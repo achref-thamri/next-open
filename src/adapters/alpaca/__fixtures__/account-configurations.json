@@ -1,0 +1,11 @@
+{
+    "dtbp_check": "entry",
+    "trade_confirm_email": "all",
+    "suspend_trade": false,
+    "no_shorting": false,
+    "fractional_trading": true,
+    "max_margin_multiplier": "4",
+    "max_options_trading_level": 3,
+    "pdt_check": "entry",
+    "ptp_no_exception_entry": false
+}

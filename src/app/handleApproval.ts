@@ -1,6 +1,5 @@
 import type { Proposal, TradingDate } from "../core/types.js";
-import { tradingDateOf } from "../core/types.js";
-import { newYorkInstant } from "./calendar.js";
+import { newYorkInstant, tradingDateOf } from "../core/types.js";
 import type { AppDeps } from "./deps.js";
 import { runJob, skip, type JobResult } from "./runJob.js";
 
