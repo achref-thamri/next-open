@@ -16,3 +16,17 @@ export class TransientError extends Error {
 export class PermanentError extends Error {
     override name = "PermanentError";
 }
+
+/** A non-retryable HTTP response (4xx other than 429). */
+export class HttpError extends PermanentError {
+    override name = "HttpError";
+
+    constructor(
+        message: string,
+        readonly status: number,
+        /** Response body text, for vendor error codes. */
+        readonly body: string,
+    ) {
+        super(message);
+    }
+}
