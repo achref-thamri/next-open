@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { toTradingDate } from "../../core/types.js";
-import { addDays, newYorkInstant } from "../calendar.js";
+import { newYorkInstant, toTradingDate } from "../../core/types.js";
+import { addDays } from "../calendar.js";
 
 describe("addDays", () => {
     it("crosses month and year ends", () => {
