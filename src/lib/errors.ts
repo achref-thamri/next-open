@@ -12,6 +12,11 @@ export class TransientError extends Error {
     }
 }
 
+/** HTTP 429: retryable after a wait, but a daily quota may need special handling by the caller. */
+export class RateLimitError extends TransientError {
+    override name = "RateLimitError";
+}
+
 /** A failure that will not go away by retrying: bad request, auth, validation. */
 export class PermanentError extends Error {
     override name = "PermanentError";

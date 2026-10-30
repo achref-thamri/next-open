@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import { HttpError, PermanentError, TransientError } from "./errors.js";
+import { HttpError, PermanentError, RateLimitError, TransientError } from "./errors.js";
 
 export type Fetch = typeof fetch;
 
@@ -43,7 +43,7 @@ export async function requestJson<S extends z.ZodType>(request: HttpRequest<S>):
 
     const text = await response.text();
     if (response.status === 429) {
-        throw new TransientError(`${label}: rate limited (429)`, retryAfterMs(response.headers.get("retry-after")));
+        throw new RateLimitError(`${label}: rate limited (429)`, retryAfterMs(response.headers.get("retry-after")));
     }
     if (response.status >= 500) throw new TransientError(`${label}: server error ${response.status}`);
     if (!response.ok) throw new HttpError(`${label}: ${response.status} ${errorMessage(text)}`, response.status, text);
