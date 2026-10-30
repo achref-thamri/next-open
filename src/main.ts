@@ -1,12 +1,20 @@
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { composeApp } from "./compose.js";
 import { loadConfig } from "./config/index.js";
+import { HEARTBEAT_PATH } from "./healthcheck.js";
 import { createLogger } from "./lib/logger.js";
 
 /** Starts the bot: checks the account, then runs the scheduler and the Telegram bot until stopped. */
 async function main(): Promise<void> {
     const config = loadConfig();
     const logger = createLogger(config.logLevel);
-    const app = composeApp(config, logger);
+    mkdirSync(dirname(HEARTBEAT_PATH), { recursive: true });
+    const app = composeApp(config, logger, {
+        onTick: (now) => {
+            writeFileSync(HEARTBEAT_PATH, now.toISOString());
+        },
+    });
     logger.info({ mode: config.mode, model: config.anthropic.model }, "starting trading bot");
 
     // Refuse to run at all if the account could use margin or short selling.

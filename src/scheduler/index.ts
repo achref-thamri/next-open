@@ -24,6 +24,8 @@ export interface SchedulerDeps {
     runs: RunsRepository;
     notifier: Notifier;
     logger: Logger;
+    /** Called on every tick; the container health check watches it. */
+    onTick?: (now: Date) => void;
 }
 
 /** Spec §4 times, in New York time. Trading-day jobs follow the session, so half days move with the close. */
@@ -102,6 +104,7 @@ export class Scheduler {
     /** One scheduling pass; public for tests. */
     async tick(): Promise<void> {
         const now = this.deps.clock.now();
+        this.deps.onTick?.(now);
         if (now.getTime() - this.lastHeartbeat >= HEARTBEAT_EVERY_MS) {
             this.lastHeartbeat = now.getTime();
             this.deps.logger.info("scheduler heartbeat");

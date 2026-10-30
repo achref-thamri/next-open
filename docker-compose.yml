@@ -1,0 +1,21 @@
+services:
+    trading-bot:
+        build:
+            context: .
+            dockerfile: docker/Dockerfile
+        image: trading-bot:latest
+        restart: unless-stopped
+        env_file: .env
+        environment:
+            DATABASE_PATH: /data/trading-bot.db
+            HEARTBEAT_PATH: /data/heartbeat
+        volumes:
+            - bot-data:/data
+        logging:
+            driver: json-file
+            options:
+                max-size: 10m
+                max-file: "5"
+
+volumes:
+    bot-data:
