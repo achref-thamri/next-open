@@ -2,6 +2,7 @@ import { formatCents } from "../core/money.js";
 import { isTicker, tradingDateOf } from "../core/types.js";
 import type { AppDeps } from "./deps.js";
 import { performance, reportText } from "./report.js";
+import { withComparison } from "./strategyReport.js";
 import { syncBroker } from "./sync.js";
 
 export const HELP = `Commands:
@@ -29,7 +30,7 @@ export async function handleCommand(
         case "/resume":
             return resume(deps);
         case "/report":
-            return reportText(await performance(deps, (await syncBroker(deps)).positions));
+            return withComparison(deps, reportText(await performance(deps, (await syncBroker(deps)).positions)));
         case "/why":
             return why(deps, args[0]);
         case "/golive":
