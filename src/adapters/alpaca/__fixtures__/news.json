@@ -1,0 +1,93 @@
+{
+    "news": [
+        {
+            "author": "Avi Kapoor",
+            "content": "<p>Article body trimmed for fixture.</p>",
+            "created_at": "2026-10-30T14:15:51Z",
+            "headline": "AutoNation, Regeneron Pharmaceuticals, AstraZeneca And Other Big Stocks Moving Higher On Friday",
+            "id": 62741649,
+            "images": [
+                {
+                    "size": "large",
+                    "url": "https://cdn.benzinga.com/files/images/story/2026/10/30/Konskie--Poland---March-16--2024-Autonat.jpg?width=2048&height=1536"
+                },
+                {
+                    "size": "small",
+                    "url": "https://cdn.benzinga.com/files/images/story/2026/10/30/Konskie--Poland---March-16--2024-Autonat.jpg?width=1024&height=768"
+                },
+                {
+                    "size": "thumb",
+                    "url": "https://cdn.benzinga.com/files/images/story/2026/10/30/Konskie--Poland---March-16--2024-Autonat.jpg?width=250&height=187"
+                }
+            ],
+            "source": "benzinga",
+            "summary": "U.S. stocks fell Friday, but AutoNation jumped 8% after beating Q3 estimates; OneSpan, Grid Dynamics and others posted d",
+            "symbols": [
+                "ACCO",
+                "AN",
+                "AZN",
+                "CDNA",
+                "CPRI",
+                "CVCO",
+                "CVEO",
+                "EXEL",
+                "FDXF",
+                "FMC",
+                "GDYN",
+                "MEOH",
+                "OSPN",
+                "REGN",
+                "RIVN",
+                "RMNI",
+                "SMP",
+                "ULH"
+            ],
+            "updated_at": "2026-10-30T14:15:51Z",
+            "url": "https://www.benzinga.com/trading-ideas/movers/26/10/62741649/autonation-regeneron-pharmaceuticals-astrazeneca-and-other-big-stocks-moving-higher-on-friday"
+        },
+        {
+            "author": "Benzinga Insights",
+            "content": "<p>Article body trimmed for fixture.</p>",
+            "created_at": "2026-10-30T14:15:24Z",
+            "headline": "Here's How Much $100 Invested In AppLovin 15 Years Ago Would Be Worth Today",
+            "id": 62741623,
+            "images": [
+                {
+                    "size": "large",
+                    "url": "https://cdn.benzinga.com/files/images/story/2025/11/06/valuestock_3.jpg?width=2048&height=1536"
+                },
+                {
+                    "size": "small",
+                    "url": "https://cdn.benzinga.com/files/images/story/2025/11/06/valuestock_3.jpg?width=1024&height=768"
+                },
+                {
+                    "size": "thumb",
+                    "url": "https://cdn.benzinga.com/files/images/story/2025/11/06/valuestock_3.jpg?width=250&height=187"
+                }
+            ],
+            "source": "benzinga",
+            "summary": "AppLovin (NASDAQ:APP) has outperformed the market over the past 15 years by 4.74% on an annualized basis producing an av",
+            "symbols": [
+                "APP"
+            ],
+            "updated_at": "2026-10-30T14:15:24Z",
+            "url": "https://www.benzinga.com/news/26/10/62741623/here-s-how-much-100-invested-applovin-15-years-ago-would-be-worth-today"
+        },
+        {
+            "author": "Benzinga Newsdesk",
+            "content": "<p>Article body trimmed for fixture.</p>",
+            "created_at": "2026-10-30T14:15:09Z",
+            "headline": "Keefe, Bruyette & Woods Maintains Market Perform on Alerus Financial, Raises Price Target to $34",
+            "id": 62741599,
+            "images": [],
+            "source": "benzinga",
+            "summary": "",
+            "symbols": [
+                "ALRS"
+            ],
+            "updated_at": "2026-10-30T14:15:09Z",
+            "url": "https://www.benzinga.com/news/26/10/62741599/keefe-bruyette-woods-maintains-market-perform-alerus-financial-raises-price-target-34"
+        }
+    ],
+    "next_page_token": "MTc5MzM2OTcwOTAwMDAwMDAwMHw2Mjc0MTU5OQ=="
+}
