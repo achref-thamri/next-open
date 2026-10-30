@@ -77,7 +77,7 @@ export function dailySchedule(jobs: {
 /**
  * Checks once a minute which jobs are due, using the broker calendar for trading days and session times.
  * A job runs once per date (the run records survive restarts); a job whose window has passed without a run is
- * recorded as missed and alerted, never replayed. Jobs run one at a time, in due order.
+ * recorded as missed and alerted, never replayed. Jobs run one at a time in the background, in due order.
  */
 export class Scheduler {
     private cron: Cron | undefined;
@@ -118,7 +118,11 @@ export class Scheduler {
         } catch (error) {
             this.deps.logger.error({ err: error }, "scheduler tick failed");
         }
-        await this.queue;
+    }
+
+    /** Resolves once every queued job has finished; for tests and shutdown. */
+    idle(): Promise<unknown> {
+        return this.queue;
     }
 
     private async consider(job: JobSpec, date: TradingDate, day: MarketDay | undefined, now: Date): Promise<void> {
@@ -132,14 +136,19 @@ export class Scheduler {
             await this.recordMissed(job, date, due);
             return;
         }
+        // Jobs run in the background, one at a time, so ticks (and the health check heartbeat) keep going
+        // during long jobs. A job that waited in the queue past its window is reported as missed instead.
         this.queue = this.queue.then(async () => {
+            if (this.deps.clock.now().getTime() > due.getTime() + job.windowMs) {
+                await this.recordMissed(job, date, due);
+                return;
+            }
             try {
                 await job.run();
             } catch (error) {
                 this.deps.logger.error({ err: error, job: job.type }, "job threw");
             }
         });
-        await this.queue;
     }
 
     private async recordMissed(job: JobSpec, date: TradingDate, due: Date): Promise<void> {

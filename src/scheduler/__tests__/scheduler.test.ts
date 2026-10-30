@@ -61,6 +61,7 @@ describe("Scheduler", () => {
         for (let t = new Date(from).getTime(); t <= new Date(to).getTime(); t += 60_000) {
             clock.set(new Date(t));
             await scheduler.tick();
+            await scheduler.idle();
         }
     }
 
@@ -129,6 +130,7 @@ describe("Scheduler", () => {
 
         clock.set("2026-11-02T14:35:00Z");
         await restarted.tick();
+        await restarted.idle();
 
         expect(ran.filter((r) => r.startsWith("execute_at_open"))).toHaveLength(1);
     });
@@ -141,7 +143,53 @@ describe("Scheduler", () => {
         expect(ran).toEqual([]);
 
         await scheduler.tick();
+        await scheduler.idle();
         expect(ran).toContain("execute_at_open@14:30");
+    });
+
+    it("keeps ticking while a long job runs, and reports a job that waited past its window as missed", async () => {
+        let release: () => void = () => undefined;
+        const ticks: Date[] = [];
+        const busy = new Scheduler(
+            {
+                broker,
+                clock,
+                runs: repos.runs,
+                notifier,
+                logger: pino({ level: "silent" }),
+                onTick: (now) => ticks.push(now),
+            },
+            [
+                {
+                    type: "liquid_list",
+                    dueAt: (d: TradingDate) => new Date(`${d}T14:00:00Z`),
+                    windowMs: 86_400_000,
+                    run: () =>
+                        new Promise<void>((resolve) => {
+                            release = resolve;
+                        }),
+                },
+                {
+                    type: "execute_at_open",
+                    dueAt: (_, day) => day?.open,
+                    windowMs: 15 * 60_000,
+                    run: job("execute_at_open"),
+                },
+            ],
+        );
+
+        clock.set("2026-11-02T14:30:00Z");
+        await busy.tick(); // starts the long job, queues the open behind it
+        clock.set("2026-11-02T14:50:00Z");
+        await busy.tick(); // returns although the long job is still running
+        release();
+        await busy.idle();
+
+        expect(ticks).toHaveLength(2);
+        expect(ran).toEqual([]);
+        expect(notifier.texts()).toContain(
+            "⏰ Missed execute_at_open for 2026-11-02 (the bot was not running in time). It will not be run late.",
+        );
     });
 
     it("waits for a running job when stopped", async () => {
@@ -161,9 +209,8 @@ describe("Scheduler", () => {
             },
         ]);
 
-        const tick = slow.tick();
+        await slow.tick();
         await slow.stop();
-        await tick;
 
         expect(finished).toBe(true);
     });
