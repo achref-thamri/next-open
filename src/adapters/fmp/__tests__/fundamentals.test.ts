@@ -151,6 +151,19 @@ describe("FmpFundamentals", () => {
         expect(Object.fromEntries(caps)).toEqual({ AAPL: 5_050_461_930_800, MSFT: 3_881_703_905_420 });
     });
 
+    it("treats FMP's 429 as the daily limit: no retries, budget marked used, answers from the cache", async () => {
+        await fmp().getProfile(AAPL);
+        clock.advance(40 * 86_400_000);
+        respond = () => new Response(JSON.stringify({ "Error Message": "Limit Reach" }), { status: 429 });
+        const adapter = fmp();
+
+        expect((await adapter.getProfile(AAPL))?.name).toBe("Apple Inc.");
+        expect(await adapter.getProfile(toTicker("MSFT"))).toBeUndefined();
+        expect(await adapter.getMarketCaps([AAPL])).toEqual(new Map());
+        expect(await adapter.remainingRequests()).toBe(0);
+        expect(urls).toHaveLength(2); // the first lookup and one refused call, nothing after
+    });
+
     it("never puts the API key in error messages", async () => {
         respond = () => new Response(fixture("company-screener-402.txt"), { status: 402 });
 
