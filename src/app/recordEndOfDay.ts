@@ -145,7 +145,10 @@ function pctText(fraction: number, signed = false): string {
 }
 
 /** Sunday job: the weekly performance report and go-live gate. */
-export async function sendWeeklyReport(deps: AppDeps): Promise<void> {
-    const { positions } = await syncBroker(deps);
-    await deps.notifier.send(`🗓️ Weekly report\n${reportText(await performance(deps, positions))}`);
+export async function sendWeeklyReport(deps: AppDeps): Promise<JobResult> {
+    return runJob(deps, "weekly_report", tradingDateOf(deps.clock.now()), async () => {
+        const { positions } = await syncBroker(deps);
+        await deps.notifier.send(`🗓️ Weekly report\n${reportText(await performance(deps, positions))}`);
+        return undefined;
+    });
 }
