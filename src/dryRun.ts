@@ -4,19 +4,51 @@ import { FakeClock } from "./adapters/fake/clock.js";
 import { openDatabase, type Db } from "./adapters/sqlite/db.js";
 import { migrate } from "./adapters/sqlite/migrate.js";
 import { createSqliteRepositories } from "./adapters/sqlite/repositories/index.js";
-import { buildLiquidList } from "./app/buildLiquidList.js";
+import { buildLiquidList, weekOf } from "./app/buildLiquidList.js";
 import { addDays } from "./app/calendar.js";
 import type { AppDeps } from "./app/deps.js";
-import { proposalText } from "./app/messages.js";
 import { runEveningAnalysis } from "./app/runEveningAnalysis.js";
 import { composeApp } from "./compose.js";
 import { loadConfig } from "./config/index.js";
-import { cents } from "./core/money.js";
-import { newYorkInstant, toTradingDate, tradingDateOf, type TradingDate } from "./core/types.js";
+import { cents, formatCents } from "./core/money.js";
+import { newYorkInstant, toTicker, toTradingDate, tradingDateOf, type TradingDate } from "./core/types.js";
 import type { Notifier } from "./ports/notifier.js";
 
 const CACHE_PATH = process.env.DRY_RUN_CACHE_PATH ?? "data/dry-run-cache.db";
 const STARTING_CASH = cents(10_000_000);
+/** Large, liquid US common stocks across sectors, for `--quick`. */
+const QUICK_TICKERS = [
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "AMZN",
+    "GOOGL",
+    "META",
+    "AVGO",
+    "TSLA",
+    "JPM",
+    "V",
+    "UNH",
+    "XOM",
+    "LLY",
+    "JNJ",
+    "PG",
+    "MA",
+    "HD",
+    "COST",
+    "ABBV",
+    "BAC",
+    "KO",
+    "PEP",
+    "CRM",
+    "AMD",
+    "NFLX",
+    "CAT",
+    "GE",
+    "DIS",
+    "INTC",
+    "WMT",
+].map(toTicker);
 
 function print(text: string): Promise<void> {
     console.log(`\n${text}`);
@@ -39,10 +71,11 @@ export function copyUniverseCache(from: string, into: Db): void {
 
 /**
  * One evening analysis with real market data, news and Claude, but a fake $100,000 broker and no Telegram.
- * Usage: npm run dry-run [-- YYYY-MM-DD]   (default: the latest trading day that has closed)
+ * Usage: npm run dry-run [-- [--quick] [YYYY-MM-DD]]   (default date: the latest trading day that has closed)
  *
  * The first run builds the liquid list in a separate cache database (data/dry-run-cache.db). That takes a few
- * days within FMP's free budget; rerun daily until it reports the list complete.
+ * days within FMP's free budget; rerun daily until it reports the list complete. `--quick` skips the list and
+ * uses a fixed set of large, liquid stocks instead, for a same-day end-to-end check.
  */
 async function dryRun(): Promise<void> {
     const config = loadConfig();
@@ -51,9 +84,15 @@ async function dryRun(): Promise<void> {
     // Real adapters on the cache database: used to build the list and to read the calendar.
     const real = composeApp({ ...config, databasePath: CACHE_PATH }, logger);
     const cacheDeps: AppDeps = { ...real.deps, notifier: consoleNotifier };
-    const asOf = process.argv[2] ? toTradingDate(process.argv[2]) : await latestClosedDay(cacheDeps);
+    const args = process.argv.slice(2);
+    const quick = args.includes("--quick");
+    const dateArg = args.find((a) => !a.startsWith("--"));
+    const asOf = dateArg ? toTradingDate(dateArg) : await latestClosedDay(cacheDeps);
 
-    if (!(await real.deps.repos.liquidLists.latestComplete())) {
+    if (quick) {
+        console.log(`Quick mode: ${QUICK_TICKERS.length} large stocks instead of the weekly list.`);
+        for (const ticker of QUICK_TICKERS) await real.deps.fundamentals.getProfile(ticker);
+    } else if (!(await real.deps.repos.liquidLists.latestComplete())) {
         console.log("Building the liquid list (uses FMP's daily budget)…");
         const result = await buildLiquidList(cacheDeps);
         console.log(`Liquid list: ${result.status}${result.message ? ` — ${result.message}` : ""}`);
@@ -75,15 +114,14 @@ async function dryRun(): Promise<void> {
         repos: createSqliteRepositories(db),
         config: { ...real.deps.config, mode: "paper" },
     };
+    if (quick) await deps.repos.liquidLists.save({ date: weekOf(asOf), tickers: QUICK_TICKERS, complete: true });
 
     console.log(
-        `Dry run for the close of ${asOf} with $${STARTING_CASH / 100} of fake cash, model ${config.anthropic.model}…`,
+        `Dry run for the close of ${asOf} with ${formatCents(STARTING_CASH)} of fake cash, model ${config.anthropic.model}…`,
     );
     const result = await runEveningAnalysis(deps);
     console.log(`\nRun ${result.status}${result.message ? `: ${result.message}` : ""}`);
 
-    const proposals = await deps.repos.proposals.list({});
-    if (proposals.length > 0) console.log(`\n${proposals.map(proposalText).join("\n\n")}`);
     const call = db.prepare("SELECT model, input_tokens, output_tokens, cost_usd FROM llm_calls").get() as
         { model: string; input_tokens: number; output_tokens: number; cost_usd: number } | undefined;
     if (call) {
