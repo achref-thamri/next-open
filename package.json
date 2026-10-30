@@ -10,6 +10,7 @@
         "dev": "tsx watch --env-file-if-exists=.env src/main.ts",
         "build": "tsc -p tsconfig.build.json",
         "start": "node --env-file-if-exists=.env dist/main.js",
+        "dry-run": "tsx --env-file-if-exists=.env src/dryRun.ts",
         "test": "vitest run",
         "test:watch": "vitest",
         "lint": "eslint . --max-warnings=0",
