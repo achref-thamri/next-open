@@ -52,6 +52,7 @@ describe("Scheduler", () => {
                 endOfDay: job("end_of_day"),
                 eveningAnalysis: job("evening_analysis"),
                 weeklyReport: job("weekly_report"),
+                backup: job("backup"),
             }),
         );
     });
@@ -66,7 +67,7 @@ describe("Scheduler", () => {
     it("runs each job once at its New York time on a trading day", async () => {
         await runDay("2026-11-02T10:00:00Z", "2026-11-03T03:00:00Z");
 
-        expect(ran).toEqual([
+        expect(ran.filter((r) => !r.startsWith("backup"))).toEqual([
             "approval_reminder@11:00",
             "liquid_list@12:00",
             "execute_at_open@14:30",
@@ -78,7 +79,7 @@ describe("Scheduler", () => {
     it("runs only date-based jobs on days the market is closed", async () => {
         await runDay("2026-11-07T10:00:00Z", "2026-11-08T03:00:00Z"); // Saturday
 
-        expect(ran).toEqual(["liquid_list@12:00"]);
+        expect(ran).toEqual(["backup@10:00", "liquid_list@12:00"]);
     });
 
     it("sends the weekly report on Sundays", async () => {
@@ -90,7 +91,10 @@ describe("Scheduler", () => {
     it("moves the end of day and evening jobs with an early close", async () => {
         await runDay("2026-11-27T17:00:00Z", "2026-11-27T20:00:00Z");
 
-        expect(ran.filter((r) => !r.startsWith("liquid_list"))).toEqual(["end_of_day@18:20", "evening_analysis@18:30"]);
+        expect(ran.filter((r) => /^(end_of_day|evening_analysis)/.test(r))).toEqual([
+            "end_of_day@18:20",
+            "evening_analysis@18:30",
+        ]);
     });
 
     it("alerts on a missed job and never runs it late", async () => {
@@ -119,6 +123,7 @@ describe("Scheduler", () => {
                 endOfDay: job("end_of_day"),
                 eveningAnalysis: job("evening_analysis"),
                 weeklyReport: job("weekly_report"),
+                backup: job("backup"),
             }),
         );
 

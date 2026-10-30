@@ -9,6 +9,7 @@ services:
         environment:
             DATABASE_PATH: /data/trading-bot.db
             HEARTBEAT_PATH: /data/heartbeat
+            BACKUP_DIR: /data/backups
         volumes:
             - bot-data:/data
         logging:

@@ -23,6 +23,7 @@ export const envSchema = z
             z.coerce.number({ error: "is required and must be an integer chat id" }).int(),
         ),
         DATABASE_PATH: z.preprocess(emptyToUndefined, z.string().min(1).default("data/trading-bot.db")),
+        BACKUP_DIR: z.preprocess(emptyToUndefined, z.string().min(1).default("data/backups")),
         LOG_LEVEL: z.preprocess(
             emptyToUndefined,
             z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
