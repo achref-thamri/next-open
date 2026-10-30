@@ -27,6 +27,8 @@ export interface Harness extends AppDeps {
     clock: FakeClock;
 }
 
+export const OWNER = 42;
+
 /** Monday 2026-11-02, 16:30 New York (EST). */
 export const EVENING = "2026-11-02T21:30:00Z";
 export const ASOF = toTradingDate("2026-11-02");
@@ -52,6 +54,7 @@ export function harness(overrides: Partial<AppConfig> = {}, now = EVENING): Harn
             risk: riskSchema.parse({}),
             universe: universeSchema.parse({}),
             tax: taxSchema.parse({}),
+            ownerChatId: OWNER,
             ...overrides,
         },
         broker,
