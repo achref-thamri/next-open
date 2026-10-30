@@ -20,7 +20,7 @@ export class FakeFundamentals implements Fundamentals {
     async getMarketCaps(tickers: readonly Ticker[]): Promise<Map<Ticker, number>> {
         await this.failures.check("getMarketCaps");
         const result = new Map<Ticker, number>();
-        if (!this.spend(1)) return result;
+        if (tickers.length === 0 || !this.spend(1)) return result;
         for (const ticker of tickers) {
             const cap = this.profiles.get(ticker)?.marketCapUsd;
             if (cap !== undefined) result.set(ticker, cap);
