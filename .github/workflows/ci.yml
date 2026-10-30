@@ -16,3 +16,17 @@ jobs:
                   cache: npm
             - run: npm ci
             - run: npm run check
+
+    docker:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+            - run: docker build -f docker/Dockerfile -t trading-bot:ci .
+            - name: Native SQLite loads as the non-root user
+              run: docker run --rm trading-bot:ci node -e "const D = require('better-sqlite3'); new D(':memory:').prepare('select 1').get()"
+            - name: Fails fast with a readable config error
+              run: |
+                  if docker run --rm trading-bot:ci > out.txt 2>&1; then exit 1; fi
+                  grep -q "Invalid configuration" out.txt
+            - name: Health check reports unhealthy without a heartbeat
+              run: "! docker run --rm trading-bot:ci node dist/healthcheck.js"

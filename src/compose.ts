@@ -32,7 +32,12 @@ export interface App {
 const systemClock: Clock = { now: () => new Date() };
 
 /** Builds every adapter and use case from config. Nothing talks to the network until the app is started. */
-export function composeApp(config: Config, logger: Logger, clock: Clock = systemClock): App {
+export function composeApp(
+    config: Config,
+    logger: Logger,
+    options: { clock?: Clock; onTick?: (now: Date) => void } = {},
+): App {
+    const clock = options.clock ?? systemClock;
     const db = openDatabase(config.databasePath);
     migrate(db);
     const repos = createSqliteRepositories(db);
@@ -81,7 +86,14 @@ export function composeApp(config: Config, logger: Logger, clock: Clock = system
     );
 
     const scheduler = new Scheduler(
-        { broker: deps.broker, clock, runs: repos.runs, notifier: deps.notifier, logger },
+        {
+            broker: deps.broker,
+            clock,
+            runs: repos.runs,
+            notifier: deps.notifier,
+            logger,
+            ...(options.onTick ? { onTick: options.onTick } : {}),
+        },
         dailySchedule({
             liquidList: () => buildLiquidList(deps),
             approvalReminder: () => remindPending(deps),
