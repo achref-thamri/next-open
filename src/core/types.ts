@@ -171,3 +171,14 @@ export interface EquitySnapshot {
     /** Value of the virtual buy-and-hold benchmark. */
     benchmarkValue: Cents;
 }
+
+/** An executed trade as reported by the broker. */
+export interface Fill {
+    ticker: Ticker;
+    side: Side;
+    qty: number;
+    price: Cents;
+    /** Regulatory and broker fees for this fill. */
+    fee: Cents;
+    date: TradingDate;
+}
