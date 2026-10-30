@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { cents } from "../money.js";
-import { closedTrades } from "../trades.js";
+import { closedTrades, positionOpenDates } from "../trades.js";
 import { toTicker, toTradingDate, type Fill } from "../types.js";
 
 function fill(ticker: string, side: Fill["side"], qty: number, priceCents: number, feeCents = 0, day = 2): Fill {
@@ -62,5 +62,21 @@ describe("closedTrades", () => {
 
     it("refuses a sell larger than the shares bought", () => {
         expect(() => closedTrades([fill("AAA", "buy", 1, 100), fill("AAA", "sell", 2, 100)])).toThrow(RangeError);
+    });
+});
+
+describe("positionOpenDates", () => {
+    it("returns the first buy since each position was last flat", () => {
+        const opened = positionOpenDates([
+            fill("AAA", "buy", 5, 100, 0, 2),
+            fill("AAA", "buy", 5, 100, 0, 3),
+            fill("BBB", "buy", 1, 100, 0, 3),
+            fill("BBB", "sell", 1, 100, 0, 4),
+            fill("CCC", "buy", 1, 100, 0, 4),
+            fill("CCC", "sell", 1, 100, 0, 5),
+            fill("CCC", "buy", 2, 100, 0, 6),
+        ]);
+
+        expect(Object.fromEntries(opened)).toEqual({ AAA: "2026-11-02", CCC: "2026-11-06" });
     });
 });

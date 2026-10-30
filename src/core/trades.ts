@@ -37,3 +37,17 @@ export function closedTrades(fills: readonly Fill[]): ClosedTrade[] {
     }
     return trades;
 }
+
+/** The date each currently held position was opened (first buy after it was last flat). */
+export function positionOpenDates(fills: readonly Fill[]): Map<Ticker, TradingDate> {
+    const qty = new Map<Ticker, number>();
+    const opened = new Map<Ticker, TradingDate>();
+    for (const fill of fills) {
+        const before = qty.get(fill.ticker) ?? 0;
+        const after = before + (fill.side === "buy" ? fill.qty : -fill.qty);
+        if (before <= 0 && after > 0) opened.set(fill.ticker, fill.date);
+        if (after <= 0) opened.delete(fill.ticker);
+        qty.set(fill.ticker, after);
+    }
+    return opened;
+}
