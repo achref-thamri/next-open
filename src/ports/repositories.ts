@@ -13,7 +13,8 @@ import type { BrokerFill, OrderRole, OrderStatus } from "./broker.js";
 import type { CompanyProfile } from "./fundamentals.js";
 import type { LlmCallRecord } from "./llm.js";
 
-export type RunType = "liquid_list" | "evening_analysis" | "approval_reminder" | "execute_at_open" | "end_of_day";
+export type RunType =
+    "liquid_list" | "evening_analysis" | "approval_reminder" | "execute_at_open" | "end_of_day" | "weekly_report";
 export type RunStatus = "running" | "succeeded" | "skipped" | "failed";
 
 export interface RunRecord {
