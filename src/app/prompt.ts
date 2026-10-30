@@ -57,6 +57,8 @@ export interface PromptInput {
     };
     recentDecisions: PromptDecision[];
     limits: RiskLimits;
+    /** Extra instructions for a strategy variant, appended to the system prompt. */
+    style?: string;
 }
 
 const DATA_TAG = "market_data";
@@ -67,7 +69,11 @@ const DATA_TAG = "market_data";
  * no headline can close the tag or open a new one.
  */
 export function buildPrompt(input: PromptInput): LlmPrompt {
-    return { system: systemPrompt(input.limits), user: userPrompt(input) };
+    const system = systemPrompt(input.limits);
+    return {
+        system: input.style ? `${system}\n\nStyle for this portfolio:\n${input.style}` : system,
+        user: userPrompt(input),
+    };
 }
 
 function systemPrompt(limits: RiskLimits): string {

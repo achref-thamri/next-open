@@ -161,11 +161,12 @@ describe("runEveningAnalysis", () => {
     it("skips when proposals for the next trading day already exist", async () => {
         h.llm.respondWith(llmOutput(decision("AAA")));
         await runEveningAnalysis(h);
+        const calls = h.llm.prompts.length;
 
         const again = await runEveningAnalysis(h);
 
         expect(again).toEqual({ status: "skipped", message: "proposals for 2026-11-03 already exist" });
-        expect(h.llm.prompts).toHaveLength(1);
+        expect(h.llm.prompts).toHaveLength(calls);
     });
 
     it("skips until the first liquid list is complete", async () => {

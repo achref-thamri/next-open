@@ -8,6 +8,7 @@ import type { AppDeps } from "./deps.js";
 import { toOrderRecord } from "./executeAtOpen.js";
 import { performance, reportText } from "./report.js";
 import { runJob, skip, type JobResult } from "./runJob.js";
+import { simulateShadowDay } from "./shadowStrategies.js";
 import { syncBroker } from "./sync.js";
 
 /**
@@ -70,6 +71,8 @@ async function endOfDay(deps: AppDeps, today: TradingDate): Promise<void> {
 
     const perf = await performance({ repos, clock, config }, positions);
     lines.push(`Since day one: bot ${pctText(perf.botReturn)} vs benchmark ${pctText(perf.benchmarkReturn)}`);
+    const strategies = await simulateShadowDay(deps, today);
+    if (strategies.length > 0) lines.push("", "Virtual strategies:", ...strategies);
     await notifier.send(lines.join("\n"));
 }
 

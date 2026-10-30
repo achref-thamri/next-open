@@ -1,6 +1,4 @@
-import { centsToDollars } from "../core/money.js";
-import { runRiskChecks, simulatePortfolio, type CheckedOrder, type OrderRequest } from "../core/risk/index.js";
-import { limitPrice, sizeOrder } from "../core/sizing.js";
+import { runRiskChecks, simulatePortfolio, type CheckedOrder } from "../core/risk/index.js";
 import { positionOpenDates } from "../core/trades.js";
 import {
     toTicker,
@@ -8,31 +6,28 @@ import {
     type Candidate,
     type DailyBar,
     type Decision,
-    type Position,
+    type Fill,
     type Proposal,
     type Ticker,
     type TradingDate,
 } from "../core/types.js";
-import { annualizedVolatility, barFeatures, periodReturns } from "../core/universe/features.js";
 import { filterUniverse, type SecurityFacts } from "../core/universe/filters.js";
 import { rankCandidates } from "../core/universe/ranking.js";
 import { newId } from "../lib/ids.js";
 import type { NewsItem } from "../ports/news.js";
 import type { CandidateRecord, DecisionRecord } from "../ports/repositories.js";
+import { buildCandidate, CONTEXT_SYMBOLS, promptInput, sizeDecisions } from "./analysisShared.js";
 import { addDays, tradingDays } from "./calendar.js";
 import type { AppDeps } from "./deps.js";
 import { eveningSummaryText, proposalText } from "./messages.js";
-import { buildPrompt, type PromptCandidate, type PromptInput } from "./prompt.js";
+import { buildPrompt } from "./prompt.js";
 import { runJob, skip, type JobResult } from "./runJob.js";
+import { proposeShadowOrders, shadowHoldings } from "./shadowStrategies.js";
 import { syncBroker, type BrokerState } from "./sync.js";
 import { validateDecisions } from "./validateDecisions.js";
 
-/** ETFs used only for market context (never traded). */
-const CONTEXT_SYMBOLS = [{ symbol: "SPY", description: "S&P 500" }] as const;
-const FEATURE_HISTORY_DAYS = 45;
-const RETURN_HISTORY_DAYS = 130;
-const MARKET_HEADLINES = 15;
-const HEADLINES_PER_TICKER = 3;
+/** Three months of trading days plus margin: enough for returns, ranking and the momentum strategy. */
+const HISTORY_DAYS = 130;
 const RECENT_DECISIONS = 20;
 
 /**
@@ -63,12 +58,12 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
     const marketNews = await deps.news.getNews({ since, until: deps.clock.now(), limit: 50 });
     const newsTickers = new Set(marketNews.flatMap((n) => n.tickers));
 
-    // Phase 1: a month of bars for everything that could be a candidate, enough for the filters and ranking.
-    const universe = [...new Set([...liquid.tickers, ...holdings, ...newsTickers])];
+    // Three months of bars for everything that could be a candidate, including the virtual portfolios' holdings.
+    const universe = [...new Set([...liquid.tickers, ...holdings, ...newsTickers, ...(await shadowHoldings(deps))])];
     const [assets, profiles, recentBars] = await Promise.all([
         marketData.listTradableAssets(),
         repos.profiles.getMany(universe),
-        marketData.getDailyBars(universe, addDays(asOf, -FEATURE_HISTORY_DAYS), asOf),
+        marketData.getDailyBars(universe, addDays(asOf, -HISTORY_DAYS), asOf),
     ]);
     if (![...recentBars.values()].some((bars) => bars.at(-1)?.date === asOf)) {
         throw new Error(`No daily bars for ${asOf} yet; refusing to analyse stale data`);
@@ -76,6 +71,8 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
     const exchanges = new Map(assets.map((a) => [a.ticker, a.exchange]));
     const records: CandidateRecord[] = [];
     const pool: Candidate[] = [];
+    const candidates = new Map<Ticker, Candidate>();
+    const eligible: Candidate[] = [];
     for (const ticker of universe) {
         const isHolding = holdings.has(ticker);
         // A ticker without a bar for today (halted, delisted) is stale; only a holding is kept, at its broker price.
@@ -83,7 +80,7 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
         const candidate = buildCandidate(
             ticker,
             bars?.at(-1)?.date === asOf ? bars : undefined,
-            state,
+            state.positions.find((p) => p.ticker === ticker)?.currentPrice,
             exchanges,
             profiles,
             newsTickers,
@@ -98,23 +95,99 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
             ? filterUniverse(candidate, config.universe)
             : { pass: false, reason: "no company profile cached" };
         records.push({ candidate, passed: result.pass, rejectReason: result.pass ? undefined : result.reason });
+        candidates.set(ticker, candidate);
+        if (result.pass) eligible.push(candidate);
         if (result.pass || isHolding) pool.push(candidate);
     }
     const shortlist = rankCandidates(pool, config.universe.maxCandidates);
     await repos.candidates.saveMany(runId, records);
     log.info({ universe: universe.length, passed: pool.length, shortlist: shortlist.length }, "candidates ranked");
 
-    // Phase 2: three months of history for the shortlist, context ETFs and recently decided tickers.
+    // History for context ETFs and recently decided tickers that are not candidates tonight.
     const recentDecisions = await repos.decisions.recent(RECENT_DECISIONS);
     const contextTickers = [...CONTEXT_SYMBOLS.map((c) => c.symbol), config.benchmarkSymbol].map(toTicker);
-    const historyTickers = [
-        ...new Set([...shortlist.map((c) => c.ticker), ...contextTickers, ...recentDecisions.map((d) => d.ticker)]),
-    ];
-    const [history, tickerNews, fills] = await Promise.all([
-        marketData.getDailyBars(historyTickers, addDays(asOf, -RETURN_HISTORY_DAYS), asOf),
+    const extraTickers = [...new Set([...contextTickers, ...recentDecisions.map((d) => d.ticker)])].filter(
+        (t) => !recentBars.has(t),
+    );
+    const [extraBars, tickerNews, fills] = await Promise.all([
+        extraTickers.length > 0
+            ? marketData.getDailyBars(extraTickers, addDays(asOf, -HISTORY_DAYS), asOf)
+            : Promise.resolve(new Map<Ticker, DailyBar[]>()),
         deps.news.getNews({ since, until: deps.clock.now(), tickers: shortlist.map((c) => c.ticker), limit: 100 }),
         repos.fills.list(),
     ]);
+    const history = new Map([...recentBars, ...extraBars]);
+
+    // The real strategy first; the virtual ones run afterwards even when it fails, and never fail the run.
+    let failure: Error | undefined;
+    let result: JobResult | undefined;
+    try {
+        result = await decideAndPropose({
+            deps,
+            runId,
+            asOf,
+            tradeDate,
+            state,
+            shortlist,
+            history,
+            marketNews,
+            tickerNews,
+            recentDecisions,
+            fills,
+            contextTickers,
+        });
+    } catch (error) {
+        failure = error instanceof Error ? error : new Error(String(error));
+    }
+    await proposeShadowOrders(deps, {
+        runId,
+        asOf,
+        tradeDate,
+        candidates,
+        eligible,
+        history,
+        marketNews,
+        contextTickers,
+        newsSince: since,
+        startEquity: state.account.equity,
+    });
+    if (failure !== undefined) throw failure;
+    return result ?? { status: "succeeded" };
+}
+
+interface DecideInput {
+    deps: AppDeps;
+    runId: string;
+    asOf: TradingDate;
+    tradeDate: TradingDate;
+    state: BrokerState;
+    shortlist: Candidate[];
+    history: Map<Ticker, DailyBar[]>;
+    marketNews: NewsItem[];
+    tickerNews: NewsItem[];
+    recentDecisions: DecisionRecord[];
+    fills: Fill[];
+    contextTickers: Ticker[];
+}
+
+/** The real strategy: prompt, Claude, validation, proposals and the owner's notification. */
+async function decideAndPropose(input: DecideInput): Promise<JobResult> {
+    const {
+        deps,
+        runId,
+        asOf,
+        tradeDate,
+        state,
+        shortlist,
+        history,
+        marketNews,
+        tickerNews,
+        recentDecisions,
+        fills,
+        contextTickers,
+    } = input;
+    const { config, repos } = deps;
+    const holdings = new Set(state.positions.map((p) => p.ticker));
 
     const prompt = buildPrompt(
         promptInput({
@@ -128,7 +201,7 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
             recentDecisions,
             openDates: positionOpenDates(fills),
             contextTickers,
-            deps,
+            limits: config.risk,
         }),
     );
     const llmResult = await deps.llm.decide(prompt);
@@ -160,115 +233,6 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
     return { status: "succeeded", message: `${proposals.filter((p) => p.qty > 0).length} proposals` };
 }
 
-function buildCandidate(
-    ticker: Ticker,
-    bars: DailyBar[] | undefined,
-    state: BrokerState,
-    exchanges: ReadonlyMap<Ticker, string>,
-    profiles: ReadonlyMap<Ticker, { kind: Candidate["kind"]; marketCapUsd: number | undefined }>,
-    newsTickers: ReadonlySet<Ticker>,
-    avgVolumeDays: number,
-): Candidate | undefined {
-    const position = state.positions.find((p) => p.ticker === ticker);
-    // A holding without recent bars (e.g. halted stock) still needs a decision, at the broker's price.
-    const features =
-        (bars && barFeatures(bars, avgVolumeDays)) ??
-        (position && { close: position.currentPrice, changePct: 0, relativeVolume: 0, avgDollarVolumeUsd: 0 });
-    if (!features) return undefined;
-    const profile = profiles.get(ticker);
-    return {
-        ticker,
-        exchange: exchanges.get(ticker) ?? "UNKNOWN",
-        kind: profile?.kind ?? "other",
-        marketCapUsd: profile?.marketCapUsd,
-        isHolding: position !== undefined,
-        inNews: newsTickers.has(ticker),
-        ...features,
-    };
-}
-
-interface PromptSources {
-    asOf: TradingDate;
-    tradeDate: TradingDate;
-    state: BrokerState;
-    shortlist: Candidate[];
-    history: ReadonlyMap<Ticker, DailyBar[]>;
-    marketNews: NewsItem[];
-    tickerNews: NewsItem[];
-    recentDecisions: DecisionRecord[];
-    openDates: ReadonlyMap<Ticker, TradingDate>;
-    contextTickers: Ticker[];
-    deps: AppDeps;
-}
-
-function promptInput(s: PromptSources): PromptInput {
-    const { account, positions } = s.state;
-    const equity = account.equity;
-    const daysBetween = (from: TradingDate) => Math.round((Date.parse(s.asOf) - Date.parse(from)) / 86_400_000);
-    const headlinesFor = (ticker: Ticker) =>
-        s.tickerNews
-            .filter((n) => n.tickers.includes(ticker))
-            .slice(0, HEADLINES_PER_TICKER)
-            .map((n) => n.headline);
-    const closeOn = (ticker: Ticker, date: TradingDate) => s.history.get(ticker)?.find((b) => b.date === date)?.close;
-    const latestClose = (ticker: Ticker) => s.history.get(ticker)?.at(-1)?.close;
-
-    const candidates: PromptCandidate[] = s.shortlist.map((c) => ({
-        ticker: c.ticker,
-        priceUsd: centsToDollars(c.close),
-        returns: periodReturns(s.history.get(c.ticker) ?? []),
-        relativeVolume: c.relativeVolume,
-        marketCapUsd: c.marketCapUsd,
-        isHolding: c.isHolding,
-        headlines: headlinesFor(c.ticker),
-    }));
-    const indexDescriptions = new Map<string, string>(CONTEXT_SYMBOLS.map((c) => [c.symbol, c.description]));
-
-    return {
-        asOf: s.asOf,
-        tradeDate: s.tradeDate,
-        portfolio: {
-            equityUsd: centsToDollars(equity),
-            cashUsd: centsToDollars(account.cash),
-            positions: positions.map((p: Position) => {
-                const opened = s.openDates.get(p.ticker);
-                return {
-                    ticker: p.ticker,
-                    qty: p.qty,
-                    avgEntryPriceUsd: centsToDollars(p.avgEntryPrice),
-                    priceUsd: centsToDollars(p.currentPrice),
-                    unrealizedPct: p.avgEntryPrice > 0 ? p.currentPrice / p.avgEntryPrice - 1 : 0,
-                    weight: equity > 0 ? p.marketValue / equity : 0,
-                    daysHeld: opened && daysBetween(opened),
-                };
-            }),
-        },
-        candidates,
-        market: {
-            indices: s.contextTickers.map((symbol) => ({
-                symbol,
-                description: indexDescriptions.get(symbol) ?? "benchmark (global stocks)",
-                returns: periodReturns(s.history.get(symbol) ?? []),
-            })),
-            sp500Volatility20d: annualizedVolatility(s.history.get(toTicker("SPY")) ?? [], 20),
-            headlines: s.marketNews.slice(0, MARKET_HEADLINES).map((n) => n.headline),
-        },
-        recentDecisions: s.recentDecisions.map((d) => {
-            const then = closeOn(d.ticker, d.tradeDate);
-            const now = latestClose(d.ticker);
-            return {
-                date: d.tradeDate,
-                ticker: d.ticker,
-                action: d.action,
-                targetWeight: d.targetWeight,
-                confidence: d.confidence,
-                outcomePct: then && now ? now / then - 1 : undefined,
-            };
-        }),
-        limits: s.deps.config.risk,
-    };
-}
-
 /** Sizes buy and sell decisions into orders, runs the risk checks and turns the result into proposals. */
 async function propose(
     deps: AppDeps,
@@ -280,29 +244,13 @@ async function propose(
 ): Promise<Proposal[]> {
     const { config, repos, logger } = deps;
     const closes = new Map(shortlist.map((c) => [c.ticker, c.close]));
-    const held = new Map(state.positions.map((p) => [p.ticker, p.qty]));
-    const byOrderId = new Map<string, Decision>();
-    const orders: OrderRequest[] = [];
-
-    for (const decision of decisions) {
-        if (decision.action === "hold") continue;
-        const close = closes.get(decision.ticker);
-        if (close === undefined) continue;
-        const price = limitPrice(close, decision.action, config.risk.maxEntryGapPct);
-        const sized = sizeOrder({
-            equity: state.account.equity,
-            targetWeight: decision.targetWeight,
-            currentQty: held.get(decision.ticker) ?? 0,
-            limitPrice: price,
-        });
-        if (sized?.side !== decision.action) {
-            logger.info({ ticker: decision.ticker, action: decision.action, sized }, "decision needs no order");
-            continue;
-        }
-        const id = newId();
-        byOrderId.set(id, decision);
-        orders.push({ id, ticker: decision.ticker, side: sized.side, qty: sized.qty, limitPrice: price });
-    }
+    const { orders, decisionOf: byOrderId } = sizeDecisions(
+        decisions,
+        closes,
+        state,
+        config.risk.maxEntryGapPct,
+        logger,
+    );
 
     const settings = await repos.settings.get();
     const securities = new Map<Ticker, SecurityFacts>(shortlist.map((c) => [c.ticker, c]));
