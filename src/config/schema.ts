@@ -75,6 +75,8 @@ export const taxSchema = z.strictObject({
     shareThresholdDkk: z.number().positive().default(79_400),
     /** Benchmark ETF taxed yearly on unrealised gains; rate depends on SKAT's positive list (open item). */
     benchmarkRate: fraction.default(0.27),
+    /** DKK per USD, used to convert the threshold. An estimate; update it when the rate drifts. */
+    usdDkkRate: z.number().positive().default(6.5),
 });
 
 /** Tunable settings, from an optional JSON file. Every field has a default. */
