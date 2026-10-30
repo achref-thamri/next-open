@@ -2,6 +2,7 @@ import type { Repositories } from "../../../ports/repositories.js";
 import type { Db } from "../db.js";
 import { SqliteCandidatesRepository, SqliteDecisionsRepository, SqliteLlmCallsRepository } from "./analysis.js";
 import { SqliteRunsRepository } from "./runs.js";
+import { SqliteShadowRepository } from "./shadow.js";
 import {
     SqliteApiUsageRepository,
     SqliteEquitySnapshotsRepository,
@@ -26,5 +27,6 @@ export function createSqliteRepositories(db: Db): Repositories {
         profiles: new SqliteProfilesRepository(db),
         liquidLists: new SqliteLiquidListsRepository(db),
         apiUsage: new SqliteApiUsageRepository(db),
+        shadow: new SqliteShadowRepository(db),
     };
 }

@@ -36,6 +36,10 @@ describe("migrate", () => {
             "proposals",
             "runs",
             "settings",
+            "shadow_fills",
+            "shadow_orders",
+            "shadow_portfolios",
+            "shadow_snapshots",
         ]);
     });
 
