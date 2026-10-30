@@ -9,7 +9,10 @@ import type { News } from "../ports/news.js";
 import type { Notifier } from "../ports/notifier.js";
 import type { Repositories } from "../ports/repositories.js";
 
-export type AppConfig = Pick<Config, "mode" | "benchmarkSymbol" | "risk" | "universe" | "tax">;
+export type AppConfig = Pick<Config, "mode" | "benchmarkSymbol" | "risk" | "universe" | "tax"> & {
+    /** The only Telegram chat allowed to approve trades and run commands. */
+    ownerChatId: number;
+};
 
 /** Everything a use case may depend on. Each use case is a plain function of these. */
 export interface AppDeps {
