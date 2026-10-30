@@ -1,4 +1,5 @@
 import type { Cents } from "../core/money.js";
+import type { SimulatedFill, VirtualOrder, VirtualPortfolio } from "../core/simulation.js";
 import type {
     Candidate,
     Decision,
@@ -196,4 +197,48 @@ export interface Repositories {
     profiles: ProfilesRepository;
     liquidLists: LiquidListsRepository;
     apiUsage: ApiUsageRepository;
+    shadow: ShadowRepository;
+}
+
+/** A strategy compared in paper mode with a virtual portfolio (see core/simulation). */
+export type StrategyId = "claude" | "claude_patient" | "momentum";
+
+export interface ShadowAccount {
+    strategy: StrategyId;
+    portfolio: VirtualPortfolio;
+    startDate: TradingDate;
+    startValue: Cents;
+    /** The last trading day whose orders and protective legs were simulated. */
+    lastSimulated: TradingDate | undefined;
+}
+
+export interface ShadowOrder extends VirtualOrder {
+    id: string;
+    reasoning: string;
+    status: "pending" | "filled" | "unfilled";
+}
+
+export interface ShadowDay {
+    strategy: StrategyId;
+    date: TradingDate;
+    portfolio: VirtualPortfolio;
+    fills: readonly SimulatedFill[];
+    filledOrderIds: readonly string[];
+    equity: Cents;
+}
+
+export interface ShadowRepository {
+    getAccount(strategy: StrategyId): Promise<ShadowAccount | undefined>;
+    /** Creates the account; does nothing when it already exists. */
+    openAccount(account: Omit<ShadowAccount, "lastSimulated">): Promise<void>;
+    /** Replaces the pending orders of a strategy for a trade date. */
+    saveOrders(strategy: StrategyId, tradeDate: TradingDate, orders: readonly ShadowOrder[]): Promise<void>;
+    pendingOrders(strategy: StrategyId, tradeDate: TradingDate): Promise<ShadowOrder[]>;
+    /**
+     * Records one simulated day atomically: new portfolio, fills, order outcomes (the rest of the day's
+     * pending orders become unfilled) and the closing equity. Returns false if the day was already recorded.
+     */
+    recordDay(day: ShadowDay): Promise<boolean>;
+    fills(strategy: StrategyId): Promise<(SimulatedFill & { strategy: StrategyId })[]>;
+    snapshots(strategy: StrategyId): Promise<{ date: TradingDate; equity: Cents }[]>;
 }
