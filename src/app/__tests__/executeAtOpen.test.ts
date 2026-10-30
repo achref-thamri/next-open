@@ -202,6 +202,20 @@ describe("executeAtOpen", () => {
         expect(h.notifier.texts()).toEqual(["⌛ 1 unapproved order expired."]);
     });
 
+    it("refuses live trading until the owner confirms /golive", async () => {
+        h = harness({ mode: "live" }, OPEN);
+        await seed(h, [proposal("p1", "AAA")]);
+
+        const result = await executeAtOpen(h);
+
+        expect(result.status).toBe("failed");
+        expect(h.broker.allOrders()).toEqual([]);
+
+        await h.repos.settings.update({ liveConfirmed: true });
+
+        expect((await executeAtOpen(h)).status).toBe("succeeded");
+    });
+
     it("refuses to trade when the account allows margin or shorting", async () => {
         await seed(h, [proposal("p1", "AAA")]);
         h.broker.marginEnabled = true;

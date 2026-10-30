@@ -35,6 +35,9 @@ async function execute(deps: AppDeps, today: TradingDate): Promise<JobResult | u
     const expired = await expirePending(deps);
     if (expired > 0) lines.push(`⌛ ${expired} unapproved order${expired === 1 ? "" : "s"} expired.`);
 
+    if (config.mode === "live" && !(await repos.settings.get()).liveConfirmed) {
+        throw new Error("live mode is not confirmed; send /golive once the go-live gate passes");
+    }
     await broker.verifyAccountSafety();
     const { account, positions } = await syncBroker(deps);
     const approved = await repos.proposals.list({ tradeDate: today, statuses: ["approved"] });
