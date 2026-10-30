@@ -1,0 +1,5 @@
+dist
+coverage
+package-lock.json
+src/**/__fixtures__
+docs/design
