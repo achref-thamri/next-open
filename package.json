@@ -1,0 +1,39 @@
+{
+    "name": "trading-bot",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "engines": {
+        "node": ">=24"
+    },
+    "scripts": {
+        "dev": "tsx watch src/main.ts",
+        "build": "tsc -p tsconfig.build.json",
+        "start": "node dist/main.js",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "lint": "eslint . --max-warnings=0",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "typecheck": "tsc --noEmit",
+        "check": "npm run format:check && npm run lint && npm run typecheck && npm test",
+        "prepare": "husky"
+    },
+    "devDependencies": {
+        "@eslint/js": "10.0.1",
+        "@types/node": "24.19.2",
+        "eslint": "10.14.0",
+        "husky": "9.1.7",
+        "jiti": "2.7.0",
+        "lint-staged": "17.6.0",
+        "prettier": "3.9.10",
+        "tsx": "4.23.15",
+        "typescript": "6.0.3",
+        "typescript-eslint": "8.72.1",
+        "vitest": "5.0.5"
+    },
+    "dependencies": {
+        "pino": "10.4.0",
+        "zod": "4.6.7"
+    }
+}
