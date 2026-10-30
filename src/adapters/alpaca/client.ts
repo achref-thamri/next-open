@@ -12,6 +12,8 @@ export const ALPACA_URLS = {
 
 /** Alpaca allows 200 requests per minute per account; stay a little under it. */
 const REQUESTS_PER_MINUTE = 180;
+const TRADING_TIMEOUT_MS = 15_000;
+const DATA_TIMEOUT_MS = 60_000;
 
 export type Query = Record<string, string | number | boolean | readonly string[] | undefined>;
 
@@ -68,6 +70,8 @@ export class AlpacaClient {
                     method,
                     url,
                     label,
+                    // Multi-symbol SIP bar pages can take a while to assemble.
+                    timeoutMs: base === ALPACA_URLS.data ? DATA_TIMEOUT_MS : TRADING_TIMEOUT_MS,
                     schema,
                     body: request.body,
                     headers: {
