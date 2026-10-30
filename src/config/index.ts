@@ -14,6 +14,7 @@ export interface Config {
     anthropic: { apiKey: string; model: string };
     telegram: { botToken: string; ownerChatId: number };
     databasePath: string;
+    backupDir: string;
     logLevel: LogLevel;
     benchmarkSymbol: string;
     risk: RiskLimits;
@@ -48,6 +49,7 @@ export function parseConfig(env: Record<string, string | undefined>, settings: u
         anthropic: { apiKey: e.ANTHROPIC_API_KEY, model: e.ANTHROPIC_MODEL },
         telegram: { botToken: e.TELEGRAM_BOT_TOKEN, ownerChatId: e.TELEGRAM_OWNER_CHAT_ID },
         databasePath: e.DATABASE_PATH,
+        backupDir: e.BACKUP_DIR,
         logLevel: e.LOG_LEVEL,
         ...settingsResult.data,
     };

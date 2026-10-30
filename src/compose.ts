@@ -5,6 +5,7 @@ import { AlpacaClient } from "./adapters/alpaca/client.js";
 import { AlpacaMarketData, AlpacaNews } from "./adapters/alpaca/marketData.js";
 import { AnthropicLlm } from "./adapters/anthropic/llm.js";
 import { FmpFundamentals } from "./adapters/fmp/fundamentals.js";
+import { backupDatabase, pruneBackups } from "./adapters/sqlite/backup.js";
 import { openDatabase, type Db } from "./adapters/sqlite/db.js";
 import { migrate } from "./adapters/sqlite/migrate.js";
 import { createSqliteRepositories } from "./adapters/sqlite/repositories/index.js";
@@ -15,9 +16,10 @@ import type { AppDeps } from "./app/deps.js";
 import { executeAtOpen } from "./app/executeAtOpen.js";
 import { approveAll, handleApproval, remindPending } from "./app/handleApproval.js";
 import { recordEndOfDay, sendWeeklyReport } from "./app/recordEndOfDay.js";
+import { runJob } from "./app/runJob.js";
 import { runEveningAnalysis } from "./app/runEveningAnalysis.js";
 import type { Config } from "./config/index.js";
-import { toTradingDate } from "./core/types.js";
+import { toTradingDate, tradingDateOf } from "./core/types.js";
 import type { Logger } from "./lib/logger.js";
 import type { Clock } from "./ports/clock.js";
 import { dailySchedule, Scheduler } from "./scheduler/index.js";
@@ -28,6 +30,9 @@ export interface App {
     scheduler: Scheduler;
     db: Db;
 }
+
+/** Nightly backups kept on the data volume (spec §14). */
+const BACKUP_RETENTION_DAYS = 14;
 
 const systemClock: Clock = { now: () => new Date() };
 
@@ -101,6 +106,14 @@ export function composeApp(
             endOfDay: () => recordEndOfDay(deps),
             eveningAnalysis: () => runEveningAnalysis(deps),
             weeklyReport: () => sendWeeklyReport(deps),
+            backup: () => {
+                const today = tradingDateOf(clock.now());
+                return runJob(deps, "backup", today, async () => {
+                    const path = await backupDatabase(db, config.backupDir, today);
+                    const deleted = pruneBackups(config.backupDir, today, BACKUP_RETENTION_DAYS);
+                    return { status: "succeeded", message: `${path}; deleted ${deleted.length} old backups` };
+                });
+            },
         }),
     );
 

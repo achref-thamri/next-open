@@ -36,11 +36,13 @@ export function dailySchedule(jobs: {
     endOfDay: () => Promise<unknown>;
     eveningAnalysis: () => Promise<unknown>;
     weeklyReport: () => Promise<unknown>;
+    backup: () => Promise<unknown>;
 }): JobSpec[] {
     const at = (date: TradingDate, time: string) => newYorkInstant(date, time);
     const after = (instant: Date, minutes: number) => new Date(instant.getTime() + minutes * MINUTE);
     const isSunday = (date: TradingDate) => new Date(`${date}T12:00:00Z`).getUTCDay() === 0;
     return [
+        { type: "backup", dueAt: (d) => at(d, "02:00"), windowMs: 6 * 60 * MINUTE, run: jobs.backup },
         { type: "liquid_list", dueAt: (d) => at(d, "07:00"), windowMs: 12 * 60 * MINUTE, run: jobs.liquidList },
         {
             type: "weekly_report",
