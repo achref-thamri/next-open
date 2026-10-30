@@ -95,6 +95,18 @@ export interface Candidate {
     /** Undefined when the fundamentals provider has no value. */
     marketCapUsd: number | undefined;
     isHolding: boolean;
+    /** Named in today's market news. */
+    inNews: boolean;
+}
+
+/** One daily OHLCV bar (SIP feed). */
+export interface DailyBar {
+    date: TradingDate;
+    open: Cents;
+    high: Cents;
+    low: Cents;
+    close: Cents;
+    volume: number;
 }
 
 export type DecisionAction = "buy" | "sell" | "hold";
