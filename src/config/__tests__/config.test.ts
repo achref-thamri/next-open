@@ -94,6 +94,17 @@ describe("parseConfig", () => {
         );
     });
 
+    it("accepts an optional https healthcheck ping URL", () => {
+        expect(parseConfig(baseEnv).healthcheckPingUrl).toBeUndefined();
+        expect(parseConfig({ ...baseEnv, HEALTHCHECK_PING_URL: "" }).healthcheckPingUrl).toBeUndefined();
+        expect(parseConfig({ ...baseEnv, HEALTHCHECK_PING_URL: "https://hc-ping.com/abc" }).healthcheckPingUrl).toBe(
+            "https://hc-ping.com/abc",
+        );
+        expect(errorOf(() => parseConfig({ ...baseEnv, HEALTHCHECK_PING_URL: "http://hc-ping.com/abc" }))).toContain(
+            "HEALTHCHECK_PING_URL",
+        );
+    });
+
     it("keeps defaults for settings that are not overridden", () => {
         const config = parseConfig(baseEnv, { risk: { maxPositions: 10 } });
 

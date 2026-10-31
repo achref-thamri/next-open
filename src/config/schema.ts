@@ -24,6 +24,7 @@ export const envSchema = z
         ),
         DATABASE_PATH: z.preprocess(emptyToUndefined, z.string().min(1).default("data/trading-bot.db")),
         BACKUP_DIR: z.preprocess(emptyToUndefined, z.string().min(1).default("data/backups")),
+        HEALTHCHECK_PING_URL: z.preprocess(emptyToUndefined, z.url({ protocol: /^https$/ }).optional()),
         LOG_LEVEL: z.preprocess(
             emptyToUndefined,
             z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),

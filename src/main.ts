@@ -4,15 +4,18 @@ import { composeApp } from "./compose.js";
 import { loadConfig } from "./config/index.js";
 import { HEARTBEAT_PATH } from "./healthcheck.js";
 import { createLogger } from "./lib/logger.js";
+import { createPinger } from "./lib/ping.js";
 
 /** Starts the bot: checks the account, then runs the scheduler and the Telegram bot until stopped. */
 async function main(): Promise<void> {
     const config = loadConfig();
     const logger = createLogger(config.logLevel);
     mkdirSync(dirname(HEARTBEAT_PATH), { recursive: true });
+    const ping = config.healthcheckPingUrl ? createPinger({ url: config.healthcheckPingUrl, logger }) : undefined;
     const app = composeApp(config, logger, {
         onTick: (now) => {
             writeFileSync(HEARTBEAT_PATH, now.toISOString());
+            ping?.(now);
         },
     });
     logger.info({ mode: config.mode, model: config.anthropic.model }, "starting trading bot");
