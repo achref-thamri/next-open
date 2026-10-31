@@ -18,12 +18,14 @@
         "format:check": "prettier --check .",
         "typecheck": "tsc --noEmit",
         "check": "npm run format:check && npm run lint && npm run typecheck && npm test",
-        "prepare": "husky"
+        "prepare": "husky",
+        "test:coverage": "vitest run --coverage"
     },
     "devDependencies": {
         "@eslint/js": "10.0.1",
         "@types/better-sqlite3": "9.6.0",
         "@types/node": "24.19.2",
+        "@vitest/coverage-v8": "5.0.5",
         "eslint": "10.14.0",
         "husky": "9.1.7",
         "jiti": "2.7.0",
