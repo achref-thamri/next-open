@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
+import { markStarted, markStopped } from "./app/lifecycle.js";
 import { composeApp } from "./compose.js";
 import { loadConfig } from "./config/index.js";
 import { HEARTBEAT_PATH } from "./healthcheck.js";
@@ -19,6 +20,7 @@ async function main(): Promise<void> {
         },
     });
     logger.info({ mode: config.mode, model: config.anthropic.model }, "starting trading bot");
+    await markStarted(app.deps);
 
     // Refuse to run at all if the account could use margin or short selling.
     await app.deps.broker.verifyAccountSafety();
@@ -30,6 +32,7 @@ async function main(): Promise<void> {
         logger.info({ signal }, "shutting down");
         await app.bot.stop();
         await app.scheduler.stop();
+        await markStopped(app.deps);
         app.db.close();
         logger.info("stopped");
         process.exit(0);
@@ -44,7 +47,6 @@ async function main(): Promise<void> {
             logger.info({ bot: info.username }, "telegram bot started");
         },
     });
-    await app.deps.notifier.send(`🤖 Trading bot started (${config.mode} mode).`);
 }
 
 main().catch((error: unknown) => {

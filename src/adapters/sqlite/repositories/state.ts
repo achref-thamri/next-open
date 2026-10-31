@@ -62,6 +62,8 @@ export const DEFAULT_SETTINGS: BotSettings = {
     haltReason: undefined,
     liveConfirmed: false,
     benchmark: undefined,
+    running: false,
+    crashAlertedAt: undefined,
 };
 
 /** Settings as one JSON value per key; unknown keys are ignored, missing keys take defaults. */
