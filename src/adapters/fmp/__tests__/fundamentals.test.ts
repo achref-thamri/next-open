@@ -151,6 +151,13 @@ describe("FmpFundamentals", () => {
         expect(Object.fromEntries(caps)).toEqual({ AAPL: 5_050_461_930_800, MSFT: 3_881_703_905_420 });
     });
 
+    it("answers no market caps when the plan lacks the batch endpoint", async () => {
+        respond = () => new Response(fixture("company-screener-402.txt"), { status: 402 });
+
+        expect(await fmp().getMarketCaps([AAPL, toTicker("MSFT")])).toEqual(new Map());
+        expect(urls).toHaveLength(1);
+    });
+
     it("treats FMP's 429 as the daily limit: no retries, budget marked used, answers from the cache", async () => {
         await fmp().getProfile(AAPL);
         clock.advance(40 * 86_400_000);

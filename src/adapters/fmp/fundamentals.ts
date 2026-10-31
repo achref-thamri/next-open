@@ -79,7 +79,15 @@ export class FmpFundamentals implements Fundamentals {
                 .slice(i, i + SYMBOLS_PER_BATCH)
                 .map(toFmpSymbol)
                 .join(",");
-            const rows = await this.get("/market-capitalization-batch", marketCapSchema, { symbols });
+            let rows;
+            try {
+                rows = await this.get("/market-capitalization-batch", marketCapSchema, { symbols });
+            } catch (error) {
+                // The free plan has no batch endpoint: keep the cached caps, which profile refreshes renew.
+                if (!(error instanceof HttpError && error.status === 402)) throw error;
+                this.options.logger.warn("FMP market cap batch not in the plan; using cached market caps");
+                break;
+            }
             if (rows === LIMIT_REACHED) break;
             for (const row of rows) {
                 const ticker = fromFmpSymbol(row.symbol);
