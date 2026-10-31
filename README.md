@@ -116,9 +116,14 @@ JSON file via `CONFIG_PATH`.
 ## Deployment
 
 One container on a small VPS with Docker Compose, SQLite on a named volume, nightly online backups kept for 14
-days, and a health check fed by the scheduler's heartbeat. Merges to `main` deploy automatically after CI passes
-(`.github/workflows/deploy.yml`): GitHub Actions ships the tree over SSH with a key that can only run the deploy
-command, and the server rebuilds and restarts the container.
+days, and a health check fed by the scheduler's heartbeat.
+
+Merges to `main` deploy automatically once CI passes ([deploy.yml](.github/workflows/deploy.yml)). GitHub Actions
+streams the tree over SSH with a key that can only run [server-deploy.sh](scripts/server-deploy.sh): it refuses to
+deploy around the open and the post-close jobs, unpacks aside, rebuilds, and fails the deploy unless the container
+reports healthy within three minutes.
+
+Manual equivalent on the server:
 
 ```sh
 docker compose up -d --build
