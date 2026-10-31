@@ -29,7 +29,7 @@ jobs:
                   const row = (k) => `| ${k} | ${t[k].pct}% | ${t[k].covered}/${t[k].total} |`;
                   console.log(["## Coverage", "| | % | covered |", "|---|---|---|", ...["statements", "branches", "functions", "lines"].map(row)].join("\n"));
                   ' >> "$GITHUB_STEP_SUMMARY"
-            - uses: actions/upload-artifact@v4
+            - uses: actions/upload-artifact@v7
               if: always()
               with:
                   name: coverage
