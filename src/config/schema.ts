@@ -75,8 +75,11 @@ export const taxSchema = z.strictObject({
     shareHighRate: fraction.default(0.42),
     /** Yearly aktieindkomst amount taxed at the low rate, for one person. */
     shareThresholdDkk: z.number().positive().default(79_400),
-    /** Benchmark ETF taxed yearly on unrealised gains; rate depends on SKAT's positive list (open item). */
-    benchmarkRate: fraction.default(0.27),
+    /**
+     * Benchmark ETF taxed yearly on unrealised gains. VT is not on SKAT's positive list (Vanguard has no listed
+     * funds), so its gains are kapitalindkomst: the top marginal rate is assumed.
+     */
+    benchmarkRate: fraction.default(0.42),
     /** DKK per USD, used to convert the threshold. An estimate; update it when the rate drifts. */
     usdDkkRate: z.number().positive().default(6.5),
 });
