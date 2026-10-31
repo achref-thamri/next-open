@@ -24,6 +24,8 @@ stored for audit.
 - **Tested.** 430+ tests: unit tests for the domain, use-case tests with in-memory fakes of every port, adapter
   tests against recorded API responses. CI runs format, lint, typecheck, tests with coverage, and Docker smoke
   tests.
+- **Maintained.** Weekly Dependabot updates, a production dependency audit in CI, signed commits, and automatic
+  deploys only after CI passes on `main`.
 
 ## How it works
 
