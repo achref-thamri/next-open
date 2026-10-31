@@ -15,6 +15,8 @@ export interface Config {
     telegram: { botToken: string; ownerChatId: number };
     databasePath: string;
     backupDir: string;
+    /** External dead man's switch (e.g. healthchecks.io), pinged while the scheduler runs. */
+    healthcheckPingUrl: string | undefined;
     logLevel: LogLevel;
     benchmarkSymbol: string;
     risk: RiskLimits;
@@ -50,6 +52,7 @@ export function parseConfig(env: Record<string, string | undefined>, settings: u
         telegram: { botToken: e.TELEGRAM_BOT_TOKEN, ownerChatId: e.TELEGRAM_OWNER_CHAT_ID },
         databasePath: e.DATABASE_PATH,
         backupDir: e.BACKUP_DIR,
+        healthcheckPingUrl: e.HEALTHCHECK_PING_URL,
         logLevel: e.LOG_LEVEL,
         ...settingsResult.data,
     };
