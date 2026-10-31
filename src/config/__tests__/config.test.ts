@@ -40,6 +40,7 @@ describe("parseConfig", () => {
         });
         expect(config.universe.maxCandidates).toBe(40);
         expect(config.tax.shareHighRate).toBe(0.42);
+        expect(config.tax.benchmarkRate).toBe(0.42);
     });
 
     it("reports a missing secret by name", () => {
