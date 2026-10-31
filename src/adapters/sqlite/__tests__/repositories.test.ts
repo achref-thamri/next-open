@@ -289,6 +289,8 @@ describe("settings", () => {
             haltReason: undefined,
             liveConfirmed: false,
             benchmark: undefined,
+            running: false,
+            crashAlertedAt: undefined,
         });
     });
 
@@ -300,6 +302,8 @@ describe("settings", () => {
             haltReason: "daily loss stop",
             liveConfirmed: false,
             benchmark,
+            running: false,
+            crashAlertedAt: undefined,
         });
 
         await repos.settings.update({ halted: false, haltReason: undefined });
@@ -309,6 +313,8 @@ describe("settings", () => {
             haltReason: undefined,
             liveConfirmed: false,
             benchmark,
+            running: false,
+            crashAlertedAt: undefined,
         });
     });
 });

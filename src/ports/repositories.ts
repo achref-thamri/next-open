@@ -146,6 +146,10 @@ export interface BotSettings {
     /** Owner confirmed /golive while TRADING_MODE=live. */
     liveConfirmed: boolean;
     benchmark: BenchmarkPosition | undefined;
+    /** Set while the process runs and cleared on a clean shutdown; still set at startup means it crashed. */
+    running: boolean;
+    /** When the owner was last told about an unexpected restart (ISO), to rate-limit crash loops. */
+    crashAlertedAt: string | undefined;
 }
 
 export interface SettingsRepository {
