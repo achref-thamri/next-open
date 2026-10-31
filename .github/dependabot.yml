@@ -1,0 +1,30 @@
+version: 2
+updates:
+    - package-ecosystem: npm
+      directory: /
+      schedule:
+          interval: weekly
+          day: saturday
+      open-pull-requests-limit: 5
+      groups:
+          # Linting, types and test tooling move together; one PR a week instead of many.
+          dev-tooling:
+              dependency-type: development
+              update-types: [minor, patch]
+          runtime:
+              dependency-type: production
+              update-types: [minor, patch]
+      ignore:
+          # Node types follow the runtime in .nvmrc (24), not the newest Node.
+          - dependency-name: "@types/node"
+            update-types: [version-update:semver-major]
+    - package-ecosystem: github-actions
+      directory: /
+      schedule:
+          interval: weekly
+          day: saturday
+    - package-ecosystem: docker
+      directory: /docker
+      schedule:
+          interval: weekly
+          day: saturday
