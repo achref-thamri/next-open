@@ -1,0 +1,22 @@
+name: Assign owner
+
+# Assigns the owner to every pull request when it opens, whoever opened it (Claude, Dependabot, contributors).
+# pull_request_target runs with this repository's token and never checks out the pull request's code.
+on:
+    pull_request_target:
+        types: [opened, reopened, ready_for_review]
+
+permissions:
+    pull-requests: write
+
+jobs:
+    assign:
+        runs-on: ubuntu-latest
+        timeout-minutes: 2
+        steps:
+            - name: Assign achref-thamri
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  PR: ${{ github.event.pull_request.number }}
+                  REPO: ${{ github.repository }}
+              run: gh pr edit "$PR" --repo "$REPO" --add-assignee achref-thamri
