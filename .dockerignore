@@ -10,3 +10,4 @@ docs
 .env.*
 *.db
 *.db-*
+.deployed-files
