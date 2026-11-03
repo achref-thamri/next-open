@@ -12,14 +12,20 @@ concurrency:
     group: deploy
     cancel-in-progress: false
 
+permissions:
+    contents: read
+
 jobs:
     deploy:
-        if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+        # A manual run deploys main only; automatic runs follow a green CI run on a push to main.
+        if: >-
+            (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+            (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
         runs-on: ubuntu-latest
         environment: production
         timeout-minutes: 15
         steps:
-            - uses: actions/checkout@v7
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
                   ref: ${{ github.event.workflow_run.head_sha || github.sha }}
             - name: Set up SSH
