@@ -23,10 +23,20 @@ flock -n 9 || { echo "another deploy is running" >&2; exit 75; }
 
 # Unpack aside first, so empty or partial input never touches the running checkout.
 incoming=$(mktemp -d)
-trap 'rm -rf "$incoming"' EXIT
+shipped=$(mktemp)
+trap 'rm -rf "$incoming" "$shipped"' EXIT
 tar -xf - -C "$incoming"
 [[ -f $incoming/docker-compose.yml && -f $incoming/package.json ]] || { echo "input is not the repo" >&2; exit 65; }
+(cd "$incoming" && find . \( -type f -o -type l \) -print | LC_ALL=C sort) >"$shipped"
 cp -a "$incoming/." "$APP_DIR/"
+
+# Files the previous deploy shipped that this one does not were deleted from the repo; remove them so they stop
+# reaching Docker builds. Files made on the server (.env) were never shipped, so they are never on the list.
+manifest="$APP_DIR/.deployed-files"
+if [[ -f $manifest ]]; then
+    LC_ALL=C comm -23 "$manifest" "$shipped" | while IFS= read -r path; do rm -f -- "$APP_DIR/$path"; done
+fi
+cp "$shipped" "$manifest"
 
 cd "$APP_DIR"
 docker compose up -d --build --remove-orphans
