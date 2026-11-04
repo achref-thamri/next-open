@@ -95,7 +95,7 @@ async function dryRun(): Promise<void> {
     } else if (!(await real.deps.repos.liquidLists.latestComplete())) {
         console.log("Building the liquid list (uses FMP's daily budget)…");
         const result = await buildLiquidList(cacheDeps);
-        console.log(`Liquid list: ${result.status}${result.message ? ` — ${result.message}` : ""}`);
+        console.log(`Liquid list: ${result.status}${result.message ? ` (${result.message})` : ""}`);
         if (result.status !== "succeeded") return;
     }
 
