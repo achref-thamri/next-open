@@ -6,12 +6,12 @@ import { withComparison } from "./strategyReport.js";
 import { syncBroker } from "./sync.js";
 
 export const HELP = `Commands:
-/status — account, positions and state
-/stop — halt trading and cancel open entry and exit orders (stop-losses stay)
-/resume — allow trading again
-/report — performance vs benchmark and the go-live gate
-/why TICKER — the latest reasoning for a ticker
-/golive — confirm live trading (live mode only, gate must pass)`;
+/status: account, positions and state
+/stop: halt trading and cancel open entry and exit orders (stop-losses stay)
+/resume: allow trading again
+/report: performance vs benchmark and the go-live gate
+/why TICKER: the latest reasoning for a ticker
+/golive: confirm live trading (live mode only, gate must pass)`;
 
 const pct = (fraction: number) => `${fraction >= 0 ? "+" : ""}${(fraction * 100).toFixed(1)}%`;
 

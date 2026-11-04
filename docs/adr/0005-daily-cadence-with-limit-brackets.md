@@ -1,4 +1,4 @@
-# 0005 — Once a day, limit bracket orders at the open
+# 0005: Once a day, limit bracket orders at the open
 
 Date: 2026-10-30 · Status: accepted
 

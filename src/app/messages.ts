@@ -18,7 +18,7 @@ export function proposalText(p: Proposal): string {
     }
     lines.push(p.reasoning);
     if (p.qty < p.requestedQty)
-        lines.push(`Risk: ${p.qty === 0 ? "rejected" : `trimmed from ${p.requestedQty}`} — ${p.riskNotes.join("; ")}`);
+        lines.push(`Risk: ${p.qty === 0 ? "rejected" : `trimmed from ${p.requestedQty}`} (${p.riskNotes.join("; ")})`);
     return lines.join("\n");
 }
 

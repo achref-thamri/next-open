@@ -1,4 +1,4 @@
-# 0006 — Missed jobs are alerted, never replayed
+# 0006: Missed jobs are alerted, never replayed
 
 Date: 2026-10-30 · Status: accepted
 

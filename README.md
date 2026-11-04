@@ -1,4 +1,4 @@
-# Trading Bot
+# Trading bot
 
 [![CI](https://github.com/achref-thamri/trading-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/achref-thamri/trading-bot/actions/workflows/ci.yml)
 
@@ -10,22 +10,22 @@ under criteria fixed in advance.
 The LLM proposes; deterministic code decides what is allowed. Every prompt, response, risk decision and order is
 stored for audit.
 
-## Highlights
+## Design
 
-- **Ports and adapters.** Pure domain logic in `core/`, vendor APIs behind interfaces in `ports/`. Swapping the
-  broker, data vendor or database means writing one adapter.
-- **Risk outside the model.** Position size, position count, cash floor, daily order caps and a daily loss halt
-  are pure functions run at proposal time and again just before execution, against the live account.
-- **Safe by construction.** Idempotent order ids derived from proposal ids, broker as the source of truth,
-  margin and short selling switched off and verified at startup, missed jobs alerted and never replayed late.
-- **Measured against alternatives.** Virtual portfolios run next to the real account on the same data: a
-  patient Claude variant, a rule-based momentum strategy, and a buy-and-hold VT benchmark, with estimated
-  Danish tax.
-- **Tested.** 430+ tests: unit tests for the domain, use-case tests with in-memory fakes of every port, adapter
-  tests against recorded API responses. CI runs format, lint, typecheck, tests with coverage, and Docker smoke
-  tests.
-- **Maintained.** Weekly Dependabot updates, a production dependency audit in CI, signed commits, and automatic
-  deploys only after CI passes on `main`.
+Domain logic lives in `core/` as pure functions, and vendor APIs sit behind interfaces in `ports/`, so a new broker,
+data vendor or database is one new adapter. Risk stays outside the model: position size, position count, cash
+floor, daily order caps and a daily loss halt are checked when a proposal is made and again just before it
+executes, against the live account. Order ids come from proposal ids, so a retry can't submit twice. The broker is
+the source of truth, margin and short selling are switched off and verified at startup, and a missed job is
+alerted and never run late.
+
+Three virtual portfolios run next to the real account on the same data: a patient Claude variant, a rule-based
+momentum strategy and a buy-and-hold VT benchmark, all with estimated Danish tax.
+
+There are 430+ tests. The domain has unit tests, the use cases run against in-memory fakes of every port, and the
+adapters are tested against recorded API responses. CI runs format, lint, typecheck, tests with coverage and Docker
+smoke tests, plus a production dependency audit. Dependabot opens updates weekly, commits are signed, and `main`
+deploys only after CI passes.
 
 ## How it works
 
@@ -40,14 +40,14 @@ flowchart LR
     A -- "proposals<br/>(approve in live mode)" --> O
 ```
 
-1. **Liquid list** (weekly): ~13,000 tradable assets are filtered by price and 20-day dollar volume from SIP
+1. Liquid list (weekly): ~13,000 tradable assets are filtered by price and 20-day dollar volume from SIP
    bars, then by market cap and the ETF/fund flag from FMP, cached within the free plan's daily quota.
-2. **Evening analysis:** rank the list by move × relative volume, add news mentions and holdings, cap at 40
+2. Evening analysis: rank the list by move × relative volume, add news mentions and holdings, cap at 40
    candidates, send portfolio, features, headlines and recent decisions to Claude. The structured answer is
    validated with zod, sized into whole shares and run through the risk checks. Proposals go to Telegram.
-3. **Execute at open:** re-sync with the broker, re-run risk checks, place bracket limit orders (stop-loss and
+3. Execute at open: re-sync with the broker, re-run risk checks, place bracket limit orders (stop-loss and
    take-profit attached). Buys never chase an overnight gap.
-4. **End of day:** snapshot equity and the benchmark, simulate the virtual portfolios, check the daily loss
+4. End of day: snapshot equity and the benchmark, simulate the virtual portfolios, check the daily loss
    limit, send a summary.
 
 Telegram is the only interface: approve/reject buttons, notifications, and `/status`, `/stop`, `/resume`,
@@ -61,12 +61,12 @@ flowchart TB
     main --> telegram["Telegram handlers"]
     scheduler --> app
     telegram --> app
-    subgraph app["app — use cases"]
+    subgraph app["app: use cases"]
         direction LR
         uc1[runEveningAnalysis] ~~~ uc2[executeAtOpen] ~~~ uc3[recordEndOfDay] ~~~ uc4[buildLiquidList]
     end
-    app --> core["core — pure domain<br/>risk · sizing · universe · metrics · tax · simulation"]
-    app --> ports["ports — interfaces"]
+    app --> core["core: pure domain<br/>risk · sizing · universe · metrics · tax · simulation"]
+    app --> ports["ports: interfaces"]
     adapters["adapters<br/>Alpaca · FMP · Anthropic · Telegram · SQLite · fakes"] -. implement .-> ports
 ```
 

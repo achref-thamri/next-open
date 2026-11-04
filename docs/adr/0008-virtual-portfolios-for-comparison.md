@@ -1,4 +1,4 @@
-# 0008 — Virtual portfolios to compare strategies
+# 0008: Virtual portfolios to compare strategies
 
 Date: 2026-10-30 · Status: accepted
 

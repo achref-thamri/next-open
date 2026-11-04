@@ -1,4 +1,4 @@
-# 0002 — The LLM proposes, code enforces risk
+# 0002: The LLM proposes, code enforces risk
 
 Date: 2026-10-30 · Status: accepted
 
