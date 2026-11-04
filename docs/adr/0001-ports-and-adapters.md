@@ -1,4 +1,4 @@
-# 0001 — Ports and adapters in a single service
+# 0001: Ports and adapters in a single service
 
 Date: 2026-10-30 · Status: accepted
 

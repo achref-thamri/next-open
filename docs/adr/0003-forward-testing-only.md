@@ -1,4 +1,4 @@
-# 0003 — Forward testing on paper, no backtests of the AI strategy
+# 0003: Forward testing on paper, no backtests of the AI strategy
 
 Date: 2026-10-30 · Status: accepted
 
@@ -16,7 +16,7 @@ in the last 30 days. Going live also needs `TRADING_MODE=live` plus a `/golive` 
 
 ## Consequences
 
-- Results take months, not minutes. Accepted: it is the only honest measurement.
+- Results take months. Accepted: it is the only honest measurement.
 - The gate cannot be adjusted after seeing results.
 - Rule-based strategies could be backtested, but they run forward next to the AI instead (ADR 0008), so every
   strategy is compared on the same period and data.
