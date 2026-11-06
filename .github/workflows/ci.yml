@@ -14,6 +14,7 @@ permissions:
     contents: read
 
 jobs:
+    # One job: billing rounds every job up to a whole minute, and the Docker build fits in the same billed minutes.
     check:
         runs-on: ubuntu-latest
         timeout-minutes: 15
@@ -44,12 +45,6 @@ jobs:
                   name: coverage
                   path: coverage/
                   retention-days: 14
-
-    docker:
-        runs-on: ubuntu-latest
-        timeout-minutes: 15
-        steps:
-            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
             - run: docker build -f docker/Dockerfile -t trading-bot:ci .
             - name: Native SQLite loads as the non-root user
               run: docker run --rm trading-bot:ci node -e "const D = require('better-sqlite3'); new D(':memory:').prepare('select 1').get()"
