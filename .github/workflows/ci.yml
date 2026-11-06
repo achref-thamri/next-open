@@ -1,14 +1,14 @@
 name: CI
 
+# Private repo: CI runs on main only, to stay inside the free Actions minutes. Run the checks locally before merging.
 on:
     push:
         branches: [main]
-    pull_request:
 
-# A newer push to a pull request replaces its run; every commit on main finishes, so each one has a result.
+# Every commit on main finishes, so each one has a result.
 concurrency:
     group: ci-${{ github.ref }}
-    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    cancel-in-progress: false
 
 permissions:
     contents: read
