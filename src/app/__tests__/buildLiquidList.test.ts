@@ -65,6 +65,17 @@ describe("buildLiquidList", () => {
         expect((await h.repos.liquidLists.latestComplete())?.tickers).toEqual(["AAA", "BBB"]);
     });
 
+    it("fetches the most traded stocks first", async () => {
+        seedStock(h, "BUSY", { until: FRIDAY, volume: 90_000_000 });
+        const limited = new FakeFundamentals(1);
+        for (const [ticker, profile] of h.fundamentals.profiles) limited.profiles.set(ticker, profile);
+        h.fundamentals = limited;
+
+        await buildLiquidList(h);
+
+        expect((await h.repos.liquidLists.latest())?.tickers).toEqual(["BUSY"]);
+    });
+
     it("builds once per week", async () => {
         await buildLiquidList(h);
         h.clock.set("2026-11-03T13:00:00Z");
