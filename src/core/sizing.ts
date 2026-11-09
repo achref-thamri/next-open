@@ -35,7 +35,7 @@ export function sizeOrder({ equity, targetWeight, currentQty, limitPrice }: Sizi
 
 /**
  * Limit price relative to the previous close: buys at most `gapPct` above it (rounded down),
- * sells at least `gapPct` below it (rounded up), so the bot never chases an overnight gap.
+ * sells at least `gapPct` below it (rounded up), so Next Open never chases an overnight gap.
  */
 export function limitPrice(previousClose: Cents, side: Side, gapPct: number): Cents {
     return side === "buy"

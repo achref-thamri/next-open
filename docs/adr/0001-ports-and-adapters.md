@@ -4,7 +4,7 @@ Date: 2026-10-30 · Status: accepted
 
 ## Context
 
-The bot depends on a broker, market data, news, fundamentals, an LLM, a messenger and storage. The broker will
+Next Open depends on a broker, market data, news, fundamentals, an LLM, a messenger and storage. The broker will
 change (Alpaca for paper, Saxo later), vendors' free plans change, and the logic that decides about real money has
 to be tested without any of them.
 

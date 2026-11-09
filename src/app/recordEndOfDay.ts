@@ -71,7 +71,7 @@ async function endOfDay(deps: AppDeps, today: TradingDate): Promise<void> {
     }
 
     const perf = await performance({ repos, clock, config }, positions);
-    lines.push(`Since day one: bot ${pctText(perf.botReturn)} vs benchmark ${pctText(perf.benchmarkReturn)}`);
+    lines.push(`Since day one: account ${pctText(perf.accountReturn)} vs benchmark ${pctText(perf.benchmarkReturn)}`);
     const strategies = await simulateShadowDay(deps, today);
     if (strategies.length > 0) lines.push("", "Virtual strategies:", ...strategies);
     await notifier.send(lines.join("\n"));
@@ -115,7 +115,7 @@ async function protectiveExits(deps: AppDeps, fills: BrokerFill[]): Promise<Map<
     return roles;
 }
 
-/** Day one: a virtual buy of the benchmark with the bot's starting equity. */
+/** Day one: a virtual buy of the benchmark with the account's starting equity. */
 async function startBenchmark(deps: AppDeps, account: Account, today: TradingDate): Promise<BenchmarkPosition> {
     const price = await benchmarkClose(deps, today);
     const benchmark: BenchmarkPosition = {

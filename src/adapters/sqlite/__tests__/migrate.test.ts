@@ -84,9 +84,9 @@ describe("migrate", () => {
     });
 
     it("opens file databases in WAL mode with foreign keys on", () => {
-        const dir = mkdtempSync(join(tmpdir(), "trading-bot-"));
+        const dir = mkdtempSync(join(tmpdir(), "next-open-"));
         dirs.push(dir);
-        const db = openDatabase(join(dir, "nested", "bot.db"));
+        const db = openDatabase(join(dir, "nested", "test.db"));
 
         expect(db.pragma("journal_mode", { simple: true })).toBe("wal");
         expect(db.pragma("foreign_keys", { simple: true })).toBe(1);

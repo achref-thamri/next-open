@@ -45,12 +45,12 @@ jobs:
                   name: coverage
                   path: coverage/
                   retention-days: 14
-            - run: docker build -f docker/Dockerfile -t trading-bot:ci .
+            - run: docker build -f docker/Dockerfile -t next-open:ci .
             - name: Native SQLite loads as the non-root user
-              run: docker run --rm trading-bot:ci node -e "const D = require('better-sqlite3'); new D(':memory:').prepare('select 1').get()"
+              run: docker run --rm next-open:ci node -e "const D = require('better-sqlite3'); new D(':memory:').prepare('select 1').get()"
             - name: Fails fast with a readable config error
               run: |
-                  if docker run --rm trading-bot:ci > out.txt 2>&1; then exit 1; fi
+                  if docker run --rm next-open:ci > out.txt 2>&1; then exit 1; fi
                   grep -q "Invalid configuration" out.txt
             - name: Health check reports unhealthy without a heartbeat
-              run: "! docker run --rm trading-bot:ci node dist/healthcheck.js"
+              run: "! docker run --rm next-open:ci node dist/healthcheck.js"

@@ -22,7 +22,7 @@ describe("createLogger", () => {
             apiKey: "top-secret-1",
             config: {
                 alpaca: { keyId: "top-secret-2", secretKey: "top-secret-3" },
-                telegram: { botToken: "top-secret-4" },
+                telegram: { token: "top-secret-4" },
             },
             request: { headers: { "apca-api-secret-key": "top-secret-5" } },
         });

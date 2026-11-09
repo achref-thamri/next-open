@@ -17,12 +17,12 @@ export const envSchema = z
         FMP_API_KEY: requiredSecret,
         ANTHROPIC_API_KEY: requiredSecret,
         ANTHROPIC_MODEL: z.preprocess(emptyToUndefined, z.string().trim().min(1).default("claude-sonnet-5-5")),
-        TELEGRAM_BOT_TOKEN: requiredSecret,
+        TELEGRAM_TOKEN: requiredSecret,
         TELEGRAM_OWNER_CHAT_ID: z.preprocess(
             emptyToUndefined,
             z.coerce.number({ error: "is required and must be an integer chat id" }).int(),
         ),
-        DATABASE_PATH: z.preprocess(emptyToUndefined, z.string().min(1).default("data/trading-bot.db")),
+        DATABASE_PATH: z.preprocess(emptyToUndefined, z.string().min(1).default("data/next-open.db")),
         BACKUP_DIR: z.preprocess(emptyToUndefined, z.string().min(1).default("data/backups")),
         HEALTHCHECK_PING_URL: z.preprocess(emptyToUndefined, z.url({ protocol: /^https$/ }).optional()),
         LOG_LEVEL: z.preprocess(

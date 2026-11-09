@@ -10,7 +10,7 @@ RUN npm run build && npm prune --omit=dev --ignore-scripts
 
 FROM node:24-bookworm-slim
 ENV NODE_ENV=production \
-    DATABASE_PATH=/data/trading-bot.db \
+    DATABASE_PATH=/data/next-open.db \
     HEARTBEAT_PATH=/data/heartbeat \
     TZ=UTC
 WORKDIR /app

@@ -1,8 +1,8 @@
-import { Bot } from "grammy";
+import { Bot as TelegramClient } from "grammy";
 import type { Update } from "grammy/types";
 import { pino } from "pino";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { registerHandlers, splitMessage, TelegramNotifier, type TelegramHandlers } from "../bot.js";
+import { registerHandlers, splitMessage, TelegramNotifier, type TelegramHandlers } from "../messenger.js";
 
 const OWNER = 42;
 const STRANGER = 7;
@@ -12,14 +12,14 @@ interface ApiCall {
     payload: Record<string, unknown>;
 }
 
-/** A bot whose API calls are recorded instead of sent. */
-function fakeBot() {
-    const bot = new Bot("123:abc", {
+/** A Telegram client whose API calls are recorded instead of sent. */
+function fakeTelegram() {
+    const telegram = new TelegramClient("123:abc", {
         botInfo: {
             id: 1,
             is_bot: true,
-            first_name: "Trading Bot",
-            username: "trading_bot",
+            first_name: "Next Open",
+            username: "next_open",
             can_join_groups: false,
             can_read_all_group_messages: false,
             supports_inline_queries: false,
@@ -32,7 +32,7 @@ function fakeBot() {
         },
     });
     const calls: ApiCall[] = [];
-    bot.api.config.use((_prev, method, payload) => {
+    telegram.api.config.use((_prev, method, payload) => {
         calls.push({ method, payload: payload });
         const result =
             method === "sendMessage"
@@ -40,7 +40,7 @@ function fakeBot() {
                 : true;
         return Promise.resolve({ ok: true, result } as never);
     });
-    return { bot, calls };
+    return { telegram, calls };
 }
 
 let updateId = 0;
@@ -66,12 +66,12 @@ const button = (chatId: number, data: string): Update => ({
 });
 
 describe("Telegram handlers", () => {
-    let bot: Bot;
+    let telegram: TelegramClient;
     let calls: ApiCall[];
     let handlers: { [K in keyof TelegramHandlers]: ReturnType<typeof vi.fn> & TelegramHandlers[K] };
 
     beforeEach(() => {
-        ({ bot, calls } = fakeBot());
+        ({ telegram, calls } = fakeTelegram());
         handlers = {
             onCommand: vi.fn(() => Promise.resolve("status reply")),
             onDecision: vi.fn((_chat: number, id: string, action: string) =>
@@ -79,26 +79,26 @@ describe("Telegram handlers", () => {
             ),
             onApproveAll: vi.fn(() => Promise.resolve({ ok: true, text: "Approved 2 of 2." })),
         };
-        registerHandlers(bot, OWNER, handlers, pino({ level: "silent" }));
+        registerHandlers(telegram, OWNER, handlers, pino({ level: "silent" }));
     });
 
     it("answers the owner's commands", async () => {
-        await bot.handleUpdate(message(OWNER, "/status"));
+        await telegram.handleUpdate(message(OWNER, "/status"));
 
         expect(handlers.onCommand).toHaveBeenCalledWith(OWNER, "/status");
         expect(calls).toEqual([{ method: "sendMessage", payload: { chat_id: OWNER, text: "status reply" } }]);
     });
 
     it("ignores messages from anyone else, without replying", async () => {
-        await bot.handleUpdate(message(STRANGER, "/stop"));
+        await telegram.handleUpdate(message(STRANGER, "/stop"));
 
         expect(handlers.onCommand).not.toHaveBeenCalled();
         expect(calls).toEqual([]);
     });
 
     it("maps approve and reject buttons to the approval use case", async () => {
-        await bot.handleUpdate(button(OWNER, "approve:01ABC"));
-        await bot.handleUpdate(button(OWNER, "reject:01DEF"));
+        await telegram.handleUpdate(button(OWNER, "approve:01ABC"));
+        await telegram.handleUpdate(button(OWNER, "reject:01DEF"));
 
         expect(handlers.onDecision.mock.calls).toEqual([
             [OWNER, "01ABC", "approve"],
@@ -116,7 +116,7 @@ describe("Telegram handlers", () => {
     });
 
     it("maps the approve-all button", async () => {
-        await bot.handleUpdate(button(OWNER, "all:2026-11-03"));
+        await telegram.handleUpdate(button(OWNER, "all:2026-11-03"));
 
         expect(handlers.onApproveAll).toHaveBeenCalledWith(OWNER, "2026-11-03");
     });
@@ -124,13 +124,13 @@ describe("Telegram handlers", () => {
     it("keeps the buttons when the decision failed", async () => {
         handlers.onDecision.mockResolvedValueOnce({ ok: false, text: "Too late." });
 
-        await bot.handleUpdate(button(OWNER, "approve:01ABC"));
+        await telegram.handleUpdate(button(OWNER, "approve:01ABC"));
 
         expect(calls.map((c) => c.method)).toEqual(["answerCallbackQuery", "sendMessage"]);
     });
 
     it("ignores button presses from anyone else", async () => {
-        await bot.handleUpdate(button(STRANGER, "approve:01ABC"));
+        await telegram.handleUpdate(button(STRANGER, "approve:01ABC"));
 
         expect(handlers.onDecision).not.toHaveBeenCalled();
         expect(calls.map((c) => c.method)).toEqual(["answerCallbackQuery"]);
@@ -139,8 +139,8 @@ describe("Telegram handlers", () => {
 
 describe("TelegramNotifier", () => {
     it("sends text, proposals with buttons and approve-all to the owner", async () => {
-        const { bot, calls } = fakeBot();
-        const notifier = new TelegramNotifier(bot, OWNER);
+        const { telegram, calls } = fakeTelegram();
+        const notifier = new TelegramNotifier(telegram, OWNER);
 
         await notifier.send("hello");
         await notifier.sendProposal("BUY 10 AAPL", "01ABC");
@@ -164,9 +164,9 @@ describe("TelegramNotifier", () => {
     });
 
     it("splits long messages", async () => {
-        const { bot, calls } = fakeBot();
+        const { telegram, calls } = fakeTelegram();
 
-        await new TelegramNotifier(bot, OWNER).send("a".repeat(5000));
+        await new TelegramNotifier(telegram, OWNER).send("a".repeat(5000));
 
         expect(calls).toHaveLength(2);
     });

@@ -1,10 +1,10 @@
-# Trading bot
+# Next Open
 
-[![CI](https://github.com/achref-thamri/trading-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/achref-thamri/trading-bot/actions/workflows/ci.yml)
+[![CI](https://github.com/achref-thamri/next-open/actions/workflows/ci.yml/badge.svg)](https://github.com/achref-thamri/next-open/actions/workflows/ci.yml)
 
-An AI-assisted US stock trading bot with hard risk limits in code. Once a day, after the US close, it scans the
-market, asks Claude for trade decisions, checks every proposal against risk rules, and places limit orders at the
-next open through Alpaca. It runs on paper money first and only goes live after beating a buy-and-hold benchmark
+Next Open trades US stocks with Claude's help and hard risk limits in code. Once a day, after the US close, it
+scans the market, asks Claude for trade decisions, checks every proposal against risk rules, and places limit orders
+at the next open through Alpaca. It runs on paper money first and only goes live after beating a buy-and-hold benchmark
 under criteria fixed in advance.
 
 The LLM proposes; deterministic code decides what is allowed. Every prompt, response, risk decision and order is
@@ -95,7 +95,7 @@ Alpaca and FMP use small typed `fetch` clients instead of vendor SDKs.
 
 ## Getting started
 
-Requirements: Node 24 (`.nvmrc`), and for a real run: Alpaca paper, FMP (free), Anthropic and Telegram bot keys.
+Requirements: Node 24 (`.nvmrc`), and for a real run: Alpaca paper, FMP (free), Anthropic and a Telegram token.
 
 ```sh
 npm ci

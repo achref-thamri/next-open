@@ -9,7 +9,7 @@ describe("markStarted", () => {
         h = harness();
     });
 
-    it("stays silent on the first start and marks the bot running", async () => {
+    it("stays silent on the first start and marks Next Open running", async () => {
         await markStarted(h);
 
         expect(h.notifier.sent).toEqual([]);
