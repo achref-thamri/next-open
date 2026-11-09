@@ -25,7 +25,8 @@ export function weekOf(date: TradingDate): TradingDate {
  * The weekly liquid list (spec §5). Runs daily but builds at most one complete list per week: price and dollar
  * volume from SIP bars filter the ~11,000 tradable assets first, then company profiles (ETF flag, market cap)
  * from the cache, fetching missing ones within FMP's daily budget. While profiles are missing the list is
- * saved as incomplete and the next day's run continues; the evening job only uses complete lists.
+ * saved as incomplete and the next day's run continues. Profiles are fetched most traded first, and the evening
+ * job uses the list while it fills.
  */
 export async function buildLiquidList(deps: AppDeps): Promise<JobResult> {
     const today = tradingDateOf(deps.clock.now());
@@ -64,6 +65,8 @@ async function build(deps: AppDeps, today: TradingDate, week: TradingDate): Prom
         liquid.push(facts);
     }
 
+    // Most traded first, so the profiles FMP's daily budget buys go to the stocks most likely to be traded.
+    liquid.sort((a, b) => b.avgDollarVolumeUsd - a.avgDollarVolumeUsd);
     const tickers = liquid.map((s) => s.ticker);
     const cached = await repos.profiles.getMany(tickers);
     const now = clock.now();

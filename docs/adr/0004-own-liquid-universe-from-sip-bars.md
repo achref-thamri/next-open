@@ -19,9 +19,14 @@ shows only about 2% of real volume (AAPL: 0.83M vs 36M shares on one day), which
 - FMP profiles are cached for 30 days and fetched within a daily request budget, so the first list fills over
   several days. The list is marked incomplete until then and the evening job waits for a complete one.
 
+- 2026-11-09: the evening job no longer waits for a complete list. Profiles are fetched most traded first and the
+  evening job uses whatever the list holds so far. The first paper week had no trades at all because the list was
+  still filling, and the shadow portfolios never opened either.
+
 ## Consequences
 
 - Candidates are liquid large caps, which suits once-a-day limit orders.
-- The first week after a fresh install has no trading. Later weeks only look up new or stale tickers.
+- The first days after a fresh install trade from a short list of the most traded stocks, which grows each day.
+  Later weeks only look up new or stale tickers.
 - FMP's free plan has turned out to refuse its batch market-cap endpoint (HTTP 402). Cached caps are used instead
   and renew with the 30-day profile refresh.

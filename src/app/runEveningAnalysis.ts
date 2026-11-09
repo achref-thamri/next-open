@@ -50,8 +50,9 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
     const log = logger.child({ job: "evening_analysis", runId });
 
     const state = await syncBroker(deps);
-    const liquid = await repos.liquidLists.latestComplete();
-    if (!liquid) return skip("no complete liquid list yet; the weekly job is still filling the profile cache");
+    // A list that is still filling is used as it is: it already holds the most traded stocks.
+    const liquid = await repos.liquidLists.latest();
+    if (!liquid?.tickers.length) return skip("no stocks on the liquid list yet");
 
     const holdings = new Set(state.positions.map((p) => p.ticker));
     const since = new Date(deps.clock.now().getTime() - 24 * 3_600_000);

@@ -169,11 +169,28 @@ describe("runEveningAnalysis", () => {
         expect(h.llm.prompts).toHaveLength(calls);
     });
 
-    it("skips until the first liquid list is complete", async () => {
+    it("skips until the liquid list has stocks", async () => {
         const fresh = harness();
         seedStock(fresh, "AAA");
 
         expect(await runEveningAnalysis(fresh)).toMatchObject({ status: "skipped" });
+
+        await fresh.repos.liquidLists.save({ date: toTradingDate("2026-11-01"), tickers: [], complete: false });
+        expect(await runEveningAnalysis(fresh)).toMatchObject({ status: "skipped" });
+    });
+
+    it("trades from a list that is still filling", async () => {
+        await h.repos.liquidLists.save({
+            date: toTradingDate("2026-11-01"),
+            tickers: [toTicker("AAA")],
+            complete: false,
+        });
+        h.llm.respondWith(llmOutput(decision("AAA")));
+
+        await runEveningAnalysis(h);
+
+        const proposals = await h.repos.proposals.list({ tradeDate: NEXT });
+        expect(proposals.map((p) => p.ticker)).toEqual(["AAA"]);
     });
 
     it("sends proposals with buttons in live mode and leaves them pending", async () => {
