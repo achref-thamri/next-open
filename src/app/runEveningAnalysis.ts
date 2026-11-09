@@ -60,9 +60,14 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
     const newsTickers = new Set(marketNews.flatMap((n) => n.tickers));
 
     // Three months of bars for everything that could be a candidate, including the virtual portfolios' holdings.
-    const universe = [...new Set([...liquid.tickers, ...holdings, ...newsTickers, ...(await shadowHoldings(deps))])];
-    const [assets, profiles, recentBars] = await Promise.all([
-        marketData.listTradableAssets(),
+    // News also tags tickers the broker doesn't list (B3SA3 in Brazil, 2026-11-09), and one of those makes Alpaca
+    // refuse the whole bars request, so only tradable tickers and current holdings go in.
+    const assets = await marketData.listTradableAssets();
+    const tradable = new Set(assets.map((a) => a.ticker));
+    const universe = [
+        ...new Set([...liquid.tickers, ...holdings, ...newsTickers, ...(await shadowHoldings(deps))]),
+    ].filter((ticker) => tradable.has(ticker) || holdings.has(ticker));
+    const [profiles, recentBars] = await Promise.all([
         repos.profiles.getMany(universe),
         marketData.getDailyBars(universe, addDays(asOf, -HISTORY_DAYS), asOf),
     ]);

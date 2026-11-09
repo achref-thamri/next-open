@@ -86,6 +86,22 @@ describe("runEveningAnalysis", () => {
         expect(user).toContain('"symbol":"SPY"');
     });
 
+    it("leaves out news tickers the broker cannot trade, whose bars it would refuse", async () => {
+        // On 2026-11-09 a headline tagged B3SA3 (Brazil) and Alpaca rejected the whole bars request with a 400.
+        h.news.items.push({
+            id: "n2",
+            headline: "B3 shares rise",
+            summary: "",
+            source: "test",
+            createdAt: new Date("2026-11-02T20:00:00Z"),
+            tickers: [toTicker("B3SA3"), toTicker("AAA")],
+        });
+        h.llm.respondWith(llmOutput(decision("AAA")));
+
+        expect((await runEveningAnalysis(h)).status).toBe("succeeded");
+        expect(h.marketData.barRequests.flat()).not.toContain("B3SA3");
+    });
+
     it("rejects invalid LLM output: no proposals, an alert and a failed run", async () => {
         h.llm.respondWith("not json at all");
 
