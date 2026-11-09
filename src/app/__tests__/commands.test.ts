@@ -151,7 +151,7 @@ describe("handleCommand", () => {
         it("refuses in paper mode", async () => {
             await seedPassingHistory(h);
 
-            expect(await send("/golive")).toContain("Refused: the bot runs in paper mode");
+            expect(await send("/golive")).toContain("Refused: Next Open runs in paper mode");
             expect((await h.repos.settings.get()).liveConfirmed).toBe(false);
         });
 

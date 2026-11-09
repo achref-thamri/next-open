@@ -93,7 +93,7 @@ export interface ProposalsRepository {
 export interface OrderRecord {
     clientOrderId: string;
     brokerOrderId: string;
-    /** Undefined for orders the bot did not place itself (e.g. bracket legs). */
+    /** Undefined for orders Next Open did not place itself (e.g. bracket legs). */
     proposalId: string | undefined;
     tradeDate: TradingDate;
     ticker: Ticker;
@@ -140,7 +140,7 @@ export interface BenchmarkPosition {
     startValue: Cents;
 }
 
-export interface BotSettings {
+export interface AppSettings {
     halted: boolean;
     haltReason: string | undefined;
     /** Owner confirmed /golive while TRADING_MODE=live. */
@@ -153,8 +153,8 @@ export interface BotSettings {
 }
 
 export interface SettingsRepository {
-    get(): Promise<BotSettings>;
-    update(patch: Partial<BotSettings>): Promise<BotSettings>;
+    get(): Promise<AppSettings>;
+    update(patch: Partial<AppSettings>): Promise<AppSettings>;
 }
 
 export interface CachedProfile extends CompanyProfile {

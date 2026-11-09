@@ -12,7 +12,7 @@ export interface Config {
     alpaca: { keyId: string; secretKey: string };
     fmp: { apiKey: string };
     anthropic: { apiKey: string; model: string };
-    telegram: { botToken: string; ownerChatId: number };
+    telegram: { token: string; ownerChatId: number };
     databasePath: string;
     backupDir: string;
     /** External dead man's switch (e.g. healthchecks.io), pinged while the scheduler runs. */
@@ -49,7 +49,7 @@ export function parseConfig(env: Record<string, string | undefined>, settings: u
         alpaca: { keyId, secretKey },
         fmp: { apiKey: e.FMP_API_KEY },
         anthropic: { apiKey: e.ANTHROPIC_API_KEY, model: e.ANTHROPIC_MODEL },
-        telegram: { botToken: e.TELEGRAM_BOT_TOKEN, ownerChatId: e.TELEGRAM_OWNER_CHAT_ID },
+        telegram: { token: e.TELEGRAM_TOKEN, ownerChatId: e.TELEGRAM_OWNER_CHAT_ID },
         databasePath: e.DATABASE_PATH,
         backupDir: e.BACKUP_DIR,
         healthcheckPingUrl: e.HEALTHCHECK_PING_URL,

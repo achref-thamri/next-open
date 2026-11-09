@@ -6,8 +6,8 @@
 # so that key can run nothing else. After changing this file, copy it to the server again by hand.
 set -euo pipefail
 
-APP_DIR="$HOME/trading-bot"
-SERVICE=trading-bot
+APP_DIR="$HOME/next-open"
+SERVICE=next-open
 
 # A restart cancels a running job and the scheduler never replays it, so stay clear of the open and the
 # post-close jobs on weekdays (New York time).

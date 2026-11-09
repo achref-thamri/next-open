@@ -8,9 +8,9 @@ import type { AppDeps } from "./deps.js";
 
 export interface Performance {
     days: number;
-    botReturn: number;
+    accountReturn: number;
     benchmarkReturn: number;
-    botMaxDrawdown: number;
+    accountMaxDrawdown: number;
     benchmarkMaxDrawdown: number;
     sharpe: number | undefined;
     winRate: number | undefined;
@@ -43,9 +43,9 @@ export async function performance(
 
     return {
         days: snapshots.length,
-        botReturn: totalReturn(equity),
+        accountReturn: totalReturn(equity),
         benchmarkReturn: totalReturn(benchmark),
-        botMaxDrawdown: maxDrawdown(equity),
+        accountMaxDrawdown: maxDrawdown(equity),
         benchmarkMaxDrawdown: maxDrawdown(benchmark),
         sharpe: sharpeRatio(equity),
         winRate: winRate(trades),
@@ -69,8 +69,8 @@ const pct = (fraction: number | undefined) => (fraction === undefined ? "n/a" : 
 export function reportText(p: Performance): string {
     const lines = [
         `📊 Performance over ${p.days} trading day${p.days === 1 ? "" : "s"}`,
-        `Return: bot ${pct(p.botReturn)} vs benchmark ${pct(p.benchmarkReturn)}`,
-        `Max drawdown: bot ${pct(p.botMaxDrawdown)} vs benchmark ${pct(p.benchmarkMaxDrawdown)}`,
+        `Return: account ${pct(p.accountReturn)} vs benchmark ${pct(p.benchmarkReturn)}`,
+        `Max drawdown: account ${pct(p.accountMaxDrawdown)} vs benchmark ${pct(p.benchmarkMaxDrawdown)}`,
         `Sharpe ${p.sharpe === undefined ? "n/a" : p.sharpe.toFixed(2)} · win rate ${pct(p.winRate)} · turnover ${p.turnover.toFixed(2)}×`,
         `Fees ${formatCents(p.fees)} · estimated tax on realised gains ${formatCents(p.realizedTax)}`,
         "",

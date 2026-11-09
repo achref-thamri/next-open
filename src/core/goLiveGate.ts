@@ -35,14 +35,14 @@ export interface Criterion {
 export interface GoLiveResult {
     pass: boolean;
     criteria: Criterion[];
-    botReturnAfterTax: number;
+    accountReturnAfterTax: number;
     benchmarkReturnAfterTax: number;
-    botMaxDrawdown: number;
+    accountMaxDrawdown: number;
     benchmarkMaxDrawdown: number;
 }
 
 /**
- * The four go-live criteria (spec §1). Returns compare liquidation values: the bot as if every position were
+ * The four go-live criteria (spec §1). Returns compare liquidation values: the account as if every position were
  * sold today, the benchmark after its yearly mark-to-market tax including the current year.
  */
 export function evaluateGoLiveGate(input: GoLiveInput): GoLiveResult {
@@ -57,20 +57,20 @@ export function evaluateGoLiveGate(input: GoLiveInput): GoLiveResult {
         detail: `${months} months (need ${GO_LIVE_RULES.minPaperMonths}, prefer ${GO_LIVE_RULES.preferredPaperMonths})`,
     };
 
-    const botReturnAfterTax = first && last ? afterTaxBotReturn(input, first, last) : 0;
+    const accountReturnAfterTax = first && last ? afterTaxAccountReturn(input, first, last) : 0;
     const benchmarkReturnAfterTax = first && last ? afterTaxBenchmarkReturn(input, first, last) : 0;
     const beatsBenchmark = {
         name: "Beats benchmark after fees and tax",
-        pass: snapshots.length > 1 && botReturnAfterTax > benchmarkReturnAfterTax,
-        detail: `bot ${percent(botReturnAfterTax)} vs benchmark ${percent(benchmarkReturnAfterTax)}`,
+        pass: snapshots.length > 1 && accountReturnAfterTax > benchmarkReturnAfterTax,
+        detail: `account ${percent(accountReturnAfterTax)} vs benchmark ${percent(benchmarkReturnAfterTax)}`,
     };
 
-    const botMaxDrawdown = maxDrawdown(snapshots.map((s) => s.equity));
+    const accountMaxDrawdown = maxDrawdown(snapshots.map((s) => s.equity));
     const benchmarkMaxDrawdown = maxDrawdown(snapshots.map((s) => s.benchmarkValue));
     const drawdown = {
         name: "Max drawdown",
-        pass: botMaxDrawdown <= benchmarkMaxDrawdown + GO_LIVE_RULES.maxExtraDrawdown + 1e-12,
-        detail: `bot ${percent(botMaxDrawdown)} vs benchmark ${percent(benchmarkMaxDrawdown)} (allowed ${GO_LIVE_RULES.maxExtraDrawdown * 100} points worse)`,
+        pass: accountMaxDrawdown <= benchmarkMaxDrawdown + GO_LIVE_RULES.maxExtraDrawdown + 1e-12,
+        detail: `account ${percent(accountMaxDrawdown)} vs benchmark ${percent(benchmarkMaxDrawdown)} (allowed ${GO_LIVE_RULES.maxExtraDrawdown * 100} points worse)`,
     };
 
     const failure = input.lastUnexplainedFailure;
@@ -88,14 +88,14 @@ export function evaluateGoLiveGate(input: GoLiveInput): GoLiveResult {
     return {
         pass: criteria.every((c) => c.pass),
         criteria,
-        botReturnAfterTax,
+        accountReturnAfterTax,
         benchmarkReturnAfterTax,
-        botMaxDrawdown,
+        accountMaxDrawdown,
         benchmarkMaxDrawdown,
     };
 }
 
-function afterTaxBotReturn(input: GoLiveInput, first: EquitySnapshot, last: EquitySnapshot): number {
+function afterTaxAccountReturn(input: GoLiveInput, first: EquitySnapshot, last: EquitySnapshot): number {
     const gains = new Map<number, Cents>();
     for (const trade of input.closedTrades) addGain(gains, yearOf(trade.date), trade.realizedPl);
     addGain(gains, yearOf(input.today), input.unrealizedPl);

@@ -99,12 +99,12 @@ describe("Scheduler", () => {
     });
 
     it("alerts on a missed job and never runs it late", async () => {
-        // The bot comes up at 10:00 New York, half an hour after the open.
+        // Next Open comes up at 10:00 New York, half an hour after the open.
         await runDay("2026-11-02T15:00:00Z", "2026-11-02T15:05:00Z");
 
         expect(ran).not.toContain("execute_at_open@15:00");
         expect(notifier.texts()).toContain(
-            "⏰ Missed execute_at_open for 2026-11-02 (the bot was not running in time). It will not be run late.",
+            "⏰ Missed execute_at_open for 2026-11-02 (Next Open was not running in time). It will not be run late.",
         );
         const missed = await repos.runs.latest("execute_at_open", toTradingDate("2026-11-02"));
         expect(missed).toMatchObject({ status: "skipped", error: expect.stringContaining("missed") as unknown });
@@ -188,7 +188,7 @@ describe("Scheduler", () => {
         expect(ticks).toHaveLength(2);
         expect(ran).toEqual([]);
         expect(notifier.texts()).toContain(
-            "⏰ Missed execute_at_open for 2026-11-02 (the bot was not running in time). It will not be run late.",
+            "⏰ Missed execute_at_open for 2026-11-02 (Next Open was not running in time). It will not be run late.",
         );
     });
 

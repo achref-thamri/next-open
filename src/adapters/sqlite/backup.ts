@@ -2,13 +2,13 @@ import { mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import type { Db } from "./db.js";
 
-const FILE = /^trading-bot-(\d{4}-\d{2}-\d{2})\.db$/;
+const FILE = /^next-open-(\d{4}-\d{2}-\d{2})\.db$/;
 const DAY_MS = 86_400_000;
 
-/** Copies the live database with SQLite's online backup API (safe while the bot runs) to `<dir>/trading-bot-<date>.db`. */
+/** Copies the live database with SQLite's online backup API (safe while Next Open runs) to `<dir>/next-open-<date>.db`. */
 export async function backupDatabase(db: Db, dir: string, date: string): Promise<string> {
     mkdirSync(dir, { recursive: true });
-    const path = join(dir, `trading-bot-${date}.db`);
+    const path = join(dir, `next-open-${date}.db`);
     await db.backup(path);
     return path;
 }

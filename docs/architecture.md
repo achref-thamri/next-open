@@ -90,7 +90,7 @@ SQLite (better-sqlite3) with versioned migrations (`PRAGMA user_version`, `src/a
 | Universe cache      | `profiles`, `liquid_lists`, `api_usage`                                  |
 | Strategy comparison | `shadow_portfolios`, `shadow_orders`, `shadow_fills`, `shadow_snapshots` |
 
-The broker is the source of truth for positions and cash; the database records what the bot intended and why.
+The broker is the source of truth for positions and cash; the database records what Next Open intended and why.
 
 ## Strategy comparison
 
@@ -106,7 +106,7 @@ and estimated Danish tax, so the paper period answers whether the AI adds anythi
 - Daily vendor quotas are budgeted per day in SQLite (`api_usage`); hitting one pauses the job until the next day
   instead of failing it.
 - Orders use `client_order_id` derived from the proposal id, so retries and restarts cannot double-submit.
-- At startup the bot switches margin and short selling off at the broker and refuses to run if it cannot verify it.
+- At startup Next Open switches margin and short selling off at the broker and refuses to run if it cannot verify it.
 - Going live needs both `TRADING_MODE=live` and a `/golive` confirmation in Telegram.
 
 ## Testing

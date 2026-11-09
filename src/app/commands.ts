@@ -92,7 +92,7 @@ async function why(deps: AppDeps, raw: string | undefined): Promise<string> {
 /** Live trading needs TRADING_MODE=live and a passing go-live gate; this records the owner's confirmation. */
 async function goLive(deps: AppDeps): Promise<string> {
     if (deps.config.mode !== "live") {
-        return "Refused: the bot runs in paper mode. Set TRADING_MODE=live with live keys and restart first.";
+        return "Refused: Next Open runs in paper mode. Set TRADING_MODE=live with live keys and restart first.";
     }
     const settings = await deps.repos.settings.get();
     if (settings.liveConfirmed) return "Live trading is already confirmed.";

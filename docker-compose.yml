@@ -1,17 +1,19 @@
+name: next-open
+
 services:
-    trading-bot:
+    next-open:
         build:
             context: .
             dockerfile: docker/Dockerfile
-        image: trading-bot:latest
+        image: next-open:latest
         restart: unless-stopped
         env_file: .env
         environment:
-            DATABASE_PATH: /data/trading-bot.db
+            DATABASE_PATH: /data/next-open.db
             HEARTBEAT_PATH: /data/heartbeat
             BACKUP_DIR: /data/backups
         volumes:
-            - bot-data:/data
+            - data:/data
         logging:
             driver: json-file
             options:
@@ -19,4 +21,4 @@ services:
                 max-file: "5"
 
 volumes:
-    bot-data:
+    data:

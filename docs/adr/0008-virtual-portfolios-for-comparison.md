@@ -4,7 +4,7 @@ Date: 2026-10-30 · Status: accepted
 
 ## Context
 
-Beating a benchmark on paper shows the bot made money, not that the AI was the reason. A simple rule might do as
+Beating a benchmark on paper shows the account made money, not that the AI was the reason. A simple rule might do as
 well for less cost and complexity.
 
 ## Decision

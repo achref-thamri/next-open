@@ -160,7 +160,7 @@ export class Scheduler {
         await runs.finish(id, { status: "skipped", finishedAt: clock.now(), error: message });
         try {
             await notifier.send(
-                `⏰ Missed ${job.type} for ${date} (the bot was not running in time). It will not be run late.`,
+                `⏰ Missed ${job.type} for ${date} (Next Open was not running in time). It will not be run late.`,
             );
         } catch (error) {
             logger.error({ err: error }, "failed to send the missed-job alert");

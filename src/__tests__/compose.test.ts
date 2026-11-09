@@ -10,7 +10,7 @@ describe("composeApp", () => {
             ALPACA_PAPER_SECRET_KEY: "secret",
             FMP_API_KEY: "fmp",
             ANTHROPIC_API_KEY: "sk-ant",
-            TELEGRAM_BOT_TOKEN: "123:abc",
+            TELEGRAM_TOKEN: "123:abc",
             TELEGRAM_OWNER_CHAT_ID: "42",
             DATABASE_PATH: ":memory:",
         });

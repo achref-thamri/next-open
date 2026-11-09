@@ -10,7 +10,7 @@ shows only about 2% of real volume (AAPL: 0.83M vs 36M shares on one day), which
 
 ## Decision
 
-- The bot builds its own weekly list: all tradable US assets, 20-day SIP daily bars in multi-symbol batches,
+- Next Open builds its own weekly list: all tradable US assets, 20-day SIP daily bars in multi-symbol batches,
   filtered by price (≥ $5) and average dollar volume (≥ $20M), then by market cap (≥ $2B) and the ETF/fund flag
   from FMP profiles.
 - All volume figures use the SIP feed. SIP refuses the last 15 minutes, so post-close jobs start 20–30 minutes
