@@ -17,7 +17,7 @@ function snap(date: string, equityDollars: number, benchmarkDollars: number): Eq
     };
 }
 
-/** Four months of paper trading where the bot clearly beats the benchmark with a similar drawdown. */
+/** Four months of paper trading where the account clearly beats the benchmark with a similar drawdown. */
 function passing(overrides: Partial<GoLiveInput> = {}): GoLiveInput {
     return {
         snapshots: [
@@ -52,8 +52,8 @@ describe("evaluateGoLiveGate", () => {
     it("computes after-tax returns on a liquidation basis", () => {
         const result = evaluateGoLiveGate(passing());
 
-        // bot: $1,500 gain in 2027 → 27% = $405 → (11,500 - 405) / 10,000 - 1
-        expect(result.botReturnAfterTax).toBeCloseTo(0.1095);
+        // account: $1,500 gain in 2027 → 27% = $405 → (11,500 - 405) / 10,000 - 1
+        expect(result.accountReturnAfterTax).toBeCloseTo(0.1095);
         // benchmark: -$300 in 2026 carried, +$600 in 2027 → $300 taxed at 27% = $81
         expect(result.benchmarkReturnAfterTax).toBeCloseTo(0.0219);
     });
@@ -81,7 +81,7 @@ describe("evaluateGoLiveGate", () => {
     });
 
     it("fails when tax turns a pre-tax win into a loss", () => {
-        // bot +$1,000 pre-tax vs benchmark +$800; bot pays $270, benchmark untaxed in this case
+        // account +$1,000 pre-tax vs benchmark +$800; account pays $270, benchmark untaxed in this case
         const input = passing({
             snapshots: [snap("2026-11-02", 10_000, 10_000), snap("2027-03-02", 11_000, 10_800)],
             closedTrades: [{ ticker: toTicker("AAA"), date: d("2027-01-04"), qty: 1, realizedPl: cents(100_000) }],
@@ -92,7 +92,7 @@ describe("evaluateGoLiveGate", () => {
         expect(criterion(input, "Beats benchmark after fees and tax")?.pass).toBe(false);
     });
 
-    it("fails when the bot's drawdown is more than 5 points worse", () => {
+    it("fails when the account's drawdown is more than 5 points worse", () => {
         const input = passing({
             snapshots: [
                 snap("2026-11-02", 10_000, 10_000),

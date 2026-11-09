@@ -24,7 +24,7 @@ export async function markStarted(deps: LifecycleDeps): Promise<void> {
     if (now.getTime() - lastAlert < CRASH_ALERT_EVERY_MS) return;
     await repos.settings.update({ crashAlertedAt: now.toISOString() });
     await notifier.send(
-        `⚠️ Trading bot restarted unexpectedly (${config.mode} mode). The previous run ended without a clean ` +
+        `⚠️ Next Open restarted unexpectedly (${config.mode} mode). The previous run ended without a clean ` +
             "shutdown; check the server logs.",
     );
 }

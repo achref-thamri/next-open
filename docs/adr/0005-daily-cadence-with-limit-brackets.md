@@ -4,7 +4,7 @@ Date: 2026-10-30 · Status: accepted
 
 ## Context
 
-The bot is not competing on speed, an LLM call is slow and costs money, and the owner approves trades by phone in
+Next Open is not competing on speed, an LLM call is slow and costs money, and the owner approves trades by phone in
 live mode. Overnight news can gap a stock far from the price the decision was based on.
 
 ## Decision
@@ -20,4 +20,4 @@ live mode. Overnight news can gap a stock far from the price the decision was ba
 ## Consequences
 
 - Predictable cost (about $0.03 per call) and a human-friendly approval window.
-- Some good trades are missed on gaps. Accepted: chasing gaps is how bots buy tops.
+- Some good trades are missed on gaps. Accepted: chasing gaps is how fast traders buy tops.

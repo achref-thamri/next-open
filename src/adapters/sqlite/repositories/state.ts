@@ -2,7 +2,7 @@ import type { Cents } from "../../../core/money.js";
 import type { EquitySnapshot, SecurityKind, Ticker, TradingDate } from "../../../core/types.js";
 import type {
     ApiUsageRepository,
-    BotSettings,
+    AppSettings,
     CachedProfile,
     EquitySnapshotsRepository,
     LiquidList,
@@ -57,7 +57,7 @@ export class SqliteEquitySnapshotsRepository implements EquitySnapshotsRepositor
     }
 }
 
-export const DEFAULT_SETTINGS: BotSettings = {
+export const DEFAULT_SETTINGS: AppSettings = {
     halted: false,
     haltReason: undefined,
     liveConfirmed: false,
@@ -70,11 +70,11 @@ export const DEFAULT_SETTINGS: BotSettings = {
 export class SqliteSettingsRepository implements SettingsRepository {
     constructor(private readonly db: Db) {}
 
-    get(): Promise<BotSettings> {
+    get(): Promise<AppSettings> {
         return promised(() => this.read());
     }
 
-    update(patch: Partial<BotSettings>): Promise<BotSettings> {
+    update(patch: Partial<AppSettings>): Promise<AppSettings> {
         return promised(() => {
             const upsert = this.db.prepare(
                 "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
@@ -88,13 +88,13 @@ export class SqliteSettingsRepository implements SettingsRepository {
         });
     }
 
-    private read(): BotSettings {
+    private read(): AppSettings {
         const rows = this.db.prepare("SELECT key, value FROM settings").all() as { key: string; value: string }[];
         const settings: Record<string, unknown> = { ...DEFAULT_SETTINGS };
         for (const { key, value } of rows) {
             if (key in DEFAULT_SETTINGS) settings[key] = JSON.parse(value) ?? undefined;
         }
-        return settings as unknown as BotSettings;
+        return settings as unknown as AppSettings;
     }
 }
 

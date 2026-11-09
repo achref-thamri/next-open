@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { Bot } from "grammy";
+import { Bot as TelegramClient } from "grammy";
 import { AlpacaBroker } from "./adapters/alpaca/broker.js";
 import { AlpacaClient } from "./adapters/alpaca/client.js";
 import { AlpacaMarketData, AlpacaNews } from "./adapters/alpaca/marketData.js";
@@ -9,7 +9,7 @@ import { backupDatabase, pruneBackups } from "./adapters/sqlite/backup.js";
 import { openDatabase, type Db } from "./adapters/sqlite/db.js";
 import { migrate } from "./adapters/sqlite/migrate.js";
 import { createSqliteRepositories } from "./adapters/sqlite/repositories/index.js";
-import { registerHandlers, TelegramNotifier } from "./adapters/telegram/bot.js";
+import { registerHandlers, TelegramNotifier } from "./adapters/telegram/messenger.js";
 import { buildLiquidList } from "./app/buildLiquidList.js";
 import { handleCommand } from "./app/commands.js";
 import type { AppDeps } from "./app/deps.js";
@@ -26,7 +26,7 @@ import { dailySchedule, Scheduler } from "./scheduler/index.js";
 
 export interface App {
     deps: AppDeps;
-    bot: Bot;
+    telegram: TelegramClient;
     scheduler: Scheduler;
     db: Db;
 }
@@ -48,7 +48,7 @@ export function composeApp(
     const repos = createSqliteRepositories(db);
 
     const alpaca = new AlpacaClient({ ...config.alpaca, mode: config.mode, logger });
-    const bot = new Bot(config.telegram.botToken);
+    const telegram = new TelegramClient(config.telegram.token);
     const deps: AppDeps = {
         config: {
             mode: config.mode,
@@ -73,14 +73,14 @@ export function composeApp(
             model: config.anthropic.model,
             logger,
         }),
-        notifier: new TelegramNotifier(bot, config.telegram.ownerChatId),
+        notifier: new TelegramNotifier(telegram, config.telegram.ownerChatId),
         clock,
         repos,
         logger,
     };
 
     registerHandlers(
-        bot,
+        telegram,
         config.telegram.ownerChatId,
         {
             onCommand: (chatId, text) => handleCommand(deps, { chatId, text }),
@@ -117,5 +117,5 @@ export function composeApp(
         }),
     );
 
-    return { deps, bot, scheduler, db };
+    return { deps, telegram, scheduler, db };
 }

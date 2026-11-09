@@ -89,7 +89,7 @@ export async function shadowHoldings(deps: AppDeps): Promise<Ticker[]> {
 /**
  * Evening: each virtual strategy decides on its own portfolio with tonight's data, and its orders for the next
  * trading day are sized, risk-checked with the same rules and stored. One strategy failing never affects the
- * real bot or the other strategies.
+ * real account or the other strategies.
  */
 export async function proposeShadowOrders(deps: AppDeps, ctx: ShadowContext): Promise<void> {
     for (const strategy of SHADOW_STRATEGIES) {

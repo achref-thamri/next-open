@@ -7,7 +7,7 @@ import { HEARTBEAT_PATH } from "./healthcheck.js";
 import { createLogger } from "./lib/logger.js";
 import { createPinger } from "./lib/ping.js";
 
-/** Starts the bot: checks the account, then runs the scheduler and the Telegram bot until stopped. */
+/** Starts Next Open: checks the account, then runs the scheduler and Telegram until stopped. */
 async function main(): Promise<void> {
     const config = loadConfig();
     const logger = createLogger(config.logLevel);
@@ -19,7 +19,7 @@ async function main(): Promise<void> {
             ping?.(now);
         },
     });
-    logger.info({ mode: config.mode, model: config.anthropic.model }, "starting trading bot");
+    logger.info({ mode: config.mode, model: config.anthropic.model }, "starting Next Open");
     await markStarted(app.deps);
 
     // Refuse to run at all if the account could use margin or short selling.
@@ -30,7 +30,7 @@ async function main(): Promise<void> {
         if (stopping) return;
         stopping = true;
         logger.info({ signal }, "shutting down");
-        await app.bot.stop();
+        await app.telegram.stop();
         await app.scheduler.stop();
         await markStopped(app.deps);
         app.db.close();
@@ -41,10 +41,10 @@ async function main(): Promise<void> {
     process.on("SIGINT", () => void shutdown("SIGINT"));
 
     app.scheduler.start();
-    void app.bot.start({
+    void app.telegram.start({
         drop_pending_updates: true,
         onStart: (info) => {
-            logger.info({ bot: info.username }, "telegram bot started");
+            logger.info({ account: info.username }, "telegram started");
         },
     });
 }

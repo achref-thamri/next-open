@@ -3,7 +3,7 @@ import type { LogLevel } from "../config/index.js";
 
 export type { Logger } from "pino";
 
-const SECRET_KEYS = ["apiKey", "secretKey", "keyId", "botToken", "authorization", "apikey"];
+const SECRET_KEYS = ["apiKey", "secretKey", "keyId", "token", "authorization", "apikey"];
 const SECRET_HEADERS = ["apca-api-key-id", "apca-api-secret-key", "x-api-key"];
 
 /** Redacts secret keys at the top level and up to three levels deep, plus known auth headers. */

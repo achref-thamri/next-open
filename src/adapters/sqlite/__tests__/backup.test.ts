@@ -25,7 +25,7 @@ describe("backups", () => {
 
         const path = await backupDatabase(db, join(dir, "backups"), "2026-11-02");
 
-        expect(path).toBe(join(dir, "backups", "trading-bot-2026-11-02.db"));
+        expect(path).toBe(join(dir, "backups", "next-open-2026-11-02.db"));
         const copy = openDatabase(path);
         expect(copy.prepare("SELECT value FROM settings WHERE key = 'halted'").get()).toEqual({ value: "true" });
         expect(copy.pragma("integrity_check", { simple: true })).toBe("ok");
@@ -36,24 +36,24 @@ describe("backups", () => {
     it("deletes only backups older than the retention period", () => {
         const dir = tempDir();
         for (const name of [
-            "trading-bot-2026-10-18.db",
-            "trading-bot-2026-10-19.db",
-            "trading-bot-2026-11-01.db",
-            "trading-bot.db",
+            "next-open-2026-10-18.db",
+            "next-open-2026-10-19.db",
+            "next-open-2026-11-01.db",
+            "next-open.db",
             "notes.txt",
-            "trading-bot-2026-10-01.db-wal",
+            "next-open-2026-10-01.db-wal",
         ]) {
             writeFileSync(join(dir, name), "");
         }
 
-        expect(pruneBackups(dir, "2026-11-02", 14)).toEqual(["trading-bot-2026-10-18.db"]);
+        expect(pruneBackups(dir, "2026-11-02", 14)).toEqual(["next-open-2026-10-18.db"]);
         expect(readdirSync(dir).sort()).toEqual([
+            "next-open-2026-10-01.db-wal",
+            "next-open-2026-10-19.db",
+            "next-open-2026-11-01.db",
+            "next-open.db",
             "notes.txt",
-            "trading-bot-2026-10-01.db-wal",
-            "trading-bot-2026-10-19.db",
-            "trading-bot-2026-11-01.db",
-            "trading-bot.db",
         ]);
-        expect(existsSync(join(dir, "trading-bot-2026-10-19.db"))).toBe(true);
+        expect(existsSync(join(dir, "next-open-2026-10-19.db"))).toBe(true);
     });
 });

@@ -6,7 +6,7 @@ const baseEnv = {
     ALPACA_PAPER_SECRET_KEY: "paper-secret",
     FMP_API_KEY: "fmp-key",
     ANTHROPIC_API_KEY: "sk-ant-very-secret",
-    TELEGRAM_BOT_TOKEN: "123:abc",
+    TELEGRAM_TOKEN: "123:abc",
     TELEGRAM_OWNER_CHAT_ID: "42",
 };
 
@@ -50,7 +50,7 @@ describe("parseConfig", () => {
     });
 
     it("treats empty strings as missing", () => {
-        expect(errorOf(() => parseConfig({ ...baseEnv, TELEGRAM_BOT_TOKEN: "" }))).toContain("TELEGRAM_BOT_TOKEN");
+        expect(errorOf(() => parseConfig({ ...baseEnv, TELEGRAM_TOKEN: "" }))).toContain("TELEGRAM_TOKEN");
     });
 
     it("lists every problem at once", () => {

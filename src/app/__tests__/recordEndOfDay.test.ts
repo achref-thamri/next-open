@@ -29,7 +29,7 @@ describe("recordEndOfDay", () => {
         seedStock(h, "VT", { price: 125, until: NEXT });
     });
 
-    it("starts the benchmark on day one with the bot's equity", async () => {
+    it("starts the benchmark on day one with the account's equity", async () => {
         await recordEndOfDay(h);
 
         expect((await h.repos.settings.get()).benchmark).toEqual({
@@ -138,7 +138,7 @@ describe("recordEndOfDay", () => {
 
         const report = h.notifier.texts().at(-1) ?? "";
         expect(report).toContain("🗓️ Weekly report");
-        expect(report).toContain("Return: bot 0.0% vs benchmark 0.0%");
+        expect(report).toContain("Return: account 0.0% vs benchmark 0.0%");
         expect(report).toContain("❌ Paper trading period: 0 months (need 3, prefer 6)");
     });
 });

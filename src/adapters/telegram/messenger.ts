@@ -1,11 +1,11 @@
-import { InlineKeyboard, type Bot, type Context } from "grammy";
+import { InlineKeyboard, type Bot as TelegramClient, type Context } from "grammy";
 import type { Logger } from "../../lib/logger.js";
 import type { Notifier } from "../../ports/notifier.js";
 
 /** Telegram's message length limit. */
 const MAX_MESSAGE_LENGTH = 4096;
 
-/** What the bot does with the owner's input; each returns the reply to show. */
+/** What Next Open does with the owner's input; each returns the reply to show. */
 export interface TelegramHandlers {
     onCommand(chatId: number, text: string): Promise<string | undefined>;
     onDecision(
@@ -19,35 +19,42 @@ export interface TelegramHandlers {
 /** Notifier that sends plain-text messages, with inline buttons for approvals, to the owner's chat. */
 export class TelegramNotifier implements Notifier {
     constructor(
-        private readonly bot: Bot,
+        private readonly telegram: TelegramClient,
         private readonly ownerChatId: number,
     ) {}
 
     async send(text: string): Promise<void> {
-        for (const chunk of splitMessage(text)) await this.bot.api.sendMessage(this.ownerChatId, chunk);
+        for (const chunk of splitMessage(text)) await this.telegram.api.sendMessage(this.ownerChatId, chunk);
     }
 
     async sendProposal(text: string, proposalId: string): Promise<void> {
         const keyboard = new InlineKeyboard()
             .text("✅ Approve", `approve:${proposalId}`)
             .text("❌ Reject", `reject:${proposalId}`);
-        await this.bot.api.sendMessage(this.ownerChatId, text.slice(0, MAX_MESSAGE_LENGTH), { reply_markup: keyboard });
+        await this.telegram.api.sendMessage(this.ownerChatId, text.slice(0, MAX_MESSAGE_LENGTH), {
+            reply_markup: keyboard,
+        });
     }
 
     async sendApproveAll(text: string, tradeDate: string): Promise<void> {
         const keyboard = new InlineKeyboard().text("✅ Approve all", `all:${tradeDate}`);
-        await this.bot.api.sendMessage(this.ownerChatId, text, { reply_markup: keyboard });
+        await this.telegram.api.sendMessage(this.ownerChatId, text, { reply_markup: keyboard });
     }
 }
 
 /**
  * Wires commands and approval buttons. Only the owner's private chat is served; everything else is ignored
- * without a reply, so the bot does not reveal itself to strangers.
+ * without a reply, so Next Open does not reveal itself to strangers.
  */
-export function registerHandlers(bot: Bot, ownerChatId: number, handlers: TelegramHandlers, logger: Logger): void {
+export function registerHandlers(
+    telegram: TelegramClient,
+    ownerChatId: number,
+    handlers: TelegramHandlers,
+    logger: Logger,
+): void {
     const isOwner = (ctx: Context) => ctx.chat?.id === ownerChatId && ctx.from?.id === ownerChatId;
 
-    bot.on("message:text", async (ctx) => {
+    telegram.on("message:text", async (ctx) => {
         if (!isOwner(ctx)) {
             logger.warn({ chatId: ctx.chat.id }, "ignored message from another chat");
             return;
@@ -56,7 +63,7 @@ export function registerHandlers(bot: Bot, ownerChatId: number, handlers: Telegr
         if (reply) for (const chunk of splitMessage(reply)) await ctx.reply(chunk);
     });
 
-    bot.on("callback_query:data", async (ctx) => {
+    telegram.on("callback_query:data", async (ctx) => {
         if (!isOwner(ctx)) {
             logger.warn({ chatId: ctx.chat?.id }, "ignored button press from another chat");
             await ctx.answerCallbackQuery();
@@ -76,7 +83,7 @@ export function registerHandlers(bot: Bot, ownerChatId: number, handlers: Telegr
         await ctx.reply(result.text);
     });
 
-    bot.catch((error) => {
+    telegram.catch((error) => {
         logger.error({ err: error.error }, "telegram handler failed");
     });
 }

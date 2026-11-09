@@ -55,7 +55,7 @@ describe("virtual strategies", () => {
         expect(h.llm.prompts[1]?.system).toContain("When in doubt, hold.");
     });
 
-    it("leaves the real bot alone when a virtual strategy fails", async () => {
+    it("leaves the real account alone when a virtual strategy fails", async () => {
         h.llm.respondWith((prompt) => (isPatient(prompt) ? "garbage" : llmOutput(decision("AAA"))));
 
         const result = await runEveningAnalysis(h);
