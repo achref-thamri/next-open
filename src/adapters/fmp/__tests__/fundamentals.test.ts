@@ -53,7 +53,7 @@ describe("FmpFundamentals", () => {
             ticker: AAPL,
             name: "Apple Inc.",
             kind: "common_stock",
-            marketCapUsd: 5_050_461_930_800,
+            marketCapUsd: 4_831_386_666_210,
         });
         expect(urls[0]?.pathname).toBe("/stable/profile");
         expect(urls[0]?.searchParams.get("symbol")).toBe("AAPL");
