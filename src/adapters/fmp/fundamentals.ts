@@ -13,7 +13,6 @@ const API = "fmp";
 /** The free plan allows about 250 requests a day; keep a margin for manual checks. */
 const FMP_DAILY_BUDGET = 240;
 const PROFILE_MAX_AGE_MS = 30 * 86_400_000;
-const SYMBOLS_PER_BATCH = 100;
 
 const profileSchema = z.array(
     z.object({
@@ -24,7 +23,6 @@ const profileSchema = z.array(
         isFund: z.boolean(),
     }),
 );
-const marketCapSchema = z.array(z.object({ symbol: z.string(), marketCap: z.number().nullish() }));
 
 export interface FmpOptions {
     apiKey: string;
@@ -38,7 +36,7 @@ export interface FmpOptions {
 }
 
 /**
- * Company profiles and market caps from Financial Modeling Prep. Profiles are cached in SQLite and refreshed
+ * Company profiles (including market cap) from Financial Modeling Prep. Profiles are cached in SQLite and refreshed
  * after 30 days; every request counts against a daily budget, and when it is used up the adapter answers from
  * the cache (or not at all) instead of calling the API. The API key travels in the query string, so URLs are
  * never logged or put in error messages.
@@ -69,32 +67,6 @@ export class FmpFundamentals implements Fundamentals {
         };
         await this.options.profiles.save(profile);
         return withoutDate(profile);
-    }
-
-    async getMarketCaps(tickers: readonly Ticker[]): Promise<Map<Ticker, number>> {
-        const caps = new Map<Ticker, number>();
-        for (let i = 0; i < tickers.length; i += SYMBOLS_PER_BATCH) {
-            if (!(await this.spend())) break;
-            const symbols = tickers
-                .slice(i, i + SYMBOLS_PER_BATCH)
-                .map(toFmpSymbol)
-                .join(",");
-            let rows;
-            try {
-                rows = await this.get("/market-capitalization-batch", marketCapSchema, { symbols });
-            } catch (error) {
-                // The free plan has no batch endpoint: keep the cached caps, which profile refreshes renew.
-                if (!(error instanceof HttpError && error.status === 402)) throw error;
-                this.options.logger.warn("FMP market cap batch not in the plan; using cached market caps");
-                break;
-            }
-            if (rows === LIMIT_REACHED) break;
-            for (const row of rows) {
-                const ticker = fromFmpSymbol(row.symbol);
-                if (ticker && row.marketCap != null) caps.set(ticker, row.marketCap);
-            }
-        }
-        return caps;
     }
 
     async remainingRequests(): Promise<number> {

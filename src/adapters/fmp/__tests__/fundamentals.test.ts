@@ -121,43 +121,6 @@ describe("FmpFundamentals", () => {
         expect(urls).toHaveLength(1);
     });
 
-    it("fetches market caps in batches of 100", async () => {
-        respond = (url) =>
-            new Response(
-                JSON.stringify(
-                    (url.searchParams.get("symbols") ?? "")
-                        .split(",")
-                        .map((symbol, i) => ({ symbol, marketCap: i === 0 ? null : 1e9 })),
-                ),
-            );
-        const tickers = [toTicker("BRK.B"), ...Array.from({ length: 149 }, (_, i) => toTicker(`T${i}`))];
-
-        const caps = await fmp().getMarketCaps(tickers);
-
-        expect(urls.map((u) => u.pathname)).toEqual([
-            "/stable/market-capitalization-batch",
-            "/stable/market-capitalization-batch",
-        ]);
-        expect(urls[0]?.searchParams.get("symbols")?.startsWith("BRK-B,T0")).toBe(true);
-        expect(caps.size).toBe(148);
-        expect(caps.has(toTicker("BRK.B"))).toBe(false);
-    });
-
-    it("maps the recorded batch response", async () => {
-        respond = () => new Response(fixture("market-cap-batch.json"));
-
-        const caps = await fmp().getMarketCaps([AAPL, toTicker("MSFT")]);
-
-        expect(Object.fromEntries(caps)).toEqual({ AAPL: 5_050_461_930_800, MSFT: 3_881_703_905_420 });
-    });
-
-    it("answers no market caps when the plan lacks the batch endpoint", async () => {
-        respond = () => new Response(fixture("company-screener-402.txt"), { status: 402 });
-
-        expect(await fmp().getMarketCaps([AAPL, toTicker("MSFT")])).toEqual(new Map());
-        expect(urls).toHaveLength(1);
-    });
-
     it("treats FMP's 429 as the daily limit: no retries, budget marked used, answers from the cache", async () => {
         await fmp().getProfile(AAPL);
         clock.advance(40 * 86_400_000);
@@ -166,7 +129,6 @@ describe("FmpFundamentals", () => {
 
         expect((await adapter.getProfile(AAPL))?.name).toBe("Apple Inc.");
         expect(await adapter.getProfile(toTicker("MSFT"))).toBeUndefined();
-        expect(await adapter.getMarketCaps([AAPL])).toEqual(new Map());
         expect(await adapter.remainingRequests()).toBe(0);
         expect(urls).toHaveLength(2); // the first lookup and one refused call, nothing after
     });

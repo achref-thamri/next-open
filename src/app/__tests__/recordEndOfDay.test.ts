@@ -78,19 +78,19 @@ describe("recordEndOfDay", () => {
     });
 
     it("cancels unfilled buys and lists them in the summary", async () => {
-        const order = await h.broker.placeOrder(buy("tb-p1", 10, 10_000));
+        const order = await h.broker.placeOrder(buy("no-p1", 10, 10_000));
         await h.repos.orders.upsert(toOrderRecord(order, undefined, NEXT, h.clock.now()));
         h.broker.openMarket(new Map([[AAA, cents(10_300)]])); // gapped above the limit
 
         await recordEndOfDay(h);
 
-        expect((await h.broker.getOrderByClientId("tb-p1"))?.status).toBe("canceled");
-        expect((await h.repos.orders.getByClientOrderId("tb-p1"))?.status).toBe("canceled");
+        expect((await h.broker.getOrderByClientId("no-p1"))?.status).toBe("canceled");
+        expect((await h.repos.orders.getByClientOrderId("no-p1"))?.status).toBe("canceled");
         expect(h.notifier.texts()[0]).toContain("Not filled: buy 10 AAA (limit $100.00 not reached), cancelled");
     });
 
     it("reports fills and stop-loss hits, and keeps the stop of a filled entry", async () => {
-        const order = await h.broker.placeOrder(buy("tb-p1", 10, 10_000));
+        const order = await h.broker.placeOrder(buy("no-p1", 10, 10_000));
         await h.repos.orders.upsert(toOrderRecord(order, undefined, NEXT, h.clock.now()));
         h.broker.openMarket(new Map([[AAA, cents(10_000)]]));
         h.broker.tradeRange(AAA, cents(8_900), cents(10_000));
@@ -101,11 +101,11 @@ describe("recordEndOfDay", () => {
         expect(text).toContain("buy 10 AAA at $100.00");
         expect(text).toContain("🛡️ stop-loss 10 AAA at $90.00");
         expect(text).not.toContain("Not filled");
-        expect((await h.repos.orders.getByClientOrderId("tb-p1"))?.status).toBe("filled");
+        expect((await h.repos.orders.getByClientOrderId("no-p1"))?.status).toBe("filled");
     });
 
     it("keeps the legs of a filled entry open overnight", async () => {
-        const order = await h.broker.placeOrder(buy("tb-p1", 10, 10_000));
+        const order = await h.broker.placeOrder(buy("no-p1", 10, 10_000));
         await h.repos.orders.upsert(toOrderRecord(order, undefined, NEXT, h.clock.now()));
         h.broker.openMarket(new Map([[AAA, cents(10_000)]]));
 
