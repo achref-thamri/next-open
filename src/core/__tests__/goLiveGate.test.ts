@@ -69,6 +69,12 @@ describe("evaluateGoLiveGate", () => {
         expect(evaluateGoLiveGate(input).pass).toBe(false);
     });
 
+    it("says month, not months, after one month", () => {
+        expect(criterion(passing({ today: d("2026-12-02") }), "Paper trading period")?.detail).toBe(
+            "1 month (need 3, prefer 6)",
+        );
+    });
+
     it("fails when the benchmark wins after tax", () => {
         const input = passing({
             snapshots: [snap("2026-11-02", 10_000, 10_000), snap("2027-03-02", 10_500, 10_600)],
