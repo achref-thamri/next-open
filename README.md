@@ -2,148 +2,105 @@
 
 [![CI](https://github.com/achref-thamri/next-open/actions/workflows/ci.yml/badge.svg)](https://github.com/achref-thamri/next-open/actions/workflows/ci.yml)
 
-Next Open trades US stocks with Claude's help and hard risk limits in code. Once a day, after the US close, it
-scans the market, asks Claude for trade decisions, checks every proposal against risk rules, and places limit orders
-at the next open through Alpaca. It runs on paper money first and only goes live after beating a buy-and-hold benchmark
-under criteria fixed in advance.
+Can an AI pick US stocks better than buying the whole market and holding it? Next Open tests that with a paper
+account. Every evening after the close it scans the market, asks an AI model what to trade, checks every proposal
+against hard risk rules in code, and places limit orders at the next open. It only goes live after beating a
+buy-and-hold benchmark under rules fixed before the first trade.
 
-The LLM proposes; deterministic code decides what is allowed. Every prompt, response, risk decision and order is
-stored for audit.
+## The idea
 
-## Design
+The AI proposes and deterministic code decides what is allowed. The model never places an order itself: its answer
+is validated, sized into whole shares and run through the risk rules, once in the evening and again against the live
+account just before the open. Every prompt, answer, risk decision and order is stored, so any trade can be explained
+later with `/why TICKER`.
 
-Domain logic lives in `core/` as pure functions, and vendor APIs sit behind interfaces in `ports/`, so a new broker,
-data vendor or database is one new adapter. Risk stays outside the model: position size, position count, cash
-floor, daily order caps and a daily loss halt are checked when a proposal is made and again just before it
-executes, against the live account. Order ids come from proposal ids, so a retry can't submit twice. The broker is
-the source of truth, margin and short selling are switched off and verified at startup, and a missed job is
-alerted and never run late.
+Results only count after fees and estimated Danish tax, and only against strategies that see the same data on the
+same days:
 
-Three virtual portfolios run next to the real account on the same data: a patient Claude variant, a rule-based
-momentum strategy and a buy-and-hold VT benchmark, all with estimated Danish tax.
+| Strategy             | Trades                                                                        |
+| -------------------- | ----------------------------------------------------------------------------- |
+| AI, real account     | The model's daily decisions, placed on the Alpaca paper account               |
+| Patient AI (virtual) | Same model and data, told to hold for weeks; at most 3 orders a day           |
+| Momentum (virtual)   | No AI: the 10 best 3-month gainers still rising, rebalanced weekly            |
+| VT buy-and-hold      | The global stock ETF bought on day one and never sold (the benchmark to beat) |
 
-There are around 450 tests. The domain has unit tests, the use cases run against in-memory fakes of every port, and
-the adapters are tested against recorded API responses. CI runs format, lint, typecheck, an unused-code check (knip),
-tests with coverage and Docker smoke tests, plus a production dependency audit. Dependabot opens updates weekly,
-commits have been signed since 31 October 2026, and `main` deploys only after CI passes.
+The virtual portfolios are simulated from daily bars with the same order rules as the broker.
 
-## How it works
+## Risk rules
+
+| Rule           | Limit                                                                  |
+| -------------- | ---------------------------------------------------------------------- |
+| Position size  | At most 10% of equity per stock                                        |
+| Positions      | At most 15 at once                                                     |
+| Cash           | At least 10% of equity stays in cash                                   |
+| Daily activity | At most 10 orders and 30% of equity traded per day                     |
+| Daily loss     | Trading halts when equity falls 3% below the previous close            |
+| Entry price    | Buys at most 1% above the last close, so an overnight gap isn't chased |
+| Instruments    | Long only, US common stocks, no margin, shorts, options or ETFs        |
+
+A buy carries a stop-loss and a take-profit at the broker. The limits are defaults in
+[`src/config/schema.ts`](src/config/schema.ts) and can be changed with a settings file.
+
+## What happens each day
 
 ```mermaid
 flowchart LR
-    subgraph Daily["Each US trading day (New York time)"]
-        direction LR
-        L["07:00<br/>Liquid list<br/>(weekly)"] --> O["09:30<br/>Execute at open"]
-        O --> E["close + 20 min<br/>End of day"]
-        E --> A["close + 30 min<br/>Evening analysis"]
-    end
-    A -- "proposals<br/>(approve in live mode)" --> O
+    L["07:00<br/>Liquid list<br/>(weekly)"] --> O["09:30<br/>Execute at open"]
+    O --> E["close + 20 min<br/>End of day"]
+    E --> A["close + 30 min<br/>Evening analysis"]
+    A -- "proposals" --> O
 ```
 
-1. Liquid list (weekly): ~13,000 tradable assets are filtered by price and 20-day dollar volume from SIP
-   bars, then by market cap and the ETF/fund flag from FMP, cached within the free plan's daily quota.
-2. Evening analysis: rank the list by move × relative volume, add news mentions and holdings, cap at 40
-   candidates, send portfolio, features, headlines and recent decisions to Claude. The structured answer is
-   validated with zod, sized into whole shares and run through the risk checks. Proposals go to Telegram.
-3. Execute at open: re-sync with the broker, re-run risk checks, place bracket limit orders (stop-loss and
-   take-profit attached). Buys never chase an overnight gap.
-4. End of day: snapshot equity and the benchmark, simulate the virtual portfolios, check the daily loss
-   limit, send a summary.
+Times are New York time and follow the broker's calendar, so holidays and half days need no special code.
 
-Telegram is the only interface: approve/reject buttons, notifications, and `/status`, `/stop`, `/resume`,
-`/report`, `/why TICKER`, `/golive`.
+- **Liquid list**, weekly: every tradable US asset on Alpaca is cut down to listed common stocks above $5, with a
+  market cap of at least $2B and $20M traded a day on average.
+- **Evening analysis**: the 40 most interesting stocks of the day (holdings, news, unusual moves) go to the AI with
+  the portfolio, prices and headlines. Its proposals are checked and sent to Telegram.
+- **Execute at open**: the risk rules run again against the live account, then the orders go out.
+- **End of day**: equity and the benchmark are recorded, the virtual portfolios are simulated, and a summary is sent.
 
-## Architecture
+A job that can't start on time is reported and skipped, never run late on old prices.
 
-```mermaid
-flowchart TB
-    main["main.ts / compose.ts<br/>composition root"] --> scheduler["scheduler<br/>croner, broker calendar"]
-    main --> telegram["Telegram handlers"]
-    scheduler --> app
-    telegram --> app
-    subgraph app["app: use cases"]
-        direction LR
-        uc1[runEveningAnalysis] ~~~ uc2[executeAtOpen] ~~~ uc3[recordEndOfDay] ~~~ uc4[buildLiquidList]
-    end
-    app --> core["core: pure domain<br/>risk · sizing · universe · metrics · tax · simulation"]
-    app --> ports["ports: interfaces"]
-    adapters["adapters<br/>Alpaca · FMP · Anthropic · Telegram · SQLite · fakes"] -. implement .-> ports
-```
+## On Telegram
 
-Dependencies point inward: `core` imports nothing outside itself, `app` talks to the world only through
-`ports`, and only `adapters` know vendor APIs. See [docs/architecture.md](docs/architecture.md) for the details
-and [docs/adr/](docs/adr/) for the decisions behind them.
+| Command       | What it does                                                    |
+| ------------- | --------------------------------------------------------------- |
+| `/status`     | Account, positions, open orders and pending approvals           |
+| `/report`     | Performance against the benchmark and the go-live checklist     |
+| `/why TICKER` | The AI's latest reasoning for a stock                           |
+| `/stop`       | Halt trading and cancel open orders (stop-losses stay in place) |
+| `/resume`     | Allow trading again                                             |
+| `/golive`     | Confirm live trading, once the go-live rules pass               |
 
-```
-src/
-  main.ts, compose.ts   composition root: config → adapters → use cases → scheduler + Telegram
-  config/               zod schema for env and limits; fails fast on bad config
-  core/                 pure domain: risk/, universe/, strategies/, sizing, metrics, tax, simulation
-  ports/                broker, marketData, news, fundamentals, llm, notifier, clock, repositories
-  adapters/             alpaca/, fmp/, anthropic/, telegram/, sqlite/ (+ migrations), fake/
-  app/                  one use case per file
-  scheduler/            job timing, catch-up windows, missed-job alerts
-  lib/                  logging, retry, errors, HTTP
-```
+Telegram also gets the evening proposals, the orders placed at the open, a daily summary and a Sunday report that
+compares every strategy. In live mode each order needs an Approve tap before 09:25.
 
-## Tech stack
+## Running it
 
-Node 24, TypeScript (strict, `noUncheckedIndexedAccess`, ESM) · zod · better-sqlite3 · croner · grammY ·
-Anthropic SDK · pino · Vitest · ESLint · Prettier · knip · husky + lint-staged · Docker · GitHub Actions.
-
-Alpaca and FMP use small typed `fetch` clients instead of vendor SDKs.
-
-## Getting started
-
-Requirements: Node 24 (`.nvmrc`), and for a real run: Alpaca paper, FMP (free), Anthropic and a Telegram token.
+Needs Node 24. No Docker needed locally.
 
 ```sh
 npm ci
-cp .env.example .env     # fill in the keys
-npm run check            # format, lint, typecheck, unused code, tests
-npm run dry-run -- --quick   # one evening analysis against real data, fake broker, no orders
-npm run dev              # scheduler + Telegram, watching for changes
+npm run check                # format, lint, typecheck, unused code, tests
+cp .env.example .env         # Alpaca paper, FMP (free), Anthropic and Telegram keys
+npm run dry-run -- --quick   # one evening analysis on real data, fake broker, no orders
+npm run dev                  # the scheduler and Telegram
 ```
 
-| Script                               | What it does                                                |
-| ------------------------------------ | ----------------------------------------------------------- |
-| `npm test` / `npm run test:coverage` | Run the tests (with a coverage report)                      |
-| `npm run check`                      | Everything CI runs, except Docker                           |
-| `npm run dry-run`                    | Full evening pipeline on live data with an in-memory broker |
-| `npm run build && npm start`         | Production build and start                                  |
-
-Risk limits, universe filters and tax rates have defaults in `src/config/schema.ts` and can be overridden with a
-JSON file via `CONFIG_PATH`.
-
-## Deployment
-
-One container on a small VPS with Docker Compose, SQLite on a named volume, nightly online backups kept for 14
-days, and a health check fed by the scheduler's heartbeat.
-
-Merges to `main` deploy automatically once CI passes ([deploy.yml](.github/workflows/deploy.yml)). GitHub Actions
-streams the tree over SSH with a key that can only run [server-deploy.sh](scripts/server-deploy.sh). The script
-refuses to deploy around the open and the post-close jobs, and the workflow tries again every five minutes until that
-window has passed. It unpacks aside, removes files deleted from the repo since the last deploy, rebuilds, and fails
-the deploy unless the container reports healthy within three minutes. The workflows run with a read-only token and
-actions pinned to commit SHAs, which Dependabot keeps current.
-
-Manual equivalent on the server:
-
-```sh
-docker compose up -d --build
-docker compose ps        # healthy within ~2 minutes
-docker compose logs -f
-```
+[Running and deploying](docs/operations.md) covers the settings, the dry run, deployment and backups.
 
 ## Status
 
 Paper trading on Alpaca since 30 October 2026. Filling the stock list within FMP's free quota took the first two
-weeks, so there are no trades to report yet. Live trading is gated on at least three months of paper results that
-beat the benchmark after fees and estimated tax, with a drawdown no more than 5 points worse and no unexplained bugs
-in the last 30 days.
+weeks, so there are no trades to report yet. Going live needs at least three months of paper results that beat the
+benchmark after fees and tax, a drawdown no more than 5 points worse, and no unexplained failures in the last 30
+days.
 
-Not financial advice. This is a personal project.
+## More
 
-## License
+- [Architecture](docs/architecture.md): layers, jobs, a proposal's path, data, code layout, tech stack and tests
+- [Running and deploying](docs/operations.md): settings, scripts, the dry run, deployment and backups
+- [Decision records](docs/adr/): why things are built the way they are
 
-[MIT](LICENSE)
+Not financial advice. This is a personal project, under the [MIT license](LICENSE).
