@@ -70,7 +70,7 @@ export function copyUniverseCache(from: string, into: Db): void {
 }
 
 /**
- * One evening analysis with real market data, news and Claude, but a fake $100,000 broker and no Telegram.
+ * One evening analysis with real market data, news and the AI model, but a fake $100,000 broker and no Telegram.
  * Usage: npm run dry-run [-- [--quick] [YYYY-MM-DD]]   (default date: the latest trading day that has closed)
  *
  * The first run builds the liquid list in a separate cache database (data/dry-run-cache.db). That takes a few
@@ -126,7 +126,7 @@ async function dryRun(): Promise<void> {
         { model: string; input_tokens: number; output_tokens: number; cost_usd: number } | undefined;
     if (call) {
         console.log(
-            `\nClaude: ${call.model}, ${call.input_tokens} input + ${call.output_tokens} output tokens, $${call.cost_usd.toFixed(4)}`,
+            `\nAI call: ${call.model}, ${call.input_tokens} input + ${call.output_tokens} output tokens, $${call.cost_usd.toFixed(4)}`,
         );
     }
     db.close();

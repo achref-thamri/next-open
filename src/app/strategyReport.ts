@@ -44,7 +44,7 @@ export async function compareStrategies(
     const realFills = (await repos.fills.list()).filter((f) => f.date >= since);
     const results: StrategyResult[] = [
         result(
-            "Claude (real paper account)",
+            "AI (real paper account)",
             real.map((s) => s.equity),
             realFills,
         ),
