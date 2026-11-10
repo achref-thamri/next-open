@@ -28,5 +28,6 @@ shows only about 2% of real volume (AAPL: 0.83M vs 36M shares on one day), which
 - Candidates are liquid large caps, which suits once-a-day limit orders.
 - The first days after a fresh install trade from a short list of the most traded stocks, which grows each day.
   Later weeks only look up new or stale tickers.
-- FMP's free plan has turned out to refuse its batch market-cap endpoint (HTTP 402). Cached caps are used instead
-  and renew with the 30-day profile refresh.
+- FMP's free plan refuses its batch market-cap endpoint (HTTP 402), so market caps come only from the profiles and
+  renew with the 30-day profile refresh. The batch call was removed on 10 November 2026: it cost one request of the
+  daily budget per run and never returned anything.

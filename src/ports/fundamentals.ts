@@ -11,8 +11,6 @@ export interface CompanyProfile {
 export interface Fundamentals {
     /** Undefined when the vendor does not know the ticker or the daily budget is used up. */
     getProfile(ticker: Ticker): Promise<CompanyProfile | undefined>;
-    /** Current market caps in one batched lookup; unknown tickers are absent. */
-    getMarketCaps(tickers: readonly Ticker[]): Promise<Map<Ticker, number>>;
     /** Remaining vendor requests today, so long jobs can stop before the budget runs out. */
     remainingRequests(): Promise<number>;
 }

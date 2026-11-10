@@ -75,19 +75,8 @@ async function build(deps: AppDeps, today: TradingDate, week: TradingDate): Prom
         return !p || now.getTime() - p.fetchedAt.getTime() >= PROFILE_MAX_AGE_MS;
     });
 
-    // Refresh market caps of fresh profiles in batches (cheap), then fetch missing or stale profiles one by one.
-    const staleSet = new Set(stale);
-    const fresh = tickers.filter((t) => !staleSet.has(t));
-    const caps = await fundamentals.getMarketCaps(fresh);
-    for (const [ticker, marketCapUsd] of caps) {
-        const profile = cached.get(ticker);
-        if (profile && profile.marketCapUsd !== marketCapUsd) await repos.profiles.save({ ...profile, marketCapUsd });
-    }
+    // Missing or stale profiles are fetched one by one; the 30-day refresh also renews the market cap.
     const profiles = new Map<Ticker, Pick<CachedProfile, "kind" | "marketCapUsd">>(cached);
-    for (const [ticker, marketCapUsd] of caps) {
-        const profile = profiles.get(ticker);
-        if (profile) profiles.set(ticker, { ...profile, marketCapUsd });
-    }
     let missing = 0;
     for (const ticker of stale) {
         if ((await fundamentals.remainingRequests()) <= 0) {

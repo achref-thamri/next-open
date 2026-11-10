@@ -14,7 +14,7 @@ describe("ids", () => {
         const proposalId = newId();
 
         expect(clientOrderId(proposalId)).toBe(clientOrderId(proposalId));
-        expect(clientOrderId(proposalId)).toBe(`tb-${proposalId}`);
+        expect(clientOrderId(proposalId)).toBe(`no-${proposalId}`);
         expect(clientOrderId(proposalId).length).toBeLessThanOrEqual(128);
     });
 });

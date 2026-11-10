@@ -9,5 +9,5 @@ export function newId(): string {
 
 /** Broker client order id for a proposal. Stable, so retries and restarts never double-submit. */
 export function clientOrderId(proposalId: string): string {
-    return `tb-${proposalId}`;
+    return `no-${proposalId}`;
 }
