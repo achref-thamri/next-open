@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { riskSchema } from "../../config/schema.js";
 import { cents } from "../../core/money.js";
 import { toTicker, toTradingDate } from "../../core/types.js";
 import { handleCommand, HELP } from "../commands.js";
@@ -34,6 +35,15 @@ describe("handleCommand", () => {
         expect(reply).toContain("Trading: ✅ active");
         expect(reply).toContain("• AAA 10 @ $100.00 → $110.00 (+10.0%)");
         expect(reply).toContain("Open orders: 0 · pending approvals: 0");
+    });
+
+    it("shows the reserved cash in /status when there is some", async () => {
+        h = harness({ risk: riskSchema.parse({ reservedCashUsd: 40_000 }) });
+
+        const reply = await send("/status");
+
+        expect(reply).toContain("Equity $60,000.00 · cash $60,000.00");
+        expect(reply).toContain("Not counted above: $40,000.00 reserved cash");
     });
 
     it("/stop halts and cancels entries and exits but keeps stop-losses", async () => {

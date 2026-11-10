@@ -54,6 +54,12 @@ export const riskSchema = z
         maxDailyTradedWeight: fraction.default(0.3),
         /** Max limit price above (buys) or below (sells) the previous close. */
         maxEntryGapPct: z.number().min(0).max(0.1).default(0.01),
+        /**
+         * Cash in the account that Next Open leaves alone, e.g. to start live with part of the money. It is taken off
+         * equity, cash and the previous close everywhere, so sizing, limits, reports and the benchmark see only the
+         * money being traded.
+         */
+        reservedCashUsd: z.number().min(0).default(0),
     })
     .refine((risk) => risk.maxPositionWeight <= 1 - risk.minCashWeight, {
         message: "maxPositionWeight cannot exceed 1 - minCashWeight",

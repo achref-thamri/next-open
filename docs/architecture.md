@@ -91,7 +91,8 @@ or reject, and the reason is stored and shown in Telegram.
 7. Daily caps (10 orders, 30% of equity traded).
 8. Daily loss (−3% against the previous close): halt and alert.
 
-Limits come from config (`src/config/schema.ts`), validated at startup.
+Limits come from config (`src/config/schema.ts`), validated at startup. Any reserved cash (`reservedCashUsd`) is
+taken off the account when it is read from the broker, before sizing and every rule.
 
 ## Data
 

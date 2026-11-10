@@ -1,5 +1,5 @@
 import { percent, signedPercent } from "../core/format.js";
-import { formatCents } from "../core/money.js";
+import { dollarsToCents, formatCents } from "../core/money.js";
 import { isTicker, tradingDateOf } from "../core/types.js";
 import type { AppDeps } from "./deps.js";
 import { performance, reportText } from "./report.js";
@@ -48,6 +48,9 @@ async function status(deps: AppDeps): Promise<string> {
         `Mode: ${deps.config.mode}${deps.config.mode === "live" && !settings.liveConfirmed ? " (not confirmed, send /golive)" : ""}`,
         `Trading: ${settings.halted ? `⛔ halted (${settings.haltReason ?? "no reason"})` : "✅ active"}`,
         `Equity ${formatCents(account.equity)} · cash ${formatCents(account.cash)} · today ${signedPercent(account.previousCloseEquity > 0 ? account.equity / account.previousCloseEquity - 1 : 0)}`,
+        ...(deps.config.risk.reservedCashUsd > 0
+            ? [`Not counted above: ${formatCents(dollarsToCents(deps.config.risk.reservedCashUsd))} reserved cash`]
+            : []),
         positions.length === 0 ? "No positions." : `Positions (${positions.length}):`,
         ...positions.map(
             (p) =>
