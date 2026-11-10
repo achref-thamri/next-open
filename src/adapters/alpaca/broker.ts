@@ -189,7 +189,8 @@ export class AlpacaBroker implements Broker {
                     side: f.side,
                     qty: f.qty,
                     price: f.price,
-                    // Alpaca charges no commission; regulatory fees post separately and are cents per trade.
+                    // No commission. SEC and FINRA fees on sells post as one FEE activity a day and are already in
+                    // the account's equity, so fills carry no fee (docs/operations.md, Going live).
                     fee: cents(0),
                     date: tradingDateOf(time),
                     time,

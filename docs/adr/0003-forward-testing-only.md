@@ -20,3 +20,5 @@ in the last 30 days. Going live also needs `TRADING_MODE=live` plus a `/golive` 
 - The gate cannot be adjusted after seeing results.
 - Rule-based strategies could be backtested, but they run forward next to the AI instead (ADR 0008), so every
   strategy is compared on the same period and data.
+- 10 November 2026: live trading can start with part of the account. `reservedCashUsd` keeps an amount out of
+  everything Next Open sizes, checks and reports, so a first live period can run on a small sum and grow.

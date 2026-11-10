@@ -23,8 +23,32 @@ change any of them, point `CONFIG_PATH` at a JSON file with only the values you 
 { "risk": { "maxPositions": 10 }, "universe": { "minMarketCapUsd": 5000000000 } }
 ```
 
-Live trading needs both `TRADING_MODE=live` with live Alpaca keys and a `/golive` confirmation in Telegram, which is
-refused until the go-live rules pass.
+## Going live
+
+Live trading starts only after the go-live rules pass ([ADR 0003](adr/0003-forward-testing-only.md)), and then in
+small steps:
+
+1. Open and fund an Alpaca live account and create live API keys.
+2. Set `ALPACA_LIVE_KEY_ID`, `ALPACA_LIVE_SECRET_KEY` and `TRADING_MODE=live`, and restart.
+3. To trade only part of the money at first, set `reservedCashUsd` in the settings file, for example
+   `{ "risk": { "reservedCashUsd": 5000 } }`. That amount is taken off equity, cash and the previous close
+   everywhere, so position sizes, the risk limits, the daily loss check, the reports and the benchmark see only the
+   money being traded. `/status` shows the reserve on its own line. Lower it to trade more.
+4. Send `/golive` in Telegram. It is refused until the go-live rules pass.
+5. Each evening's orders now wait for an Approve tap before 09:25 New York time (15:25 in Denmark); a reminder
+   comes at 06:00 New York time.
+
+Things that work differently with real money:
+
+- At startup Next Open sets the account's margin to 1× and switches short selling off. Alpaca calls such an
+  account limited margin: it may buy with the unsettled proceeds of a sale without borrowing
+  ([limited margin agreement](https://files.alpaca.markets/disclosures/library/SupplementalLimitedMarginAgreement.pdf)),
+  so selling and buying at the same open works. FINRA has abolished the pattern day trader rule and its $25,000
+  minimum ([Alpaca](https://docs.alpaca.markets/us/docs/intraday-margin-rule-for-non-leverage-margin-accounts)),
+  though a broker may keep house limits of its own.
+- Alpaca charges no commission. The SEC and FINRA fees on sells are charged once a day as separate `FEE` entries
+  and are already taken off the equity the broker reports, which is what returns and the go-live rules use. The
+  "Fees" line in `/report` counts only fees attached to fills, so it stays at $0.00 with Alpaca.
 
 ## Scripts
 
