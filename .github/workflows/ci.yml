@@ -1,20 +1,20 @@
 name: CI
 
-# Private repo: CI runs on main only, to stay inside the free Actions minutes. Run the checks locally before merging.
 on:
     push:
         branches: [main]
+    pull_request:
 
-# Every commit on main finishes, so each one has a result.
+# Every commit on main finishes, so each one has a result. A new push to a pull request cancels its older run.
 concurrency:
     group: ci-${{ github.ref }}
-    cancel-in-progress: false
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
     contents: read
 
 jobs:
-    # One job: billing rounds every job up to a whole minute, and the Docker build fits in the same billed minutes.
+    # One job: the Docker smoke tests reuse the same runner instead of starting a second one.
     check:
         runs-on: ubuntu-latest
         timeout-minutes: 15
