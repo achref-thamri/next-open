@@ -122,7 +122,8 @@ days, and a health check fed by the scheduler's heartbeat.
 
 Merges to `main` deploy automatically once CI passes ([deploy.yml](.github/workflows/deploy.yml)). GitHub Actions
 streams the tree over SSH with a key that can only run [server-deploy.sh](scripts/server-deploy.sh): it refuses to
-deploy around the open and the post-close jobs, unpacks aside, removes files deleted from the repo since the last
+deploy around the open and the post-close jobs (the workflow tries again every five minutes until that
+window passes), unpacks aside, removes files deleted from the repo since the last
 deploy, rebuilds, and fails the deploy unless the container reports healthy within three minutes. The workflows run
 with a read-only token and actions pinned to commit SHAs, which Dependabot keeps current.
 

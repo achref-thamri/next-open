@@ -23,7 +23,7 @@ jobs:
             (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
         runs-on: ubuntu-latest
         environment: production
-        timeout-minutes: 15
+        timeout-minutes: 110
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
@@ -40,4 +40,15 @@ jobs:
             - name: Deploy
               env:
                   DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-              run: git archive --format=tar HEAD | ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes "bot@$DEPLOY_HOST"
+              # The server exits 75 around the open and the post-close jobs (the longer window is 90 minutes) and while
+              # another deploy runs. Wait that out rather than fail and leave main undeployed.
+              run: |
+                  for _ in $(seq 1 20); do
+                      status=0
+                      git archive --format=tar HEAD | ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes "bot@$DEPLOY_HOST" || status=$?
+                      [[ $status -eq 75 ]] || exit "$status"
+                      echo "server refused for now; trying again in 5 minutes"
+                      sleep 300
+                  done
+                  echo "server still refusing after 100 minutes" >&2
+                  exit 75
