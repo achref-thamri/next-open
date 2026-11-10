@@ -21,7 +21,7 @@ function errorOf(fn: () => unknown): string {
 }
 
 describe("parseConfig", () => {
-    it("applies spec defaults", () => {
+    it("applies the defaults", () => {
         const config = parseConfig(baseEnv);
 
         expect(config.mode).toBe("paper");
@@ -37,6 +37,7 @@ describe("parseConfig", () => {
             maxOrdersPerDay: 10,
             maxDailyTradedWeight: 0.3,
             maxEntryGapPct: 0.01,
+            reservedCashUsd: 0,
         });
         expect(config.universe.maxCandidates).toBe(40);
         expect(config.tax.shareHighRate).toBe(0.42);

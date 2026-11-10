@@ -95,7 +95,7 @@ npm run dry-run -- --quick   # one evening analysis on real data, fake broker, n
 npm run dev                  # the scheduler and Telegram
 ```
 
-[Running and deploying](docs/operations.md) covers the settings, the dry run, deployment and backups.
+[Running and deploying](docs/operations.md) covers the settings, going live, the dry run, deployment and backups.
 
 ## Status
 
@@ -107,7 +107,7 @@ days.
 ## More
 
 - [Architecture](docs/architecture.md): layers, jobs, a proposal's path, data, code layout, tech stack and tests
-- [Running and deploying](docs/operations.md): settings, scripts, the dry run, deployment and backups
+- [Running and deploying](docs/operations.md): settings, going live, scripts, the dry run, deployment and backups
 - [Decision records](docs/adr/): why things are built the way they are
 
 Not financial advice. This is a personal project, under the [MIT license](LICENSE).
