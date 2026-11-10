@@ -31,7 +31,7 @@ export interface App {
     db: Db;
 }
 
-/** Nightly backups kept on the data volume (spec §14). */
+/** Nightly backups kept on the data volume. */
 const BACKUP_RETENTION_DAYS = 14;
 
 const systemClock: Clock = { now: () => new Date() };

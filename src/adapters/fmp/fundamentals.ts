@@ -11,7 +11,7 @@ import type { ApiUsageRepository, CachedProfile, ProfilesRepository } from "../.
 const BASE_URL = "https://financialmodelingprep.com/stable";
 const API = "fmp";
 /** The free plan allows about 250 requests a day; keep a margin for manual checks. */
-export const FMP_DAILY_BUDGET = 240;
+const FMP_DAILY_BUDGET = 240;
 const PROFILE_MAX_AGE_MS = 30 * 86_400_000;
 const SYMBOLS_PER_BATCH = 100;
 

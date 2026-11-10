@@ -2,8 +2,6 @@ import { readFileSync } from "node:fs";
 import type { z } from "zod";
 import { envSchema, settingsSchema, type RiskLimits, type TaxRates, type UniverseLimits } from "./schema.js";
 
-export type { RiskLimits, TaxRates, UniverseLimits } from "./schema.js";
-
 export type TradingMode = "paper" | "live";
 export type LogLevel = "fatal" | "error" | "warn" | "info" | "debug" | "trace";
 

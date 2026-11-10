@@ -1,3 +1,4 @@
+import { TRADING_DAYS_PER_YEAR } from "../metrics.js";
 import type { Candidate, DailyBar } from "../types.js";
 
 export type BarFeatures = Pick<Candidate, "close" | "changePct" | "relativeVolume" | "avgDollarVolumeUsd">;
@@ -30,7 +31,7 @@ function mean(values: readonly number[]): number {
 }
 
 /** Trading days per period for multi-period returns. */
-export const PERIOD_DAYS = { d1: 1, w1: 5, m1: 21, m3: 63 } as const;
+const PERIOD_DAYS = { d1: 1, w1: 5, m1: 21, m3: 63 } as const;
 
 export type PeriodReturns = Record<keyof typeof PERIOD_DAYS, number | undefined>;
 
@@ -51,5 +52,5 @@ export function annualizedVolatility(bars: readonly DailyBar[], days: number): n
     if (returns.length < 2) return undefined;
     const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length;
     const variance = returns.reduce((sum, r) => sum + (r - mean) ** 2, 0) / (returns.length - 1);
-    return Math.sqrt(variance * 252);
+    return Math.sqrt(variance * TRADING_DAYS_PER_YEAR);
 }

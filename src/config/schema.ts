@@ -43,7 +43,7 @@ export const envSchema = z
         }
     });
 
-/** Hard risk limits (spec §7). Weights are fractions of equity. */
+/** Hard risk limits, see docs/architecture.md#risk-checks. Weights are fractions of equity. */
 export const riskSchema = z
     .strictObject({
         maxPositionWeight: fraction.default(0.1),
@@ -60,7 +60,7 @@ export const riskSchema = z
         path: ["maxPositionWeight"],
     });
 
-/** Candidate filters (spec §5). */
+/** Candidate filters for the weekly liquid list and the evening shortlist. */
 export const universeSchema = z.strictObject({
     minPriceUsd: z.number().positive().default(5),
     minMarketCapUsd: z.number().positive().default(2_000_000_000),
@@ -69,7 +69,7 @@ export const universeSchema = z.strictObject({
     maxCandidates: z.int().positive().max(100).default(40),
 });
 
-/** Estimated Danish tax (spec §12). Check rates and threshold on skat.dk every January. */
+/** Estimated Danish tax (see core/tax.ts). Check rates and threshold on skat.dk every January. */
 export const taxSchema = z.strictObject({
     shareLowRate: fraction.default(0.27),
     shareHighRate: fraction.default(0.42),
@@ -92,8 +92,6 @@ export const settingsSchema = z.strictObject({
     tax: taxSchema.prefault({}),
 });
 
-export type Env = z.output<typeof envSchema>;
-export type Settings = z.output<typeof settingsSchema>;
 export type RiskLimits = z.output<typeof riskSchema>;
 export type UniverseLimits = z.output<typeof universeSchema>;
 export type TaxRates = z.output<typeof taxSchema>;

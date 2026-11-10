@@ -22,10 +22,10 @@ alerted and never run late.
 Three virtual portfolios run next to the real account on the same data: a patient Claude variant, a rule-based
 momentum strategy and a buy-and-hold VT benchmark, all with estimated Danish tax.
 
-There are 430+ tests. The domain has unit tests, the use cases run against in-memory fakes of every port, and the
-adapters are tested against recorded API responses. CI runs format, lint, typecheck, tests with coverage and Docker
-smoke tests, plus a production dependency audit. Dependabot opens updates weekly, commits are signed, and `main`
-deploys only after CI passes.
+There are around 450 tests. The domain has unit tests, the use cases run against in-memory fakes of every port, and
+the adapters are tested against recorded API responses. CI runs format, lint, typecheck, an unused-code check (knip),
+tests with coverage and Docker smoke tests, plus a production dependency audit. Dependabot opens updates weekly,
+commits have been signed since 31 October 2026, and `main` deploys only after CI passes.
 
 ## How it works
 
@@ -89,7 +89,7 @@ src/
 ## Tech stack
 
 Node 24, TypeScript (strict, `noUncheckedIndexedAccess`, ESM) · zod · better-sqlite3 · croner · grammY ·
-Anthropic SDK · pino · Vitest · ESLint · Prettier · husky + lint-staged · Docker · GitHub Actions.
+Anthropic SDK · pino · Vitest · ESLint · Prettier · knip · husky + lint-staged · Docker · GitHub Actions.
 
 Alpaca and FMP use small typed `fetch` clients instead of vendor SDKs.
 
@@ -100,7 +100,7 @@ Requirements: Node 24 (`.nvmrc`), and for a real run: Alpaca paper, FMP (free), 
 ```sh
 npm ci
 cp .env.example .env     # fill in the keys
-npm run check            # format, lint, typecheck, tests
+npm run check            # format, lint, typecheck, unused code, tests
 npm run dry-run -- --quick   # one evening analysis against real data, fake broker, no orders
 npm run dev              # scheduler + Telegram, watching for changes
 ```
@@ -121,11 +121,11 @@ One container on a small VPS with Docker Compose, SQLite on a named volume, nigh
 days, and a health check fed by the scheduler's heartbeat.
 
 Merges to `main` deploy automatically once CI passes ([deploy.yml](.github/workflows/deploy.yml)). GitHub Actions
-streams the tree over SSH with a key that can only run [server-deploy.sh](scripts/server-deploy.sh): it refuses to
-deploy around the open and the post-close jobs (the workflow tries again every five minutes until that
-window passes), unpacks aside, removes files deleted from the repo since the last
-deploy, rebuilds, and fails the deploy unless the container reports healthy within three minutes. The workflows run
-with a read-only token and actions pinned to commit SHAs, which Dependabot keeps current.
+streams the tree over SSH with a key that can only run [server-deploy.sh](scripts/server-deploy.sh). The script
+refuses to deploy around the open and the post-close jobs, and the workflow tries again every five minutes until that
+window has passed. It unpacks aside, removes files deleted from the repo since the last deploy, rebuilds, and fails
+the deploy unless the container reports healthy within three minutes. The workflows run with a read-only token and
+actions pinned to commit SHAs, which Dependabot keeps current.
 
 Manual equivalent on the server:
 
@@ -137,9 +137,10 @@ docker compose logs -f
 
 ## Status
 
-Paper trading on Alpaca. Live trading is gated on at least three months of paper results that beat the
-benchmark after fees and estimated tax, with a drawdown no more than 5 points worse and no unexplained bugs in
-the last 30 days.
+Paper trading on Alpaca since 30 October 2026. Filling the stock list within FMP's free quota took the first two
+weeks, so there are no trades to report yet. Live trading is gated on at least three months of paper results that
+beat the benchmark after fees and estimated tax, with a drawdown no more than 5 points worse and no unexplained bugs
+in the last 30 days.
 
 Not financial advice. This is a personal project.
 
