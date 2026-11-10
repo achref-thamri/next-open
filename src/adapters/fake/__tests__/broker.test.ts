@@ -43,28 +43,28 @@ describe("FakeBroker", () => {
 
     describe("idempotency", () => {
         it("returns the existing order for a repeated client order id", async () => {
-            const first = await broker.placeOrder(buy("tb-1", 10));
-            const again = await broker.placeOrder(buy("tb-1", 10));
+            const first = await broker.placeOrder(buy("no-1", 10));
+            const again = await broker.placeOrder(buy("no-1", 10));
 
             expect(again.id).toBe(first.id);
             expect(broker.allOrders()).toHaveLength(1);
         });
 
         it("looks orders up by client order id", async () => {
-            await broker.placeOrder(buy("tb-1", 10));
+            await broker.placeOrder(buy("no-1", 10));
 
-            expect((await broker.getOrderByClientId("tb-1"))?.qty).toBe(10);
-            expect(await broker.getOrderByClientId("tb-2")).toBeUndefined();
+            expect((await broker.getOrderByClientId("no-1"))?.qty).toBe(10);
+            expect(await broker.getOrderByClientId("no-2")).toBeUndefined();
         });
     });
 
     describe("buy fills", () => {
         it("fills a buy at the open when the open is at or below the limit", async () => {
-            await broker.placeOrder(buy("tb-1", 10, 10_000));
+            await broker.placeOrder(buy("no-1", 10, 10_000));
 
             broker.openMarket(prices(9_950));
 
-            const order = await broker.getOrderByClientId("tb-1");
+            const order = await broker.getOrderByClientId("no-1");
             expect(order).toMatchObject({ status: "filled", filledQty: 10, filledAvgPrice: 9_950 });
             expect(await broker.getAccount()).toEqual({
                 equity: 10_000_000,
@@ -84,16 +84,16 @@ describe("FakeBroker", () => {
         });
 
         it("does not fill a buy when the open gaps above the limit", async () => {
-            await broker.placeOrder(buy("tb-1", 10, 10_000));
+            await broker.placeOrder(buy("no-1", 10, 10_000));
 
             broker.openMarket(prices(10_001));
 
-            expect((await broker.getOrderByClientId("tb-1"))?.status).toBe("open");
+            expect((await broker.getOrderByClientId("no-1"))?.status).toBe("open");
             expect(await broker.getPositions()).toEqual([]);
         });
 
         it("records fills with the trade date", async () => {
-            await broker.placeOrder(buy("tb-1", 10));
+            await broker.placeOrder(buy("no-1", 10));
             broker.openMarket(prices(10_000));
 
             expect(await broker.getFills(new Date("2026-11-02T00:00:00Z"))).toMatchObject([
@@ -103,13 +103,13 @@ describe("FakeBroker", () => {
         });
 
         it("refuses buys beyond cash, counting other open buys", async () => {
-            await broker.placeOrder(buy("tb-1", 600, 10_000));
+            await broker.placeOrder(buy("no-1", 600, 10_000));
 
-            await expect(broker.placeOrder(buy("tb-2", 500, 10_000))).rejects.toThrow("insufficient buying power");
+            await expect(broker.placeOrder(buy("no-2", 500, 10_000))).rejects.toThrow("insufficient buying power");
         });
 
         it("refuses buys without bracket legs", async () => {
-            await expect(broker.placeOrder({ ...buy("tb-1", 1), stopLossPrice: undefined })).rejects.toBeInstanceOf(
+            await expect(broker.placeOrder({ ...buy("no-1", 1), stopLossPrice: undefined })).rejects.toBeInstanceOf(
                 PermanentError,
             );
         });
@@ -117,14 +117,14 @@ describe("FakeBroker", () => {
 
     describe("bracket legs", () => {
         beforeEach(async () => {
-            await broker.placeOrder(buy("tb-1", 10, 10_000)); // stop 9,000, target 12,000
+            await broker.placeOrder(buy("no-1", 10, 10_000)); // stop 9,000, target 12,000
             broker.openMarket(prices(10_000));
         });
 
         it("triggers the stop-loss when the day trades through it and cancels the target", async () => {
             broker.tradeRange(AAA, cents(8_900), cents(10_100));
 
-            const legs = (await broker.getOrderByClientId("tb-1"))?.legs ?? [];
+            const legs = (await broker.getOrderByClientId("no-1"))?.legs ?? [];
             expect(legs.map((l) => [l.role, l.status])).toEqual([
                 ["take_profit", "canceled"],
                 ["stop_loss", "filled"],
@@ -136,7 +136,7 @@ describe("FakeBroker", () => {
         it("triggers the take-profit and cancels the stop", async () => {
             broker.tradeRange(AAA, cents(9_900), cents(12_000));
 
-            const legs = (await broker.getOrderByClientId("tb-1"))?.legs ?? [];
+            const legs = (await broker.getOrderByClientId("no-1"))?.legs ?? [];
             expect(legs.map((l) => l.status)).toEqual(["filled", "canceled"]);
             expect((await broker.getAccount()).cash).toBe(10_000_000 + 20_000);
         });
@@ -149,24 +149,24 @@ describe("FakeBroker", () => {
         });
 
         it("reserves the shares, so a sell needs the legs cancelled first", async () => {
-            await expect(broker.placeOrder(sell("tb-2", 10))).rejects.toThrow("insufficient qty available");
+            await expect(broker.placeOrder(sell("no-2", 10))).rejects.toThrow("insufficient qty available");
 
-            const stopLeg = (await broker.getOrderByClientId("tb-1"))?.legs.find((l) => l.role === "stop_loss");
+            const stopLeg = (await broker.getOrderByClientId("no-1"))?.legs.find((l) => l.role === "stop_loss");
             await broker.cancelOrder(stopLeg?.id ?? "");
 
-            expect((await broker.getOrderByClientId("tb-1"))?.legs.map((l) => l.status)).toEqual([
+            expect((await broker.getOrderByClientId("no-1"))?.legs.map((l) => l.status)).toEqual([
                 "canceled",
                 "canceled",
             ]);
-            await expect(broker.placeOrder(sell("tb-2", 10))).resolves.toMatchObject({ role: "exit" });
+            await expect(broker.placeOrder(sell("no-2", 10))).resolves.toMatchObject({ role: "exit" });
         });
 
         it("protects only the filled part of a partially filled entry", async () => {
-            await broker.placeOrder(buy("tb-3", 10, 5_000));
-            broker.partialFill("tb-3", 4);
-            await broker.cancelOrder((await broker.getOrderByClientId("tb-3"))?.id ?? "");
+            await broker.placeOrder(buy("no-3", 10, 5_000));
+            broker.partialFill("no-3", 4);
+            await broker.cancelOrder((await broker.getOrderByClientId("no-3"))?.id ?? "");
 
-            const entry = await broker.getOrderByClientId("tb-3");
+            const entry = await broker.getOrderByClientId("no-3");
             expect(entry?.status).toBe("canceled");
             expect(entry?.legs.map((l) => [l.qty, l.status])).toEqual([
                 [4, "open"],
@@ -183,7 +183,7 @@ describe("FakeBroker", () => {
         it("fills a sell when the open is at or above the limit, net of fees", async () => {
             broker = new FakeBroker({ clock, cash: cents(0), sellFeeRate: 0.001 });
             broker.seedPosition(AAA, 20, cents(8_000));
-            await broker.placeOrder(sell("tb-1", 20, 10_000));
+            await broker.placeOrder(sell("no-1", 20, 10_000));
 
             broker.openMarket(prices(10_050));
 
@@ -193,24 +193,24 @@ describe("FakeBroker", () => {
         });
 
         it("refuses to sell more than held (no shorting)", async () => {
-            await expect(broker.placeOrder(sell("tb-1", 21))).rejects.toBeInstanceOf(PermanentError);
+            await expect(broker.placeOrder(sell("no-1", 21))).rejects.toBeInstanceOf(PermanentError);
         });
 
         it("counts open sells against the shares available", async () => {
-            await broker.placeOrder(sell("tb-1", 15));
+            await broker.placeOrder(sell("no-1", 15));
 
-            await expect(broker.placeOrder(sell("tb-2", 6))).rejects.toThrow("available: 5");
+            await expect(broker.placeOrder(sell("no-2", 6))).rejects.toThrow("available: 5");
         });
 
         it("expires unfilled sells at the close and keeps unfilled buys (gtc brackets)", async () => {
-            await broker.placeOrder(sell("tb-1", 20, 10_000));
-            await broker.placeOrder(buy("tb-2", 1, 5_000));
+            await broker.placeOrder(sell("no-1", 20, 10_000));
+            await broker.placeOrder(buy("no-2", 1, 5_000));
             broker.openMarket(prices(9_000));
 
             broker.closeMarket();
 
-            expect((await broker.getOrderByClientId("tb-1"))?.status).toBe("expired");
-            expect((await broker.getOrderByClientId("tb-2"))?.status).toBe("open");
+            expect((await broker.getOrderByClientId("no-1"))?.status).toBe("expired");
+            expect((await broker.getOrderByClientId("no-2"))?.status).toBe("open");
         });
 
         it("rolls equity into the previous close", async () => {
@@ -222,7 +222,7 @@ describe("FakeBroker", () => {
 
     describe("cancel", () => {
         it("cancels an unfilled entry together with its legs", async () => {
-            const order = await broker.placeOrder(buy("tb-1", 10));
+            const order = await broker.placeOrder(buy("no-1", 10));
 
             await broker.cancelOrder(order.id);
 
@@ -230,7 +230,7 @@ describe("FakeBroker", () => {
         });
 
         it("is a no-op for a finished order", async () => {
-            const order = await broker.placeOrder(buy("tb-1", 10));
+            const order = await broker.placeOrder(buy("no-1", 10));
             broker.openMarket(prices(10_000));
             broker.tradeRange(AAA, cents(1), cents(10_000));
 

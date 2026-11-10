@@ -208,7 +208,7 @@ describe("proposals", () => {
 
 describe("orders", () => {
     const order: OrderRecord = {
-        clientOrderId: "tb-p-1",
+        clientOrderId: "no-p-1",
         brokerOrderId: "b-1",
         proposalId: "p-1",
         tradeDate: toTradingDate("2026-11-03"),
@@ -239,7 +239,7 @@ describe("orders", () => {
         };
         await repos.orders.upsert(filled);
 
-        expect(await repos.orders.getByClientOrderId("tb-p-1")).toEqual(filled);
+        expect(await repos.orders.getByClientOrderId("no-p-1")).toEqual(filled);
         expect(await repos.orders.list({ statuses: ["open"] })).toEqual([]);
         expect(await repos.orders.list({ tradeDate: order.tradeDate })).toHaveLength(1);
     });

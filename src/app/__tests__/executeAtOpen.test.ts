@@ -70,7 +70,7 @@ describe("executeAtOpen", () => {
 
         const [order] = h.broker.allOrders();
         expect(order).toMatchObject({
-            clientOrderId: "tb-p1",
+            clientOrderId: "no-p1",
             ticker: "AAA",
             side: "buy",
             qty: 10,
@@ -82,14 +82,14 @@ describe("executeAtOpen", () => {
             ["stop_loss", 9_292],
         ]);
         expect(await statuses()).toEqual([["p1", "executed", 10]]);
-        expect((await h.repos.orders.getByClientOrderId("tb-p1"))?.proposalId).toBe("p1");
+        expect((await h.repos.orders.getByClientOrderId("no-p1"))?.proposalId).toBe("p1");
         expect(h.notifier.texts()[0]).toContain("🟢 buy 10 AAA at ≤ $101.00");
     });
 
     it("places sells before buys and cancels the position's bracket legs first", async () => {
         h.broker.seedPosition(toTicker("BBB"), 20, cents(10_000));
         await h.broker.placeOrder({
-            clientOrderId: "tb-old",
+            clientOrderId: "no-old",
             ticker: toTicker("BBB"),
             side: "buy",
             qty: 5,
@@ -105,12 +105,12 @@ describe("executeAtOpen", () => {
 
         await executeAtOpen(h);
 
-        const placed = h.broker.allOrders().filter((o) => o.clientOrderId !== "tb-old");
+        const placed = h.broker.allOrders().filter((o) => o.clientOrderId !== "no-old");
         expect(placed.map((o) => [o.clientOrderId, o.side])).toEqual([
-            ["tb-p2", "sell"],
-            ["tb-p1", "buy"],
+            ["no-p2", "sell"],
+            ["no-p1", "buy"],
         ]);
-        const old = h.broker.allOrders().find((o) => o.clientOrderId === "tb-old");
+        const old = h.broker.allOrders().find((o) => o.clientOrderId === "no-old");
         expect(old?.legs.map((l) => l.status)).toEqual(["canceled", "canceled"]);
     });
 
@@ -119,12 +119,12 @@ describe("executeAtOpen", () => {
         // The first order goes through, the second fails, the run fails.
         const first = await executeAtOpen(withFailureOnSecondOrder(h));
         expect(first.status).toBe("failed");
-        expect(h.broker.allOrders().map((o) => o.clientOrderId)).toEqual(["tb-p1"]);
+        expect(h.broker.allOrders().map((o) => o.clientOrderId)).toEqual(["no-p1"]);
 
         const second = await executeAtOpen(h);
 
         expect(second.status).toBe("succeeded");
-        expect(h.broker.allOrders().map((o) => o.clientOrderId)).toEqual(["tb-p1", "tb-p2"]);
+        expect(h.broker.allOrders().map((o) => o.clientOrderId)).toEqual(["no-p1", "no-p2"]);
         expect(await statuses()).toEqual([
             ["p1", "executed", 10],
             ["p2", "executed", 10],
@@ -134,7 +134,7 @@ describe("executeAtOpen", () => {
     it("records orders placed before a crash that never got stored", async () => {
         await seed(h, [proposal("p1", "AAA")]);
         await h.broker.placeOrder({
-            clientOrderId: "tb-p1",
+            clientOrderId: "no-p1",
             ticker: toTicker("AAA"),
             side: "buy",
             qty: 10,

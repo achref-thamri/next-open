@@ -39,7 +39,7 @@ describe("handleCommand", () => {
     it("/stop halts and cancels entries and exits but keeps stop-losses", async () => {
         h.broker.seedPosition(toTicker("BBB"), 10, cents(10_000));
         const filled = await h.broker.placeOrder({
-            clientOrderId: "tb-filled",
+            clientOrderId: "no-filled",
             ticker: AAA,
             side: "buy",
             qty: 5,
@@ -49,7 +49,7 @@ describe("handleCommand", () => {
         });
         h.broker.openMarket(new Map([[AAA, cents(10_000)]]));
         await h.broker.placeOrder({
-            clientOrderId: "tb-entry",
+            clientOrderId: "no-entry",
             ticker: toTicker("CCC"),
             side: "buy",
             qty: 5,
@@ -58,7 +58,7 @@ describe("handleCommand", () => {
             takeProfitPrice: cents(6_000),
         });
         await h.broker.placeOrder({
-            clientOrderId: "tb-exit",
+            clientOrderId: "no-exit",
             ticker: toTicker("BBB"),
             side: "sell",
             qty: 10,
@@ -74,7 +74,7 @@ describe("handleCommand", () => {
         );
         expect(await h.repos.settings.get()).toMatchObject({ halted: true, haltReason: "manual /stop" });
         const status = async (id: string) => (await h.broker.getOrderByClientId(id))?.status;
-        expect([await status("tb-entry"), await status("tb-exit")]).toEqual(["canceled", "canceled"]);
+        expect([await status("no-entry"), await status("no-exit")]).toEqual(["canceled", "canceled"]);
         const legs = (await h.broker.getOrderByClientId(filled.clientOrderId))?.legs.map((l) => l.status);
         expect(legs).toEqual(["open", "open"]);
         expect((await h.broker.getPositions()).map((p) => p.ticker).sort()).toEqual(["AAA", "BBB"]);

@@ -17,17 +17,6 @@ export class FakeFundamentals implements Fundamentals {
         return profile && { ...profile };
     }
 
-    async getMarketCaps(tickers: readonly Ticker[]): Promise<Map<Ticker, number>> {
-        await this.failures.check("getMarketCaps");
-        const result = new Map<Ticker, number>();
-        if (tickers.length === 0 || !this.spend(1)) return result;
-        for (const ticker of tickers) {
-            const cap = this.profiles.get(ticker)?.marketCapUsd;
-            if (cap !== undefined) result.set(ticker, cap);
-        }
-        return result;
-    }
-
     remainingRequests(): Promise<number> {
         return Promise.resolve(Math.max(0, this.dailyBudget - this.requests));
     }

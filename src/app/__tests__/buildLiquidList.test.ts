@@ -85,22 +85,6 @@ describe("buildLiquidList", () => {
             message: "the list for the week of 2026-11-01 is complete",
         });
     });
-
-    it("refreshes market caps of cached profiles in a batch", async () => {
-        await buildLiquidList(h);
-        h.clock.set("2026-11-08T13:00:00Z");
-        h.fundamentals.profiles.set(toTicker("SMALL"), {
-            ticker: toTicker("SMALL"),
-            name: "Small",
-            kind: "common_stock",
-            marketCapUsd: 3e9,
-        });
-
-        await buildLiquidList(h);
-
-        expect((await h.repos.liquidLists.latestComplete())?.tickers).toEqual(["AAA", "BBB", "SMALL"]);
-        expect((await h.repos.profiles.get(toTicker("SMALL")))?.marketCapUsd).toBe(3e9);
-    });
 });
 
 describe("weekOf", () => {

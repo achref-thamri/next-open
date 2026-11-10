@@ -89,7 +89,7 @@ describe("AlpacaBroker", () => {
 
     describe("orders", () => {
         const buy: OrderIntent = {
-            clientOrderId: "tb-01JBQ6Z9X8Y7W6V5T4S3R2Q1P0",
+            clientOrderId: "no-01JBQ6Z9X8Y7W6V5T4S3R2Q1P0",
             ticker: AAPL,
             side: "buy",
             qty: 53,
@@ -109,7 +109,7 @@ describe("AlpacaBroker", () => {
                 side: "buy",
                 type: "limit",
                 limit_price: "189.29",
-                client_order_id: "tb-01JBQ6Z9X8Y7W6V5T4S3R2Q1P0",
+                client_order_id: "no-01JBQ6Z9X8Y7W6V5T4S3R2Q1P0",
                 time_in_force: "gtc",
                 order_class: "bracket",
                 take_profit: { limit_price: "227.15" },
@@ -143,7 +143,7 @@ describe("AlpacaBroker", () => {
 
             expect(order).toMatchObject({
                 id: "61e69015-8549-4bfd-b9c3-01e75843f47d",
-                clientOrderId: "tb-01JBQ6Z9X8Y7W6V5T4S3R2Q1P0",
+                clientOrderId: "no-01JBQ6Z9X8Y7W6V5T4S3R2Q1P0",
                 ticker: AAPL,
                 side: "buy",
                 role: "entry",
@@ -193,7 +193,7 @@ describe("AlpacaBroker", () => {
         it("returns undefined for an unknown client order id", async () => {
             const { broker: b } = broker({});
 
-            expect(await b.getOrderByClientId("tb-missing")).toBeUndefined();
+            expect(await b.getOrderByClientId("no-missing")).toBeUndefined();
         });
 
         it("lists open orders nested", async () => {
