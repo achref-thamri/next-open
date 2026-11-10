@@ -28,7 +28,10 @@ export interface SchedulerDeps {
     onTick?: (now: Date) => void;
 }
 
-/** Spec §4 times, in New York time. Trading-day jobs follow the session, so half days move with the close. */
+/**
+ * Job times in New York time, as in the table in docs/architecture.md. Trading-day jobs follow the session, so half
+ * days move with the close.
+ */
 export function dailySchedule(jobs: {
     liquidList: () => Promise<unknown>;
     approvalReminder: () => Promise<unknown>;

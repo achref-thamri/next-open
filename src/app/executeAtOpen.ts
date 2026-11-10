@@ -14,7 +14,7 @@ import { runJob, skip, type JobResult } from "./runJob.js";
 import { syncBroker } from "./sync.js";
 
 /**
- * The open job (spec §4.3): expire unapproved proposals → sync → re-run the risk checks against the live
+ * The open job: expire unapproved proposals → sync → re-run the risk checks against the live
  * account → place orders, sells first, with a stable client order id → store → notify.
  *
  * Safe to rerun after a crash: a proposal whose order already exists at the broker is recorded, not resent.

@@ -38,7 +38,7 @@ export const minDollarVolume: UniverseFilter = ({ avgDollarVolumeUsd }, { minAvg
         : `average dollar volume ${usdShort(avgDollarVolumeUsd)} below ${usdShort(minAvgDollarVolumeUsd)}`;
 
 /** Cheapest and most decisive checks first, so the reported reason is the most basic one. */
-export const UNIVERSE_FILTERS: readonly UniverseFilter[] = [
+const UNIVERSE_FILTERS: readonly UniverseFilter[] = [
     commonStockOnly,
     listedExchange,
     minPrice,

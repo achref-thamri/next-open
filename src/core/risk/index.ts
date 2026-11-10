@@ -13,8 +13,8 @@ import { universeRule } from "./universe.js";
 export type { OrderRequest, RiskContext, RiskRule, SimulatedPortfolio } from "./types.js";
 export { dailyLossBreached } from "./dailyLoss.js";
 
-/** Spec §7 order, with the long-only guard right after the halt check. */
-export const RISK_RULES: readonly RiskRule[] = [
+/** Run in this order, the same as the list in docs/architecture.md. */
+const RISK_RULES: readonly RiskRule[] = [
     haltedRule,
     longOnlyRule,
     universeRule,
@@ -25,7 +25,7 @@ export const RISK_RULES: readonly RiskRule[] = [
     dailyLossRule,
 ];
 
-export type RiskStatus = "accepted" | "trimmed" | "rejected";
+type RiskStatus = "accepted" | "trimmed" | "rejected";
 
 export interface CheckedOrder {
     order: OrderRequest;

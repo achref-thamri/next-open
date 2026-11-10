@@ -3,8 +3,8 @@ import { newYorkInstant, tradingDateOf } from "../core/types.js";
 import type { AppDeps } from "./deps.js";
 import { runJob, skip, type JobResult } from "./runJob.js";
 
-/** Proposals must be approved before 09:25 New York time on their trade date (spec §4.2). */
-export const APPROVAL_DEADLINE = "09:25";
+/** Proposals must be approved before 09:25 New York time on their trade date. */
+const APPROVAL_DEADLINE = "09:25";
 
 export type ApprovalAction = "approve" | "reject";
 

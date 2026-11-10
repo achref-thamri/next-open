@@ -4,7 +4,7 @@ import type { Logger } from "../../lib/logger.js";
 import { requestJson, RateLimiter, type Fetch } from "../../lib/http.js";
 import { retry, type RetryOptions } from "../../lib/retry.js";
 
-export const ALPACA_URLS = {
+const ALPACA_URLS = {
     paper: "https://paper-api.alpaca.markets",
     live: "https://api.alpaca.markets",
     data: "https://data.alpaca.markets",

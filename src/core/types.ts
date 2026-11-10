@@ -87,11 +87,6 @@ export interface Position {
     unrealizedPl: Cents;
 }
 
-export interface Portfolio {
-    account: Account;
-    positions: readonly Position[];
-}
-
 /** What the universe filters need to know about a security. */
 export type SecurityKind = "common_stock" | "etf" | "fund" | "other";
 
@@ -125,7 +120,7 @@ export interface DailyBar {
 
 export type DecisionAction = "buy" | "sell" | "hold";
 
-/** One validated LLM decision (spec §6). */
+/** One validated LLM decision. */
 export interface Decision {
     ticker: Ticker;
     action: DecisionAction;

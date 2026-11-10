@@ -30,7 +30,7 @@ export interface Harness extends AppDeps {
 export const OWNER = 42;
 
 /** Monday 2026-11-02, 16:30 New York (EST). */
-export const EVENING = "2026-11-02T21:30:00Z";
+const EVENING = "2026-11-02T21:30:00Z";
 export const ASOF = toTradingDate("2026-11-02");
 export const NEXT = toTradingDate("2026-11-03");
 
@@ -70,7 +70,7 @@ export function harness(overrides: Partial<AppConfig> = {}, now = EVENING): Harn
 }
 
 /** Weekdays in the inclusive range (no holidays). */
-export function weekdays(from: TradingDate, to: TradingDate): TradingDate[] {
+function weekdays(from: TradingDate, to: TradingDate): TradingDate[] {
     const days: TradingDate[] = [];
     for (let d = new Date(`${from}T00:00:00Z`); d <= new Date(`${to}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + 1)) {
         if (d.getUTCDay() !== 0 && d.getUTCDay() !== 6) days.push(toTradingDate(d.toISOString().slice(0, 10)));

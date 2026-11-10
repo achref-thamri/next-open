@@ -7,7 +7,7 @@ const SECRET_KEYS = ["apiKey", "secretKey", "keyId", "token", "authorization", "
 const SECRET_HEADERS = ["apca-api-key-id", "apca-api-secret-key", "x-api-key"];
 
 /** Redacts secret keys at the top level and up to three levels deep, plus known auth headers. */
-export const REDACT_PATHS = [
+const REDACT_PATHS = [
     ...SECRET_KEYS.flatMap((key) => [key, `*.${key}`, `*.*.${key}`, `*.*.*.${key}`]),
     ...SECRET_HEADERS.flatMap((header) => [`headers["${header}"]`, `*.headers["${header}"]`]),
 ];

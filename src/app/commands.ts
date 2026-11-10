@@ -1,3 +1,4 @@
+import { percent, signedPercent } from "../core/format.js";
 import { formatCents } from "../core/money.js";
 import { isTicker, tradingDateOf } from "../core/types.js";
 import type { AppDeps } from "./deps.js";
@@ -12,8 +13,6 @@ export const HELP = `Commands:
 /report: performance vs benchmark and the go-live gate
 /why TICKER: the latest reasoning for a ticker
 /golive: confirm live trading (live mode only, gate must pass)`;
-
-const pct = (fraction: number) => `${fraction >= 0 ? "+" : ""}${(fraction * 100).toFixed(1)}%`;
 
 /** Handles one owner command and returns the reply. Messages from any other chat get no reply. */
 export async function handleCommand(
@@ -48,11 +47,11 @@ async function status(deps: AppDeps): Promise<string> {
     const lines = [
         `Mode: ${deps.config.mode}${deps.config.mode === "live" && !settings.liveConfirmed ? " (not confirmed, send /golive)" : ""}`,
         `Trading: ${settings.halted ? `⛔ halted (${settings.haltReason ?? "no reason"})` : "✅ active"}`,
-        `Equity ${formatCents(account.equity)} · cash ${formatCents(account.cash)} · today ${pct(account.previousCloseEquity > 0 ? account.equity / account.previousCloseEquity - 1 : 0)}`,
+        `Equity ${formatCents(account.equity)} · cash ${formatCents(account.cash)} · today ${signedPercent(account.previousCloseEquity > 0 ? account.equity / account.previousCloseEquity - 1 : 0)}`,
         positions.length === 0 ? "No positions." : `Positions (${positions.length}):`,
         ...positions.map(
             (p) =>
-                `• ${p.ticker} ${p.qty} @ ${formatCents(p.avgEntryPrice)} → ${formatCents(p.currentPrice)} (${pct(p.avgEntryPrice > 0 ? p.currentPrice / p.avgEntryPrice - 1 : 0)})`,
+                `• ${p.ticker} ${p.qty} @ ${formatCents(p.avgEntryPrice)} → ${formatCents(p.currentPrice)} (${signedPercent(p.avgEntryPrice > 0 ? p.currentPrice / p.avgEntryPrice - 1 : 0)})`,
         ),
         `Open orders: ${openOrders.length} · pending approvals: ${pending.length}`,
     ];
@@ -83,8 +82,8 @@ async function why(deps: AppDeps, raw: string | undefined): Promise<string> {
     const decision = await deps.repos.decisions.latestForTicker(ticker);
     if (!decision) return `No decisions for ${ticker} yet.`;
     return [
-        `${ticker} on ${decision.tradeDate}: ${decision.action} to ${(decision.targetWeight * 100).toFixed(1)}% of equity, confidence ${decision.confidence}/5`,
-        `Stop −${(decision.stopLossPct * 100).toFixed(1)}% · target +${(decision.takeProfitPct * 100).toFixed(1)}% · horizon ${decision.horizonDays} days`,
+        `${ticker} on ${decision.tradeDate}: ${decision.action} to ${percent(decision.targetWeight)} of equity, confidence ${decision.confidence}/5`,
+        `Stop −${percent(decision.stopLossPct)} · target +${percent(decision.takeProfitPct)} · horizon ${decision.horizonDays} days`,
         decision.reasoning,
     ].join("\n");
 }

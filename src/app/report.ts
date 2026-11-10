@@ -1,8 +1,9 @@
+import { percent } from "../core/format.js";
 import { evaluateGoLiveGate, type GoLiveResult } from "../core/goLiveGate.js";
 import { cents, formatCents } from "../core/money.js";
 import { maxDrawdown, sharpeRatio, totalFees, totalReturn, turnover, winRate } from "../core/metrics.js";
 import { realizedShareTax, totalTax } from "../core/tax.js";
-import { closedTrades } from "../core/trades.js";
+import { closedTrades, gainsByYear } from "../core/trades.js";
 import { tradingDateOf, type Cents, type Position } from "../core/types.js";
 import type { AppDeps } from "./deps.js";
 
@@ -35,11 +36,6 @@ export async function performance(
     const trades = closedTrades(fills);
     const equity = snapshots.map((s) => s.equity);
     const benchmark = snapshots.map((s) => s.benchmarkValue);
-    const gains = new Map<number, Cents>();
-    for (const t of trades) {
-        const year = Number(t.date.slice(0, 4));
-        gains.set(year, cents((gains.get(year) ?? 0) + t.realizedPl));
-    }
 
     return {
         days: snapshots.length,
@@ -51,7 +47,7 @@ export async function performance(
         winRate: winRate(trades),
         turnover: turnover(fills, equity),
         fees: totalFees(fills),
-        realizedTax: totalTax(realizedShareTax(gains, config.tax)),
+        realizedTax: totalTax(realizedShareTax(gainsByYear(trades), config.tax)),
         gate: evaluateGoLiveGate({
             snapshots,
             closedTrades: trades,
@@ -63,7 +59,7 @@ export async function performance(
     };
 }
 
-const pct = (fraction: number | undefined) => (fraction === undefined ? "n/a" : `${(fraction * 100).toFixed(1)}%`);
+const pct = (fraction: number | undefined) => (fraction === undefined ? "n/a" : percent(fraction));
 
 /** The /report and weekly report text. */
 export function reportText(p: Performance): string {

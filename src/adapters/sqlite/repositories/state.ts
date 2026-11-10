@@ -57,7 +57,7 @@ export class SqliteEquitySnapshotsRepository implements EquitySnapshotsRepositor
     }
 }
 
-export const DEFAULT_SETTINGS: AppSettings = {
+const DEFAULT_SETTINGS: AppSettings = {
     halted: false,
     haltReason: undefined,
     liveConfirmed: false,

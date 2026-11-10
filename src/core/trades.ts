@@ -38,6 +38,16 @@ export function closedTrades(fills: readonly Fill[]): ClosedTrade[] {
     return trades;
 }
 
+/** Realised P/L summed per calendar year, for the yearly tax. */
+export function gainsByYear(trades: readonly ClosedTrade[]): Map<number, Cents> {
+    const gains = new Map<number, Cents>();
+    for (const trade of trades) {
+        const year = Number(trade.date.slice(0, 4));
+        gains.set(year, cents((gains.get(year) ?? 0) + trade.realizedPl));
+    }
+    return gains;
+}
+
 /** The date each currently held position was opened (first buy after it was last flat). */
 export function positionOpenDates(fills: readonly Fill[]): Map<Ticker, TradingDate> {
     const qty = new Map<Ticker, number>();

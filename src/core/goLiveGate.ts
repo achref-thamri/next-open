@@ -1,12 +1,13 @@
 import type { TaxRates } from "../config/schema.js";
+import { percent } from "./format.js";
 import { cents, type Cents } from "./money.js";
 import { maxDrawdown } from "./metrics.js";
 import { markToMarketTax, realizedShareTax, totalTax } from "./tax.js";
-import type { ClosedTrade } from "./trades.js";
+import { gainsByYear, type ClosedTrade } from "./trades.js";
 import type { EquitySnapshot, TradingDate } from "./types.js";
 
-/** Fixed by spec §1 before trading started; deliberately not configurable. */
-export const GO_LIVE_RULES = {
+/** Fixed before trading started (docs/adr/0003-forward-testing-only.md); deliberately not configurable. */
+const GO_LIVE_RULES = {
     minPaperMonths: 3,
     preferredPaperMonths: 6,
     maxExtraDrawdown: 0.05,
@@ -25,7 +26,7 @@ export interface GoLiveInput {
     taxRates: TaxRates;
 }
 
-export interface Criterion {
+interface Criterion {
     name: string;
     pass: boolean;
     /** Measured value and requirement, ready to show to the owner. */
@@ -42,7 +43,7 @@ export interface GoLiveResult {
 }
 
 /**
- * The four go-live criteria (spec §1). Returns compare liquidation values: the account as if every position were
+ * The four go-live criteria. Returns compare liquidation values: the account as if every position were
  * sold today, the benchmark after its yearly mark-to-market tax including the current year.
  */
 export function evaluateGoLiveGate(input: GoLiveInput): GoLiveResult {
@@ -96,9 +97,9 @@ export function evaluateGoLiveGate(input: GoLiveInput): GoLiveResult {
 }
 
 function afterTaxAccountReturn(input: GoLiveInput, first: EquitySnapshot, last: EquitySnapshot): number {
-    const gains = new Map<number, Cents>();
-    for (const trade of input.closedTrades) addGain(gains, yearOf(trade.date), trade.realizedPl);
-    addGain(gains, yearOf(input.today), input.unrealizedPl);
+    const gains = gainsByYear(input.closedTrades);
+    const year = yearOf(input.today);
+    gains.set(year, cents((gains.get(year) ?? 0) + input.unrealizedPl));
     const tax = totalTax(realizedShareTax(gains, input.taxRates));
     return (last.equity - tax) / first.equity - 1;
 }
@@ -109,10 +110,6 @@ function afterTaxBenchmarkReturn(input: GoLiveInput, first: EquitySnapshot, last
     const values = [...yearEnds].map(([year, value]) => ({ year, value }));
     const tax = totalTax(markToMarketTax(first.benchmarkValue, values, input.taxRates));
     return (last.benchmarkValue - tax) / first.benchmarkValue - 1;
-}
-
-function addGain(gains: Map<number, Cents>, year: number, amount: Cents): void {
-    gains.set(year, cents((gains.get(year) ?? 0) + amount));
 }
 
 function yearOf(date: TradingDate): number {
@@ -129,8 +126,4 @@ export function monthsBetween(from: TradingDate, to: TradingDate): number {
 
 function daysBetween(from: TradingDate, to: TradingDate): number {
     return Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000);
-}
-
-function percent(fraction: number): string {
-    return `${(fraction * 100).toFixed(1)}%`;
 }

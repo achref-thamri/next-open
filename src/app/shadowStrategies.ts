@@ -1,4 +1,5 @@
 import type { RiskLimits } from "../config/schema.js";
+import { signedPercent } from "../core/format.js";
 import { cents, formatCents, type Cents } from "../core/money.js";
 import { runRiskChecks, simulatePortfolio } from "../core/risk/index.js";
 import { asBrokerState, portfolioValue, simulateDay, type VirtualPortfolio } from "../core/simulation.js";
@@ -69,12 +70,6 @@ export const SHADOW_STRATEGIES: readonly ShadowStrategy[] = [
         },
     },
 ];
-
-export const STRATEGY_NAMES: Record<StrategyId, string> = {
-    claude: "Claude (real paper account)",
-    claude_patient: "Claude patient",
-    momentum: "Momentum rule",
-};
 
 /** Tickers held by any virtual portfolio, so the evening run builds candidates for them too. */
 export async function shadowHoldings(deps: AppDeps): Promise<Ticker[]> {
@@ -258,5 +253,5 @@ async function simulateFor(deps: AppDeps, strategy: ShadowStrategy, today: Tradi
         equity,
     });
     const change = account.startValue > 0 ? equity / account.startValue - 1 : 0;
-    return `${strategy.name}: ${formatCents(cents(equity))} (${change >= 0 ? "+" : ""}${(change * 100).toFixed(2)}% since start)`;
+    return `${strategy.name}: ${formatCents(cents(equity))} (${signedPercent(change, 2)} since start)`;
 }

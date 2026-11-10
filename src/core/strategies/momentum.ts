@@ -1,3 +1,4 @@
+import { percent } from "../format.js";
 import type { Candidate, DailyBar, Decision, Ticker } from "../types.js";
 import { periodReturns } from "../universe/features.js";
 
@@ -11,7 +12,7 @@ export interface MomentumRules {
 }
 
 /** Ten equal positions of 9% (10% cash), held while in the top 20, with a wide 15% stop. */
-export const MOMENTUM_RULES: MomentumRules = { positions: 10, keepWithin: 20, targetWeight: 0.09, stopLossPct: 0.15 };
+const MOMENTUM_RULES: MomentumRules = { positions: 10, keepWithin: 20, targetWeight: 0.09, stopLossPct: 0.15 };
 
 /**
  * A plain momentum rule, no AI: rank eligible stocks by 3-month return (1-month return must also be positive,
@@ -31,7 +32,6 @@ export function momentumDecisions(
         })
         .sort((a, b) => b.m3 - a.m3 || (a.ticker < b.ticker ? -1 : 1));
     const rank = new Map(ranked.map((r, i) => [r.ticker, i + 1]));
-    const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
 
     const decisions: Decision[] = [];
     let kept = 0;
@@ -59,7 +59,7 @@ export function momentumDecisions(
                 ticker,
                 "buy",
                 rules.targetWeight,
-                `Rank ${rank.get(ticker) ?? "?"} by 3-month return (+${pct(m3)}).`,
+                `Rank ${rank.get(ticker) ?? "?"} by 3-month return (+${percent(m3)}).`,
             ),
         );
     }
