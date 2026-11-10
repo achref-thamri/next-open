@@ -48,7 +48,7 @@ describe("virtual strategies", () => {
         ]);
     });
 
-    it("asks Claude separately for the patient portfolio, with its own style", async () => {
+    it("asks the AI separately for the patient portfolio, with its own style", async () => {
         await runEveningAnalysis(h);
 
         expect(h.llm.prompts.map(isPatient)).toEqual([false, true]);

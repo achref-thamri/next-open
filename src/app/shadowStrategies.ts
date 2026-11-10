@@ -54,7 +54,7 @@ when the reason for holding is gone. When in doubt, hold.`;
 export const SHADOW_STRATEGIES: readonly ShadowStrategy[] = [
     {
         id: "claude_patient",
-        name: "Claude patient",
+        name: "Patient AI",
         limits: (risk) => ({ ...risk, maxOrdersPerDay: Math.min(risk.maxOrdersPerDay, 3) }),
         decide: patientDecisions,
     },
@@ -160,7 +160,7 @@ async function openAccount(deps: AppDeps, strategy: StrategyId, ctx: ShadowConte
     return opened;
 }
 
-/** The Claude variant: the same data and model, its own portfolio, and a patient style. */
+/** The patient AI variant: the same data and model, its own portfolio, and a patient style. */
 async function patientDecisions(
     deps: AppDeps,
     ctx: ShadowContext,
