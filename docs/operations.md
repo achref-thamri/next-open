@@ -35,6 +35,7 @@ refused until the go-live rules pass.
 | `npm run dry-run`                    | One evening analysis on live data with an in-memory broker         |
 | `npm run dev`                        | The scheduler and Telegram, restarting on changes                  |
 | `npm run build && npm start`         | Production build and start                                         |
+| `npm run screenshots`                | Redraws the README images from demo data (needs Google Chrome)     |
 
 ## Dry run
 

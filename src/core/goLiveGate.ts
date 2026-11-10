@@ -55,7 +55,7 @@ export function evaluateGoLiveGate(input: GoLiveInput): GoLiveResult {
     const paperPeriod = {
         name: "Paper trading period",
         pass: months >= GO_LIVE_RULES.minPaperMonths,
-        detail: `${months} months (need ${GO_LIVE_RULES.minPaperMonths}, prefer ${GO_LIVE_RULES.preferredPaperMonths})`,
+        detail: `${months} month${months === 1 ? "" : "s"} (need ${GO_LIVE_RULES.minPaperMonths}, prefer ${GO_LIVE_RULES.preferredPaperMonths})`,
     };
 
     const accountReturnAfterTax = first && last ? afterTaxAccountReturn(input, first, last) : 0;

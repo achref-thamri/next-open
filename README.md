@@ -7,6 +7,13 @@ account. Every evening after the close it scans the market, asks an AI model wha
 against hard risk rules in code, and places limit orders at the next open. It only goes live after beating a
 buy-and-hold benchmark under rules fixed before the first trade.
 
+<p>
+  <img src="docs/images/telegram-evening.png" width="400" alt="An evening summary in Telegram: the market view, a sell, a buy and a buy trimmed by the cash rule">
+  <img src="docs/images/telegram-report.png" width="400" alt="A /report reply in Telegram: returns, drawdown, the go-live checklist and every strategy compared">
+</p>
+
+_Example messages on made-up data. There are no real results yet._
+
 ## The idea
 
 The AI proposes and deterministic code decides what is allowed. The model never places an order itself: its answer
