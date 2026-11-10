@@ -20,7 +20,8 @@
         "check": "npm run format:check && npm run lint && npm run typecheck && npm run knip && npm test",
         "prepare": "husky",
         "test:coverage": "vitest run --coverage",
-        "knip": "knip"
+        "knip": "knip",
+        "screenshots": "tsx scripts/screenshots.ts"
     },
     "devDependencies": {
         "@eslint/js": "10.0.1",
@@ -32,6 +33,7 @@
         "jiti": "2.7.0",
         "knip": "6.44.2",
         "lint-staged": "17.6.0",
+        "playwright-core": "1.65.0",
         "prettier": "3.9.10",
         "tsx": "4.23.15",
         "typescript": "6.0.3",
