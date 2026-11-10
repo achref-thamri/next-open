@@ -13,6 +13,8 @@ endpoints.
   Repositories sit behind ports, so Postgres would be a new adapter.
 - Alpaca and FMP through small typed `fetch` clients, with every response validated by zod and recorded fixtures
   in tests. The Anthropic SDK is used because structured output and usage reporting come with it.
+- Since 10 November 2026, when the repo went public, the fixtures keep each vendor's exact response shape but hold
+  made-up content: invented headlines and company details, and prices moved by up to 5%.
 
 ## Consequences
 
