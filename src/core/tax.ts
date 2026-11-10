@@ -2,7 +2,7 @@ import type { TaxRates } from "../config/schema.js";
 import { cents, multiplyCents, type Cents } from "./money.js";
 
 /*
- * Estimated Danish tax, in USD cents (spec §12). Estimates only: the real amount depends on the owner's other
+ * Estimated Danish tax, in USD cents. Estimates only: the real amount depends on the owner's other
  * share income, exchange rates on each trade date and SKAT's rules for the year.
  */
 

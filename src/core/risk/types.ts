@@ -47,8 +47,3 @@ export function trimToBudget(order: OrderRequest, budget: number, reason: string
     if (qty >= order.qty) return accept;
     return qty > 0 ? { kind: "trim", qty, reason } : reject(reason);
 }
-
-/** 0.1 -> "10%", 0.125 -> "12.5%". */
-export function pct(fraction: number): string {
-    return `${Math.round(fraction * 1000) / 10}%`;
-}

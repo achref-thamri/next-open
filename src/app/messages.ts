@@ -1,19 +1,18 @@
+import { shortPercent } from "../core/format.js";
 import { formatCents, multiplyCents } from "../core/money.js";
 import { bracketPrices } from "../core/sizing.js";
 import type { Proposal } from "../core/types.js";
-
-const pct = (fraction: number) => `${Math.round(fraction * 1000) / 10}%`;
 
 /** One proposal for Telegram: what, how much, at what price, why, and any risk adjustments. */
 export function proposalText(p: Proposal): string {
     const lines = [
         `${p.side === "buy" ? "🟢 BUY" : "🔴 SELL"} ${p.qty} ${p.ticker} at ${p.side === "buy" ? "≤" : "≥"} ${formatCents(p.limitPrice)}`,
-        `Target ${pct(p.targetWeight)} of equity · confidence ${p.confidence}/5 · ≈ ${formatCents(multiplyCents(p.limitPrice, p.qty))}`,
+        `Target ${shortPercent(p.targetWeight)} of equity · confidence ${p.confidence}/5 · ≈ ${formatCents(multiplyCents(p.limitPrice, p.qty))}`,
     ];
     if (p.side === "buy" && p.stopLossPct !== undefined && p.takeProfitPct !== undefined) {
         const { stopLossPrice, takeProfitPrice } = bracketPrices(p.limitPrice, p.stopLossPct, p.takeProfitPct);
         lines.push(
-            `Stop ${formatCents(stopLossPrice)} (−${pct(p.stopLossPct)}) · target ${formatCents(takeProfitPrice)} (+${pct(p.takeProfitPct)})`,
+            `Stop ${formatCents(stopLossPrice)} (−${shortPercent(p.stopLossPct)}) · target ${formatCents(takeProfitPrice)} (+${shortPercent(p.takeProfitPct)})`,
         );
     }
     lines.push(p.reasoning);

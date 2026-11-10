@@ -4,13 +4,13 @@ import type { Logger } from "../../lib/logger.js";
 import type { Llm, LlmCallRecord, LlmDecisionOutput, LlmPrompt, LlmResult } from "../../ports/llm.js";
 
 /** USD per million tokens (cache writes cost 1.25× input). Update when Anthropic changes prices. */
-export const PRICES: Record<string, { input: number; output: number; cacheRead: number }> = {
+const PRICES: Record<string, { input: number; output: number; cacheRead: number }> = {
     "claude-sonnet-5-5": { input: 2, output: 10, cacheRead: 0.2 },
     "claude-opus-5-5": { input: 4, output: 20, cacheRead: 0.2 },
 };
 
 /** The shape sent as the JSON schema. Numeric bounds are checked by `validateDecisions` in the app. */
-export const decisionOutputSchema = z.strictObject({
+const decisionOutputSchema = z.strictObject({
     decisions: z.array(
         z.strictObject({
             ticker: z.string(),
@@ -112,7 +112,7 @@ export class AnthropicLlm implements Llm {
 }
 
 /** Parses and validates the model's JSON answer. */
-export function parseOutput(text: string): { ok: true; output: LlmDecisionOutput } | { ok: false; error: string } {
+function parseOutput(text: string): { ok: true; output: LlmDecisionOutput } | { ok: false; error: string } {
     let json: unknown;
     try {
         json = JSON.parse(text);

@@ -1,3 +1,4 @@
+import { percent, signedPercent } from "../core/format.js";
 import { dailyLossBreached } from "../core/risk/index.js";
 import { cents, formatCents } from "../core/money.js";
 import { toTicker, tradingDateOf, type Account, type Cents, type TradingDate } from "../core/types.js";
@@ -13,7 +14,7 @@ import { withComparison } from "./strategyReport.js";
 import { syncBroker } from "./sync.js";
 
 /**
- * The end-of-day job (spec §4.4): cancel unfilled entries, sync, snapshot equity and the benchmark, check the
+ * The end-of-day job: cancel unfilled entries, sync, snapshot equity and the benchmark, check the
  * daily loss stop and send the daily summary. Runs after the close once SIP bars for the day are available.
  */
 export async function recordEndOfDay(deps: AppDeps): Promise<JobResult> {
@@ -71,7 +72,9 @@ async function endOfDay(deps: AppDeps, today: TradingDate): Promise<void> {
     }
 
     const perf = await performance({ repos, clock, config }, positions);
-    lines.push(`Since day one: account ${pctText(perf.accountReturn)} vs benchmark ${pctText(perf.benchmarkReturn)}`);
+    lines.push(
+        `Since day one: account ${percent(perf.accountReturn, 2)} vs benchmark ${percent(perf.benchmarkReturn, 2)}`,
+    );
     const strategies = await simulateShadowDay(deps, today);
     if (strategies.length > 0) lines.push("", "Virtual strategies:", ...strategies);
     await notifier.send(lines.join("\n"));
@@ -141,11 +144,7 @@ async function benchmarkClose(deps: AppDeps, today: TradingDate, symbol = deps.c
 }
 
 function change(now: number, before: number): string {
-    return before > 0 ? pctText(now / before - 1, true) : "n/a";
-}
-
-function pctText(fraction: number, signed = false): string {
-    return `${signed && fraction >= 0 ? "+" : ""}${(fraction * 100).toFixed(2)}%`;
+    return before > 0 ? signedPercent(now / before - 1, 2) : "n/a";
 }
 
 /** Sunday job: the weekly performance report and go-live gate. */

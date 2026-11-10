@@ -1,3 +1,4 @@
+import { percent, signedPercent } from "../core/format.js";
 import type { Cents } from "../core/money.js";
 import { maxDrawdown, winRate } from "../core/metrics.js";
 import { closedTrades } from "../core/trades.js";
@@ -5,8 +6,10 @@ import type { Fill, TradingDate } from "../core/types.js";
 import type { AppDeps } from "./deps.js";
 import { SHADOW_STRATEGIES } from "./shadowStrategies.js";
 
-export interface StrategyResult {
+interface StrategyResult {
     name: string;
+    /** The buy-and-hold benchmark, which makes no trades. */
+    isBenchmark: boolean;
     return: number;
     maxDrawdown: number;
     trades: number;
@@ -21,10 +24,12 @@ export interface StrategyComparison {
 
 /**
  * Every strategy over the same window, from the first day the virtual portfolios were simulated: the real
- * paper account, each virtual strategy and the VT benchmark. Undefined before the first simulated day.
+ * paper account, each virtual strategy and the buy-and-hold benchmark. Undefined before the first simulated day.
  */
-export async function compareStrategies(deps: Pick<AppDeps, "repos">): Promise<StrategyComparison | undefined> {
-    const { repos } = deps;
+export async function compareStrategies(
+    deps: Pick<AppDeps, "repos" | "config">,
+): Promise<StrategyComparison | undefined> {
+    const { repos, config } = deps;
     const virtual = await Promise.all(
         SHADOW_STRATEGIES.map(async (s) => ({
             name: s.name,
@@ -50,11 +55,14 @@ export async function compareStrategies(deps: Pick<AppDeps, "repos">): Promise<S
                 v.fills,
             ),
         ),
-        result(
-            "VT buy-and-hold",
-            real.map((s) => s.benchmarkValue),
-            [],
-        ),
+        {
+            ...result(
+                `${config.benchmarkSymbol} buy-and-hold`,
+                real.map((s) => s.benchmarkValue),
+                [],
+            ),
+            isBenchmark: true,
+        },
     ];
     return { since, days: real.length, results };
 }
@@ -65,6 +73,7 @@ function result(name: string, values: readonly Cents[], fills: readonly Fill[]):
     const trades = closedTrades(fills);
     return {
         name,
+        isBenchmark: false,
         return: first && last ? last / first - 1 : 0,
         maxDrawdown: maxDrawdown(values),
         trades: trades.length,
@@ -72,22 +81,19 @@ function result(name: string, values: readonly Cents[], fills: readonly Fill[]):
     };
 }
 
-const pct = (x: number) => `${x >= 0 ? "+" : ""}${(x * 100).toFixed(1)}%`;
-
 export function comparisonText(c: StrategyComparison): string {
     const lines = [`🏁 Strategies since ${c.since} (${c.days} trading day${c.days === 1 ? "" : "s"}):`];
     for (const r of [...c.results].sort((a, b) => b.return - a.return)) {
-        const trades =
-            r.name === "VT buy-and-hold"
-                ? ""
-                : ` · ${r.trades} closed trade${r.trades === 1 ? "" : "s"}${r.winRate === undefined ? "" : `, ${Math.round(r.winRate * 100)}% won`}`;
-        lines.push(`• ${r.name}: ${pct(r.return)} · max drawdown ${(r.maxDrawdown * 100).toFixed(1)}%${trades}`);
+        const trades = r.isBenchmark
+            ? ""
+            : ` · ${r.trades} closed trade${r.trades === 1 ? "" : "s"}${r.winRate === undefined ? "" : `, ${Math.round(r.winRate * 100)}% won`}`;
+        lines.push(`• ${r.name}: ${signedPercent(r.return)} · max drawdown ${percent(r.maxDrawdown)}${trades}`);
     }
     return lines.join("\n");
 }
 
 /** Appends the strategy comparison to a report once there is one. */
-export async function withComparison(deps: Pick<AppDeps, "repos">, report: string): Promise<string> {
+export async function withComparison(deps: Pick<AppDeps, "repos" | "config">, report: string): Promise<string> {
     const comparison = await compareStrategies(deps);
     return comparison ? `${report}\n\n${comparisonText(comparison)}` : report;
 }

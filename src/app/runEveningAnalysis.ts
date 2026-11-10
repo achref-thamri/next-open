@@ -31,7 +31,7 @@ const HISTORY_DAYS = 130;
 const RECENT_DECISIONS = 20;
 
 /**
- * The evening job (spec §4.1): sync → candidates → filter → rank → LLM → validate → size → risk checks →
+ * The evening job: sync → candidates → filter → rank → LLM → validate → size → risk checks →
  * store → notify. In paper mode proposals are approved at once; in live mode they wait for the owner.
  */
 export async function runEveningAnalysis(deps: AppDeps): Promise<JobResult> {
