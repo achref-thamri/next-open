@@ -176,7 +176,7 @@ interface DecideInput {
     contextTickers: Ticker[];
 }
 
-/** The real strategy: prompt, Claude, validation, proposals and the owner's notification. */
+/** The real strategy: prompt, AI call, validation, proposals and the owner's notification. */
 async function decideAndPropose(input: DecideInput): Promise<JobResult> {
     const {
         deps,

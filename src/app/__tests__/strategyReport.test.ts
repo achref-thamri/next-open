@@ -70,9 +70,9 @@ describe("strategy comparison", () => {
             [
                 "🏁 Strategies since 2026-11-03 (2 trading days):",
                 "• Momentum rule: +3.0% · max drawdown 0.0% · 1 closed trade, 100% won",
-                "• Claude (real paper account): +1.5% · max drawdown 0.0% · 0 closed trades",
+                "• AI (real paper account): +1.5% · max drawdown 0.0% · 0 closed trades",
                 "• VT buy-and-hold: +0.5% · max drawdown 0.0%",
-                "• Claude patient: -1.0% · max drawdown 1.0% · 0 closed trades",
+                "• Patient AI: -1.0% · max drawdown 1.0% · 0 closed trades",
             ].join("\n"),
         );
     });
