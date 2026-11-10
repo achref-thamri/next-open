@@ -125,13 +125,13 @@ and estimated Danish tax, so the paper period answers whether the AI adds anythi
 
 ## Testing
 
-| Level       | What                                                 | How                                                     |
-| ----------- | ---------------------------------------------------- | ------------------------------------------------------- |
-| Domain      | Risk, sizing, filters, metrics, tax, simulation      | Plain unit tests                                        |
-| Use cases   | Full daily pipeline, idempotency, halts, missed jobs | In-memory fakes of every port, with injectable failures |
-| Adapters    | Alpaca, FMP, Anthropic mapping and error handling    | Recorded API responses in `__fixtures__`                |
-| Persistence | Repositories and migrations                          | In-memory SQLite                                        |
-| Container   | Native module loads, config fails fast, health check | CI Docker job                                           |
+| Level       | What                                                 | How                                                       |
+| ----------- | ---------------------------------------------------- | --------------------------------------------------------- |
+| Domain      | Risk, sizing, filters, metrics, tax, simulation      | Plain unit tests                                          |
+| Use cases   | Full daily pipeline, idempotency, halts, missed jobs | In-memory fakes of every port, with injectable failures   |
+| Adapters    | Alpaca, FMP, Anthropic mapping and error handling    | API responses in `__fixtures__`, real shape, made-up data |
+| Persistence | Repositories and migrations                          | In-memory SQLite                                          |
+| Container   | Native module loads, config fails fast, health check | CI Docker job                                             |
 
 Tests live in `__tests__` folders next to the code. `npm run check` runs everything CI runs except Docker.
 

@@ -51,11 +51,11 @@ describe("AlpacaMarketData", () => {
 
         expect(bars[0]).toEqual({
             date: "2026-10-20",
-            open: 33_986,
-            high: 34_306,
-            low: 33_870,
-            close: 33_950,
-            volume: 35_997_106,
+            open: 33_303,
+            high: 33_617,
+            low: 33_190,
+            close: 33_268,
+            volume: 31_304_503,
         });
         expect(bars.map((b) => b.date)).toEqual([...bars.map((b) => b.date)].sort());
     });
@@ -124,8 +124,8 @@ describe("AlpacaNews", () => {
         const [first] = await news.getNews({ since, until, limit: 50 });
 
         expect(first).toMatchObject({
-            id: "62741649",
-            headline: "AutoNation, Regeneron Pharmaceuticals, AstraZeneca And Other Big Stocks Moving Higher On Friday",
+            id: "9000001",
+            headline: "Midday Movers: Car Dealer Jumps After Strong Quarter, Biotech Names Mixed",
             source: "benzinga",
             createdAt: new Date("2026-10-30T14:15:51Z"),
         });
