@@ -16,6 +16,20 @@ change without touching the trading logic.
 Dependencies only point inward. `core` imports nothing outside itself; `app` imports `core` and `ports`, never an
 adapter. Swapping Alpaca for another broker, or SQLite for Postgres, is a new adapter and a line in `compose.ts`.
 
+## Code layout
+
+```
+src/
+  main.ts, compose.ts   composition root: config → adapters → use cases → scheduler + Telegram
+  config/               zod schema for env and limits; fails fast on bad config
+  core/                 pure domain: risk/, universe/, strategies/, sizing, metrics, tax, simulation
+  ports/                broker, marketData, news, fundamentals, llm, notifier, clock, repositories
+  adapters/             alpaca/, fmp/, anthropic/, telegram/, sqlite/ (+ migrations), fake/
+  app/                  one use case per file
+  scheduler/            job timing, catch-up windows, missed-job alerts
+  lib/                  logging, retry, errors, HTTP
+```
+
 ## Jobs and scheduling
 
 The scheduler (`src/scheduler`) checks once a minute which jobs are due. Trading-day jobs take their times from the
@@ -120,3 +134,17 @@ and estimated Danish tax, so the paper period answers whether the AI adds anythi
 | Container   | Native module loads, config fails fast, health check | CI Docker job                                           |
 
 Tests live in `__tests__` folders next to the code. `npm run check` runs everything CI runs except Docker.
+
+## Tech stack
+
+Node 24 and TypeScript (strict, `noUncheckedIndexedAccess`, ESM), zod, better-sqlite3, croner, grammY, the
+Anthropic SDK and pino. Alpaca and FMP use small typed `fetch` clients instead of vendor SDKs
+([ADR 0007](adr/0007-sqlite-and-typed-fetch-clients.md)). Tooling is Vitest, ESLint, Prettier, knip, husky with
+lint-staged, Docker and GitHub Actions.
+
+## Quality checks
+
+CI runs format, lint, typecheck, knip (unused code), the tests with coverage thresholds, Docker smoke tests (the
+native SQLite module loads, bad config fails fast, the health check fails without a heartbeat) and an audit of the
+production dependencies. Dependabot opens updates every Saturday. Commits have been signed since 31 October 2026,
+and `main` deploys only after CI passes.
