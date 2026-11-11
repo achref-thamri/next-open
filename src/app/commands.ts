@@ -6,13 +6,17 @@ import { performance, reportText } from "./report.js";
 import { withComparison } from "./strategyReport.js";
 import { syncBroker } from "./sync.js";
 
-export const HELP = `Commands:
-/status: account, positions and state
-/stop: halt trading and cancel open entry and exit orders (stop-losses stay)
-/resume: allow trading again
-/report: performance vs benchmark and the go-live gate
-/why TICKER: the latest reasoning for a ticker
-/golive: confirm live trading (live mode only, gate must pass)`;
+/** Every owner command. The help reply and the Telegram command menu are both built from this list. */
+export const COMMANDS = [
+    { command: "status", description: "Account, positions and state" },
+    { command: "report", description: "Performance vs benchmark and the go-live gate" },
+    { command: "why", usage: "/why TICKER", description: "The latest reasoning for a ticker" },
+    { command: "stop", description: "Halt trading and cancel open entry and exit orders (stop-losses stay)" },
+    { command: "resume", description: "Allow trading again" },
+    { command: "golive", description: "Confirm live trading (live mode only, gate must pass)" },
+];
+
+export const HELP = ["Commands:", ...COMMANDS.map((c) => `${c.usage ?? `/${c.command}`}: ${c.description}`)].join("\n");
 
 /** Handles one owner command and returns the reply. Messages from any other chat get no reply. */
 export async function handleCommand(

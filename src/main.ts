@@ -1,5 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
+import { setCommandMenu } from "./adapters/telegram/messenger.js";
+import { COMMANDS } from "./app/commands.js";
 import { markStarted, markStopped } from "./app/lifecycle.js";
 import { composeApp } from "./compose.js";
 import { loadConfig } from "./config/index.js";
@@ -41,6 +43,10 @@ async function main(): Promise<void> {
     process.on("SIGINT", () => void shutdown("SIGINT"));
 
     app.scheduler.start();
+    // A menu that fails to load is not worth stopping for; the commands still work when typed.
+    setCommandMenu(app.telegram, config.telegram.ownerChatId, COMMANDS).catch((error: unknown) => {
+        logger.warn({ err: error }, "telegram command menu not set");
+    });
     void app.telegram.start({
         drop_pending_updates: true,
         onStart: (info) => {
