@@ -43,6 +43,21 @@ export class TelegramNotifier implements Notifier {
 }
 
 /**
+ * Fills the command menu next to the message box. It is set for the owner's chat only, so anyone else who finds
+ * the account sees no commands.
+ */
+export async function setCommandMenu(
+    telegram: TelegramClient,
+    ownerChatId: number,
+    commands: readonly { command: string; description: string }[],
+): Promise<void> {
+    await telegram.api.setMyCommands(
+        commands.map(({ command, description }) => ({ command, description })),
+        { scope: { type: "chat", chat_id: ownerChatId } },
+    );
+}
+
+/**
  * Wires commands and approval buttons. Only the owner's private chat is served; everything else is ignored
  * without a reply, so Next Open does not reveal itself to strangers.
  */
