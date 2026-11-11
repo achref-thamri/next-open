@@ -62,7 +62,7 @@ size, outside market hours:
 
     ```sh
     docker compose exec next-open node dist/resetPaper.js
-    docker compose restart next-open
+    docker compose up -d     # recreates the container so new keys in .env are read; restart would not
     ```
 
 The script deletes equity snapshots, proposals, orders, fills, decisions and the virtual portfolios, and keeps
