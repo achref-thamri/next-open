@@ -35,9 +35,20 @@ describe("sizeOrder", () => {
         });
     });
 
-    it("returns nothing when one share exceeds the target", () => {
-        // 1% of $100,000 = $1,000 < one share at $1,500
-        expect(sizeOrder({ equity, targetWeight: 0.01, currentQty: 0, limitPrice: cents(150_000) })).toBeUndefined();
+    it("buys one share when the target is worth less than a share", () => {
+        // 10% of $2,900 = $290 < one share at $350; the risk rules still cap the position
+        expect(
+            sizeOrder({ equity: cents(290_000), targetWeight: 0.1, currentQty: 0, limitPrice: cents(35_000) }),
+        ).toEqual({ side: "buy", qty: 1 });
+    });
+
+    it("keeps the last share while the target is above zero", () => {
+        expect(
+            sizeOrder({ equity: cents(290_000), targetWeight: 0.05, currentQty: 2, limitPrice: cents(35_000) }),
+        ).toEqual({ side: "sell", qty: 1 });
+        expect(
+            sizeOrder({ equity: cents(290_000), targetWeight: 0.05, currentQty: 1, limitPrice: cents(35_000) }),
+        ).toBeUndefined();
     });
 
     it("returns nothing when already at target", () => {
