@@ -65,8 +65,8 @@ size, outside market hours:
     docker compose up -d     # recreates the container so new keys in .env are read; restart would not
     ```
 
-The script deletes equity snapshots, proposals, orders, fills, decisions and the virtual portfolios, and keeps
-settings, runs, AI calls, the liquid list and the cached company profiles. It refuses to run in live mode. The
+The script deletes equity snapshots, proposals, orders, fills, decisions, the virtual portfolios and the virtual
+benchmark position (the next end-of-day buys it again with the new balance), and keeps the other settings, runs, AI calls, the liquid list and the cached company profiles. It refuses to run in live mode. The
 go-live clock starts again from the first snapshot after the reset.
 
 ## Scripts
