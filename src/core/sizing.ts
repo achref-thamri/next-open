@@ -17,7 +17,8 @@ export interface SizedOrder {
 
 /**
  * Whole-share order that moves the position to its target weight at the limit price.
- * Buys round down so the target is never exceeded; a zero target sells everything.
+ * Buys round down, but any target above zero means at least one share: on a small account a share often costs more
+ * than the target, and the risk rules still cap the position. A zero target sells everything.
  * Returns undefined when no whole-share change is needed.
  */
 export function sizeOrder({ equity, targetWeight, currentQty, limitPrice }: SizingInput): SizedOrder | undefined {
@@ -26,7 +27,7 @@ export function sizeOrder({ equity, targetWeight, currentQty, limitPrice }: Sizi
         throw new RangeError(`Current quantity must be a whole number of shares, got ${currentQty}`);
     }
     const targetValue = Math.max(0, equity * Math.max(0, targetWeight));
-    const targetQty = targetWeight > 0 ? Math.floor(targetValue / limitPrice + 1e-9) : 0;
+    const targetQty = targetValue > 0 ? Math.max(1, Math.floor(targetValue / limitPrice + 1e-9)) : 0;
 
     if (targetQty > currentQty) return { side: "buy", qty: targetQty - currentQty };
     if (targetQty < currentQty) return { side: "sell", qty: currentQty - targetQty };
