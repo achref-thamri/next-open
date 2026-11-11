@@ -1,4 +1,5 @@
 import { runRiskChecks, simulatePortfolio, type CheckedOrder } from "../core/risk/index.js";
+import { oneShareFits } from "../core/sizing.js";
 import { positionOpenDates } from "../core/trades.js";
 import {
     toTicker,
@@ -103,7 +104,9 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
         records.push({ candidate, passed: result.pass, rejectReason: result.pass ? undefined : result.reason });
         candidates.set(ticker, candidate);
         if (result.pass) eligible.push(candidate);
-        if (result.pass || isHolding) pool.push(candidate);
+        // A stock whose single share costs more than a full position could never be bought, so the AI is not shown it.
+        const fits = oneShareFits(candidate.close, state.account.equity, config.risk.maxPositionWeight);
+        if (isHolding || (result.pass && fits)) pool.push(candidate);
     }
     const shortlist = rankCandidates(pool, config.universe.maxCandidates);
     await repos.candidates.saveMany(runId, records);

@@ -11,6 +11,7 @@
         "build": "tsc -p tsconfig.build.json",
         "start": "node --env-file-if-exists=.env dist/main.js",
         "dry-run": "tsx --env-file-if-exists=.env src/dryRun.ts",
+        "reset-paper": "tsx --env-file-if-exists=.env src/resetPaper.ts",
         "test": "vitest run",
         "test:watch": "vitest",
         "lint": "eslint . --max-warnings=0",

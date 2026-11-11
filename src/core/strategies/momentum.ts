@@ -11,8 +11,23 @@ export interface MomentumRules {
     stopLossPct: number;
 }
 
-/** Ten equal positions of 9% (10% cash), held while in the top 20, with a wide 15% stop. */
-const MOMENTUM_RULES: MomentumRules = { positions: 10, keepWithin: 20, targetWeight: 0.09, stopLossPct: 0.15 };
+/**
+ * Momentum under the account's own limits: as many equal positions as allowed, sharing everything but the cash
+ * floor, held while in the top twice that many, with a wide 15% stop. Five positions and 10% cash give 18% each.
+ */
+export function momentumRules(limits: {
+    maxPositions: number;
+    maxPositionWeight: number;
+    minCashWeight: number;
+}): MomentumRules {
+    const positions = limits.maxPositions;
+    return {
+        positions,
+        keepWithin: positions * 2,
+        targetWeight: Math.min(limits.maxPositionWeight, (1 - limits.minCashWeight) / positions),
+        stopLossPct: 0.15,
+    };
+}
 
 /**
  * A plain momentum rule, no AI: rank eligible stocks by 3-month return (1-month return must also be positive,
@@ -23,7 +38,7 @@ export function momentumDecisions(
     eligible: readonly Candidate[],
     history: ReadonlyMap<Ticker, readonly DailyBar[]>,
     holdings: ReadonlySet<Ticker>,
-    rules: MomentumRules = MOMENTUM_RULES,
+    rules: MomentumRules,
 ): Decision[] {
     const ranked = eligible
         .flatMap((c) => {

@@ -39,9 +39,9 @@ describe("virtual strategies", () => {
                 startValue: 10_000_000,
             });
         }
-        // 9% of $100,000 at a limit of $105 × 1.01 = $106.05
+        // 6% of $100,000 (90% over the 15 positions the test limits allow) at a limit of $105 × 1.01 = $106.05
         expect(await h.repos.shadow.pendingOrders("momentum", NEXT)).toMatchObject([
-            { ticker: AAA, side: "buy", qty: 84, limitPrice: 10_605, stopLossPrice: 9_014, status: "pending" },
+            { ticker: AAA, side: "buy", qty: 56, limitPrice: 10_605, stopLossPrice: 9_014, status: "pending" },
         ]);
         expect(await h.repos.shadow.pendingOrders("claude_patient", NEXT)).toMatchObject([
             { ticker: BBB, side: "buy", reasoning: "Reason for BBB." },
@@ -84,14 +84,14 @@ describe("virtual strategies", () => {
 
         const lines = await simulateShadowDay(h, NEXT);
 
-        // Momentum: 84 AAA bought at $105.50, worth $107.00 at the close: +$126
-        expect(lines).toContain("Momentum rule: $100,126.00 (+0.13% since start)");
+        // Momentum: 56 AAA bought at $105.50, worth $107.00 at the close: +$84
+        expect(lines).toContain("Momentum rule: $100,084.00 (+0.08% since start)");
         expect(await h.repos.shadow.fills("momentum")).toMatchObject([
-            { ticker: AAA, side: "buy", qty: 84, price: 10_550, reason: "entry" },
+            { ticker: AAA, side: "buy", qty: 56, price: 10_550, reason: "entry" },
         ]);
         // Patient: BBB bought at $98, then the day fell through its stop
         expect((await h.repos.shadow.fills("claude_patient")).map((f) => f.reason)).toEqual(["entry", "stop_loss"]);
-        expect(await h.repos.shadow.snapshots("momentum")).toEqual([{ date: NEXT, equity: 10_012_600 }]);
+        expect(await h.repos.shadow.snapshots("momentum")).toEqual([{ date: NEXT, equity: 10_008_400 }]);
 
         expect(await simulateShadowDay(h, NEXT)).toEqual([]);
         expect(await h.repos.shadow.fills("momentum")).toHaveLength(1);
@@ -131,7 +131,7 @@ describe("virtual strategies", () => {
         const monday = toTradingDate("2026-11-09");
         expect((await h.repos.shadow.pendingOrders("momentum", monday)).map((o) => [o.ticker, o.side, o.qty])).toEqual([
             ["XYZ", "sell", 100],
-            ["AAA", "buy", 84],
+            ["AAA", "buy", 56],
         ]);
     });
 });

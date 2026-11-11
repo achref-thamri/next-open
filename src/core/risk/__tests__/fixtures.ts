@@ -23,9 +23,12 @@ export function security(ticker: string, overrides: Partial<SecurityFacts> = {})
     };
 }
 
+/** The rule tests were written for a larger account than the defaults: up to 15 positions of 10% each. */
+const TEST_LIMITS = { maxPositionWeight: 0.1, maxPositions: 15, maxDailyTradedWeight: 0.3 };
+
 export function context(overrides: Partial<RiskContext> = {}, tickers: string[] = ["AAA", "BBB", "CCC"]): RiskContext {
     return {
-        limits: riskSchema.parse({}),
+        limits: riskSchema.parse(TEST_LIMITS),
         universeLimits: universeSchema.parse({}),
         halted: false,
         account: { equity: EQUITY, cash: cents(5_000_000), previousCloseEquity: EQUITY },

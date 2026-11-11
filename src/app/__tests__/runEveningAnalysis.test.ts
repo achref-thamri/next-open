@@ -86,6 +86,19 @@ describe("runEveningAnalysis", () => {
         expect(user).toContain('"symbol":"SPY"');
     });
 
+    it("leaves out stocks whose single share costs more than a full position", async () => {
+        // Equity is $100,000 and a position is at most 10% here, so a $12,000 share can never be bought.
+        seedStock(h, "PRICY", { price: 12_000 });
+        await seedLiquidList(h, ["AAA", "BBB", "PRICY"]);
+        h.llm.respondWith(llmOutput(decision("AAA")));
+
+        await runEveningAnalysis(h);
+
+        const user = h.llm.prompts[0]?.user ?? "";
+        expect(user).toContain('"ticker":"AAA"');
+        expect(user).not.toContain('"ticker":"PRICY"');
+    });
+
     it("leaves out news tickers the broker cannot trade, whose bars it would refuse", async () => {
         // On 2026-11-09 a headline tagged B3SA3 (Brazil) and Alpaca rejected the whole bars request with a 400.
         h.news.items.push({

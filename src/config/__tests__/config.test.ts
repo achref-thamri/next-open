@@ -30,12 +30,12 @@ describe("parseConfig", () => {
         expect(config.telegram.ownerChatId).toBe(42);
         expect(config.benchmarkSymbol).toBe("VT");
         expect(config.risk).toEqual({
-            maxPositionWeight: 0.1,
-            maxPositions: 15,
+            maxPositionWeight: 0.2,
+            maxPositions: 5,
             minCashWeight: 0.1,
             dailyLossStopPct: 0.03,
             maxOrdersPerDay: 10,
-            maxDailyTradedWeight: 0.3,
+            maxDailyTradedWeight: 0.4,
             maxEntryGapPct: 0.01,
             reservedCashUsd: 0,
         });
@@ -111,7 +111,7 @@ describe("parseConfig", () => {
         const config = parseConfig(baseEnv, { risk: { maxPositions: 10 } });
 
         expect(config.risk.maxPositions).toBe(10);
-        expect(config.risk.maxPositionWeight).toBe(0.1);
+        expect(config.risk.maxPositionWeight).toBe(0.2);
     });
 
     it.each([

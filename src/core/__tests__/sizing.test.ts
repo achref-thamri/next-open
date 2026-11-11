@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { cents } from "../money.js";
-import { bracketPrices, limitPrice, sizeOrder } from "../sizing.js";
+import { bracketPrices, limitPrice, oneShareFits, sizeOrder } from "../sizing.js";
 
 const equity = cents(10_000_000); // $100,000
+
+describe("oneShareFits", () => {
+    it("is true while one share costs at most a full position", () => {
+        expect(oneShareFits(cents(58_000), cents(290_000), 0.2)).toBe(true);
+        expect(oneShareFits(cents(58_001), cents(290_000), 0.2)).toBe(false);
+    });
+});
 
 describe("sizeOrder", () => {
     it("buys whole shares up to the target, rounding down", () => {

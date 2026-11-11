@@ -43,15 +43,19 @@ export const envSchema = z
         }
     });
 
-/** Hard risk limits, see docs/architecture.md#risk-checks. Weights are fractions of equity. */
+/**
+ * Hard risk limits, see docs/architecture.md#risk-checks. Weights are fractions of equity. The defaults suit a small
+ * account (about $3,000): five positions, so a whole share of most liquid stocks fits in one.
+ */
 export const riskSchema = z
     .strictObject({
-        maxPositionWeight: fraction.default(0.1),
-        maxPositions: z.int().positive().default(15),
+        maxPositionWeight: fraction.default(0.2),
+        maxPositions: z.int().positive().default(5),
         minCashWeight: z.number().min(0).lt(1).default(0.1),
         dailyLossStopPct: fraction.default(0.03),
         maxOrdersPerDay: z.int().positive().default(10),
-        maxDailyTradedWeight: fraction.default(0.3),
+        /** 0.4 lets one full position be swapped for another (a 20% sell and a 20% buy) in a day. */
+        maxDailyTradedWeight: fraction.default(0.4),
         /** Max limit price above (buys) or below (sells) the previous close. */
         maxEntryGapPct: z.number().min(0).max(0.1).default(0.01),
         /**

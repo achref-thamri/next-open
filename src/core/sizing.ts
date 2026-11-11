@@ -33,6 +33,11 @@ export function sizeOrder({ equity, targetWeight, currentQty, limitPrice }: Sizi
     return undefined;
 }
 
+/** Whether one share costs no more than a full position, so a buy can get at least one whole share. */
+export function oneShareFits(price: Cents, equity: Cents, maxPositionWeight: number): boolean {
+    return price <= equity * maxPositionWeight;
+}
+
 /**
  * Limit price relative to the previous close: buys at most `gapPct` above it (rounded down),
  * sells at least `gapPct` below it (rounded up), so Next Open never chases an overnight gap.

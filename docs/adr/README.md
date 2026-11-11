@@ -12,3 +12,4 @@ Short records of decisions that shape the code: the context, what was decided, a
 | [0006](0006-missed-jobs-are-never-replayed.md)      | Missed jobs are alerted, never replayed                   |
 | [0007](0007-sqlite-and-typed-fetch-clients.md)      | SQLite and typed fetch clients instead of vendor SDKs     |
 | [0008](0008-virtual-portfolios-for-comparison.md)   | Virtual portfolios to compare strategies                  |
+| [0009](0009-sized-for-a-small-account.md)           | Sized for a small account                                 |
