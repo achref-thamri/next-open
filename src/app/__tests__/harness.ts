@@ -17,6 +17,9 @@ import { toTicker, toTradingDate, type DailyBar, type Ticker, type TradingDate }
 import type { LlmDecisionOutput, RawDecision } from "../../ports/llm.js";
 import type { AppConfig, AppDeps } from "../deps.js";
 
+/** The app tests use a larger account than the defaults: up to 15 positions of 10% each. */
+const TEST_LIMITS = { maxPositionWeight: 0.1, maxPositions: 15, maxDailyTradedWeight: 0.3 };
+
 export interface Harness extends AppDeps {
     broker: FakeBroker;
     marketData: FakeMarketData;
@@ -51,7 +54,7 @@ export function harness(overrides: Partial<AppConfig> = {}, now = EVENING): Harn
         config: {
             mode: "paper",
             benchmarkSymbol: "VT",
-            risk: riskSchema.parse({}),
+            risk: riskSchema.parse(TEST_LIMITS),
             universe: universeSchema.parse({}),
             tax: taxSchema.parse({}),
             ownerChatId: OWNER,

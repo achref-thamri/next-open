@@ -50,6 +50,25 @@ Things that work differently with real money:
   and are already taken off the equity the broker reports, which is what returns and the go-live rules use. The
   "Fees" line in `/report` counts only fees attached to fills, so it stays at $0.00 with Alpaca.
 
+## Resetting the paper account
+
+The paper account should hold what the live one will start with, so the go-live rules test the real thing. The
+defaults are sized for about $2,900 (20,000 kr, [ADR 0009](adr/0009-sized-for-a-small-account.md)). To change the
+size, outside market hours:
+
+1. Reset the paper account to the new balance on Alpaca's dashboard. If Alpaca issues new paper keys, put them in
+   `ALPACA_PAPER_KEY_ID` and `ALPACA_PAPER_SECRET_KEY`.
+2. On the server, clear the old history and restart:
+
+    ```sh
+    docker compose exec next-open node dist/resetPaper.js
+    docker compose restart next-open
+    ```
+
+The script deletes equity snapshots, proposals, orders, fills, decisions and the virtual portfolios, and keeps
+settings, runs, AI calls, the liquid list and the cached company profiles. It refuses to run in live mode. The
+go-live clock starts again from the first snapshot after the reset.
+
 ## Scripts
 
 | Script                               | What it does                                                       |
@@ -57,13 +76,14 @@ Things that work differently with real money:
 | `npm run check`                      | Everything CI runs except Docker: format, lint, types, knip, tests |
 | `npm test` / `npm run test:coverage` | The tests, with a coverage report                                  |
 | `npm run dry-run`                    | One evening analysis on live data with an in-memory broker         |
+| `npm run reset-paper`                | Clears the paper trading history after a paper account reset       |
 | `npm run dev`                        | The scheduler and Telegram, restarting on changes                  |
 | `npm run build && npm start`         | Production build and start                                         |
 | `npm run screenshots`                | Redraws the README images from demo data (needs Google Chrome)     |
 
 ## Dry run
 
-`npm run dry-run` runs one evening analysis against real market data, news and the AI, with a fake $100,000 broker
+`npm run dry-run` runs one evening analysis against real market data, news and the AI, with a fake $2,900 broker
 and messages printed instead of sent. It takes an optional date (`npm run dry-run -- 2026-11-06`); the default is
 the latest trading day that has closed.
 

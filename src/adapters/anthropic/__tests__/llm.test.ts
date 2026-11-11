@@ -97,7 +97,7 @@ describe("AnthropicLlm", () => {
         if (!result.ok) return;
         expect(validateDecisions(result.output, shortlist, new Set(), limits)).toEqual({
             ok: false,
-            errors: ["AAPL target weight 0.5 outside 0..0.1"],
+            errors: ["AAPL target weight 0.5 outside 0..0.2"],
         });
     });
 

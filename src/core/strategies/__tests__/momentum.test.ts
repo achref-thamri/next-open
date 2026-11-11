@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { cents } from "../../money.js";
 import { toTicker, toTradingDate, type Candidate, type DailyBar, type Ticker } from "../../types.js";
-import { momentumDecisions } from "../momentum.js";
+import { momentumDecisions, momentumRules } from "../momentum.js";
 
 /** 64 daily bars with closes from `price(i)`. */
 function series(price: (i: number) => number): DailyBar[] {
@@ -73,5 +73,20 @@ describe("momentumDecisions", () => {
         eligible.push(candidate("NEW"));
 
         expect(momentumDecisions(eligible, history, new Set(), rules).map((d) => d.ticker)).toEqual(["BBB"]);
+    });
+});
+
+describe("momentumRules", () => {
+    it("splits everything but the cash floor over the allowed positions", () => {
+        expect(momentumRules({ maxPositions: 5, maxPositionWeight: 0.2, minCashWeight: 0.1 })).toEqual({
+            positions: 5,
+            keepWithin: 10,
+            targetWeight: 0.18,
+            stopLossPct: 0.15,
+        });
+    });
+
+    it("never goes above the position cap", () => {
+        expect(momentumRules({ maxPositions: 2, maxPositionWeight: 0.2, minCashWeight: 0.1 }).targetWeight).toBe(0.2);
     });
 });

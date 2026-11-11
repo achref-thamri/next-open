@@ -85,13 +85,15 @@ or reject, and the reason is stored and shown in Telegram.
 1. Halted (manual `/stop` or daily loss stop): reject new orders.
 2. Long only: no short positions.
 3. Universe: the ticker must still pass the filters.
-4. Max position size (10% of equity): trim.
-5. Max positions (15): reject new buys unless a sell frees a slot.
+4. Max position size (20% of equity): trim.
+5. Max positions (5): reject new buys unless a sell frees a slot.
 6. Min cash (10%): trim buys.
-7. Daily caps (10 orders, 30% of equity traded).
+7. Daily caps (10 orders, 40% of equity traded).
 8. Daily loss (−3% against the previous close): halt and alert.
 
-Limits come from config (`src/config/schema.ts`), validated at startup. Any reserved cash (`reservedCashUsd`) is
+Limits come from config (`src/config/schema.ts`), validated at startup. The defaults are sized for an account of
+about $3,000 ([ADR 0009](adr/0009-sized-for-a-small-account.md)). Before any of this, the evening leaves out stocks
+whose single share costs more than a full position, since they could never be bought. Any reserved cash (`reservedCashUsd`) is
 taken off the account when it is read from the broker, before sizing and every rule.
 
 ## Data
@@ -111,7 +113,7 @@ The broker is the source of truth for positions and cash; the database records w
 
 Next to the real (paper) account, three virtual portfolios start with the same capital and see the same data each
 evening: `claude_patient` (a second prompt that favours few trades and long holds), `momentum` (a weekly rule-based
-rebalance, no AI) and a VT buy-and-hold benchmark. `core/simulation.ts` fills their orders from the next day's bars
+rebalance, no AI, as many equal positions as the limits allow) and a VT buy-and-hold benchmark. `core/simulation.ts` fills their orders from the next day's bars
 (limit vs open, stop before target on the same day, gaps). Daily and weekly reports compare all of them, after fees
 and estimated Danish tax, so the paper period answers whether the AI adds anything over a simple rule.
 
