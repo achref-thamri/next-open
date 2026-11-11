@@ -80,6 +80,9 @@ A job that can't start on time is reported and skipped, never run late on old pr
 | `/resume`     | Allow trading again                                             |
 | `/golive`     | Confirm live trading, once the go-live rules pass               |
 
+The same list shows up in Telegram's command menu next to the message box, so you don't have to remember them.
+Nobody else who finds the account sees it.
+
 Telegram also gets the evening proposals, the orders placed at the open, a daily summary and a Sunday report that
 compares every strategy. In live mode each order needs an Approve tap before 09:25.
 

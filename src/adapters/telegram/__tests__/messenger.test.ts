@@ -2,7 +2,13 @@ import { Bot as TelegramClient } from "grammy";
 import type { Update } from "grammy/types";
 import { pino } from "pino";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { registerHandlers, splitMessage, TelegramNotifier, type TelegramHandlers } from "../messenger.js";
+import {
+    registerHandlers,
+    setCommandMenu,
+    splitMessage,
+    TelegramNotifier,
+    type TelegramHandlers,
+} from "../messenger.js";
 
 const OWNER = 42;
 const STRANGER = 7;
@@ -134,6 +140,26 @@ describe("Telegram handlers", () => {
 
         expect(handlers.onDecision).not.toHaveBeenCalled();
         expect(calls.map((c) => c.method)).toEqual(["answerCallbackQuery"]);
+    });
+});
+
+describe("setCommandMenu", () => {
+    it("sets the menu for the owner's chat only", async () => {
+        const { telegram, calls } = fakeTelegram();
+
+        const commands = [{ command: "why", usage: "/why TICKER", description: "Reasoning" }];
+
+        await setCommandMenu(telegram, OWNER, commands);
+
+        expect(calls).toEqual([
+            {
+                method: "setMyCommands",
+                payload: {
+                    commands: [{ command: "why", description: "Reasoning" }],
+                    scope: { type: "chat", chat_id: OWNER },
+                },
+            },
+        ]);
     });
 });
 

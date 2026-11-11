@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { riskSchema } from "../../config/schema.js";
 import { cents } from "../../core/money.js";
 import { toTicker, toTradingDate } from "../../core/types.js";
-import { handleCommand, HELP } from "../commands.js";
+import { COMMANDS, handleCommand, HELP } from "../commands.js";
 import { ASOF, harness, OWNER, type Harness } from "./harness.js";
 
 const AAA = toTicker("AAA");
@@ -23,6 +23,13 @@ describe("handleCommand", () => {
     it("answers unknown commands with help", async () => {
         expect(await send("hello")).toBe(HELP);
         expect(await send("/nope")).toBe(HELP);
+    });
+
+    it("handles every command in the menu, and lists each one in the help", async () => {
+        for (const { command } of COMMANDS) {
+            expect(await send(`/${command}`)).not.toBe(HELP);
+            expect(HELP).toContain(`/${command}`);
+        }
     });
 
     it("shows status", async () => {
