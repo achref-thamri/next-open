@@ -20,6 +20,9 @@ withdrawals keep it low. Trades themselves are commission-free.
 - Stocks whose single share costs more than a full position are left out of the shortlist, for the AI and the
   patient variant, and out of momentum's ranking. The cutoff is equity times the position cap, so it grows with
   the account.
+- Any target weight above zero buys at least one share, even when the target is worth less than a share. On the
+  first $2,900 evening the AI picked AVGO at 12% ($348) and AMD at 10% ($290), both under one share, so both rounded
+  to zero. The position cap still applies through the risk rules.
 - The momentum rule takes its size from the limits: as many positions as allowed, sharing everything but the cash
   floor (5 × 18% with the defaults).
 - The paper account is reset to the live amount, and `npm run reset-paper` clears the paper history so the go-live
@@ -30,5 +33,6 @@ withdrawals keep it low. Trades themselves are commission-free.
 - The go-live clock restarts at the reset. Three months from mid-November puts the earliest live date in mid-February 2027.
 - Five positions is concentrated: one stock can move the account by a fifth of its own move. The 3% daily loss stop
   and the stop-loss on every buy stay as they were.
-- Stocks above about $580 are out of reach until the account grows.
+- Stocks above about $580 are out of reach until the account grows. Below that, a position can end up larger than
+  the weight the AI asked for, up to the 20% cap.
 - The rule tests keep their own limits (15 positions of 10%), so they test the rules and not the defaults.
