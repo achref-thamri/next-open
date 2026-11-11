@@ -3,8 +3,8 @@ import { signedPercent } from "../core/format.js";
 import { cents, formatCents, type Cents } from "../core/money.js";
 import { runRiskChecks, simulatePortfolio } from "../core/risk/index.js";
 import { asBrokerState, portfolioValue, simulateDay, type VirtualPortfolio } from "../core/simulation.js";
-import { bracketPrices } from "../core/sizing.js";
-import { momentumDecisions } from "../core/strategies/momentum.js";
+import { bracketPrices, oneShareFits } from "../core/sizing.js";
+import { momentumDecisions, momentumRules } from "../core/strategies/momentum.js";
 import type { Candidate, DailyBar, Decision, Ticker, TradingDate } from "../core/types.js";
 import { rankCandidates } from "../core/universe/ranking.js";
 import type { NewsItem } from "../ports/news.js";
@@ -62,11 +62,16 @@ export const SHADOW_STRATEGIES: readonly ShadowStrategy[] = [
         id: "momentum",
         name: "Momentum rule",
         limits: (risk) => risk,
-        decide: (_deps, ctx, _account, state) => {
+        decide: (_deps, ctx, _account, state, limits) => {
             const holdings = new Set(state.positions.map((p) => p.ticker));
             // Rebalance on the last trading day of the week, and on the first run.
             const rebalance = weekOf(ctx.tradeDate) !== weekOf(ctx.asOf) || holdings.size === 0;
-            return Promise.resolve(rebalance ? momentumDecisions(ctx.eligible, ctx.history, holdings) : []);
+            if (!rebalance) return Promise.resolve([]);
+            const rules = momentumRules(limits);
+            const affordable = ctx.eligible.filter((c) =>
+                oneShareFits(c.close, state.account.equity, rules.targetWeight),
+            );
+            return Promise.resolve(momentumDecisions(affordable, ctx.history, holdings, rules));
         },
     },
 ];
@@ -170,7 +175,10 @@ async function patientDecisions(
 ): Promise<Decision[]> {
     const held = new Set(state.positions.map((p) => p.ticker));
     const pool: Candidate[] = [];
-    for (const c of ctx.eligible) if (!held.has(c.ticker)) pool.push({ ...c, isHolding: false });
+    for (const c of ctx.eligible) {
+        if (held.has(c.ticker) || !oneShareFits(c.close, state.account.equity, limits.maxPositionWeight)) continue;
+        pool.push({ ...c, isHolding: false });
+    }
     for (const ticker of held) {
         const c = ctx.candidates.get(ticker);
         if (!c) throw new Error(`No price data for ${ticker}`);

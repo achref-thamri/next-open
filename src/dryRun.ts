@@ -15,7 +15,8 @@ import { newYorkInstant, toTicker, toTradingDate, tradingDateOf, type TradingDat
 import type { Notifier } from "./ports/notifier.js";
 
 const CACHE_PATH = process.env.DRY_RUN_CACHE_PATH ?? "data/dry-run-cache.db";
-const STARTING_CASH = cents(10_000_000);
+/** The size of the paper account, so the dry run sizes positions the way the real one would. */
+const STARTING_CASH = cents(290_000);
 /** Large, liquid US common stocks across sectors, for `--quick`. */
 const QUICK_TICKERS = [
     "AAPL",
@@ -70,7 +71,7 @@ export function copyUniverseCache(from: string, into: Db): void {
 }
 
 /**
- * One evening analysis with real market data, news and the AI model, but a fake $100,000 broker and no Telegram.
+ * One evening analysis with real market data, news and the AI model, but a fake $2,900 broker and no Telegram.
  * Usage: npm run dry-run [-- [--quick] [YYYY-MM-DD]]   (default date: the latest trading day that has closed)
  *
  * The first run builds the liquid list in a separate cache database (data/dry-run-cache.db). That takes a few
