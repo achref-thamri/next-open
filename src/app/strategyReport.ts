@@ -48,13 +48,19 @@ export async function compareStrategies(
             real.map((s) => s.equity),
             realFills,
         ),
-        ...virtual.map((v) =>
-            result(
-                v.name,
-                v.snapshots.map((s) => s.equity),
-                v.fills,
-            ),
-        ),
+        // A strategy added later is shown from its own first day, so its return covers a shorter window.
+        ...virtual.flatMap((v) => {
+            const first = v.snapshots[0]?.date;
+            if (first === undefined) return [];
+            const name = first > since ? `${v.name} (from ${first})` : v.name;
+            return [
+                result(
+                    name,
+                    v.snapshots.map((s) => s.equity),
+                    v.fills,
+                ),
+            ];
+        }),
         {
             ...result(
                 `${config.benchmarkSymbol} buy-and-hold`,

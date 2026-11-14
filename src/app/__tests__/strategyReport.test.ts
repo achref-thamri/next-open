@@ -16,7 +16,7 @@ async function seedHistory(h: Harness): Promise<void> {
     ] as const) {
         await h.repos.equity.save({ date: d(date), equity: cents(equity), cash: cents(0), benchmarkValue: cents(vt) });
     }
-    for (const strategy of ["claude_patient", "momentum"] as const) {
+    for (const strategy of ["claude_patient", "momentum", "claude_close_stop"] as const) {
         await h.repos.shadow.openAccount({
             strategy,
             portfolio: { cash: cents(10_000_000), positions: [] },
@@ -25,7 +25,7 @@ async function seedHistory(h: Harness): Promise<void> {
         });
     }
     const day = (
-        strategy: "claude_patient" | "momentum",
+        strategy: "claude_patient" | "momentum" | "claude_close_stop",
         date: string,
         equity: number,
         fills: { side: "buy" | "sell"; price: number }[] = [],
@@ -50,6 +50,8 @@ async function seedHistory(h: Harness): Promise<void> {
     await day("momentum", "2026-11-04", 10_300_000, [{ side: "sell", price: 11_000 }]);
     await day("claude_patient", "2026-11-03", 10_000_000);
     await day("claude_patient", "2026-11-04", 9_900_000);
+    // Added a day later; Time-exit AI has no simulated day yet.
+    await day("claude_close_stop", "2026-11-04", 10_000_000);
 }
 
 describe("strategy comparison", () => {
@@ -72,6 +74,7 @@ describe("strategy comparison", () => {
                 "• Momentum rule: +3.0% · max drawdown 0.0% · 1 closed trade, 100% won",
                 "• AI (real paper account): +1.5% · max drawdown 0.0% · 0 closed trades",
                 "• VT buy-and-hold: +0.5% · max drawdown 0.0%",
+                "• Close-stop AI (from 2026-11-04): +0.0% · max drawdown 0.0% · 0 closed trades",
                 "• Patient AI: -1.0% · max drawdown 1.0% · 0 closed trades",
             ].join("\n"),
         );

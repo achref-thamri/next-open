@@ -196,6 +196,32 @@ describe("simulateDay", () => {
         expect(result.fills.map((f) => f.reason)).toEqual(["entry", "stop_loss"]);
     });
 
+    it("with stops at the close, holds through a dip that recovers and sells at a close below the stop", () => {
+        const dip = new Map([[AAA, bar(10_000, 8_500, 10_200, 9_500)]]);
+        const closedBelow = new Map([[AAA, bar(9_500, 8_500, 9_600, 8_800)]]);
+        const options = { stopAtClose: true };
+
+        const recovered = simulateDay(portfolio(0, [held(AAA, 10, 100_000, 9_000)]), [], dip, day, options);
+        const stopped = simulateDay(portfolio(0, [held(AAA, 10, 100_000, 9_000)]), [], closedBelow, day, options);
+
+        expect(recovered.fills).toEqual([]);
+        expect(recovered.portfolio.positions[0]?.lastPrice).toBe(9_500);
+        expect(stopped.fills).toMatchObject([{ side: "sell", qty: 10, price: 8_800, reason: "stop_loss" }]);
+        expect(stopped.portfolio.cash).toBe(88_000);
+    });
+
+    it("with stops at the close, lets the take-profit trigger first on a day that hits both", () => {
+        const result = simulateDay(
+            portfolio(0, [held(AAA, 10, 100_000, 9_000, 11_000)]),
+            [],
+            new Map([[AAA, bar(10_000, 8_900, 11_500, 8_950)]]),
+            day,
+            { stopAtClose: true },
+        );
+
+        expect(result.fills).toMatchObject([{ price: 11_000, reason: "take_profit" }]);
+    });
+
     it("leaves orders without a bar unfilled and keeps positions at their last price", () => {
         const result = simulateDay(portfolio(1_000_000, [held(BBB)]), [buy(AAA)], new Map(), day);
 
