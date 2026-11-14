@@ -111,9 +111,12 @@ The broker is the source of truth for positions and cash; the database records w
 
 ## Strategy comparison
 
-Next to the real (paper) account, three virtual portfolios start with the same capital and see the same data each
+Next to the real (paper) account, virtual portfolios start with the same capital and see the same data each
 evening: `claude_patient` (a second prompt that favours few trades and long holds), `momentum` (a weekly rule-based
-rebalance, no AI, as many equal positions as the limits allow) and a VT buy-and-hold benchmark. `core/simulation.ts` fills their orders from the next day's bars
+rebalance, no AI, as many equal positions as the limits allow), two exit-rule variants that copy the real account's
+decisions without another AI call (`claude_close_stop` checks the stop-loss only at the close, `claude_time_exit`
+sells anything held more than 28 days), and a VT buy-and-hold benchmark. A portfolio added later is reported from its
+own first day. `core/simulation.ts` fills their orders from the next day's bars
 (limit vs open, stop before target on the same day, gaps). Daily and weekly reports compare all of them, after fees
 and estimated Danish tax, so the paper period answers whether the AI adds anything over a simple rule.
 

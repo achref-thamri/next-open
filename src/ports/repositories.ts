@@ -205,7 +205,7 @@ export interface Repositories {
 }
 
 /** A strategy compared in paper mode with a virtual portfolio (see core/simulation). */
-export type StrategyId = "claude" | "claude_patient" | "momentum";
+export type StrategyId = "claude" | "claude_patient" | "momentum" | "claude_close_stop" | "claude_time_exit";
 
 export interface ShadowAccount {
     strategy: StrategyId;
