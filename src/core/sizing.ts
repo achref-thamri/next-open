@@ -54,10 +54,19 @@ export interface BracketPrices {
     takeProfitPrice: Cents;
 }
 
-/** Stop-loss and take-profit prices for a buy, at least one cent away from the limit price. */
-export function bracketPrices(limit: Cents, stopLossPct: number, takeProfitPct: number): BracketPrices {
-    const stop = multiplyCents(limit, 1 - stopLossPct, "down");
-    const take = multiplyCents(limit, 1 + takeProfitPct, "up");
+/**
+ * Stop-loss and take-profit prices for a buy. They are measured from the previous close, the best guess at the entry
+ * price when the order is placed; the limit sits a gap above it, and measuring from there would put the stop too close.
+ * Both legs stay at least one cent away from the limit, as the broker requires.
+ */
+export function bracketPrices(
+    previousClose: Cents,
+    limit: Cents,
+    stopLossPct: number,
+    takeProfitPct: number,
+): BracketPrices {
+    const stop = multiplyCents(previousClose, 1 - stopLossPct, "down");
+    const take = multiplyCents(previousClose, 1 + takeProfitPct, "up");
     return {
         stopLossPrice: cents(Math.max(1, Math.min(stop, limit - 1))),
         takeProfitPrice: cents(Math.max(take, limit + 1)),

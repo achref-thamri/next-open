@@ -41,7 +41,7 @@ describe("virtual strategies", () => {
         }
         // 6% of $100,000 (90% over the 15 positions the test limits allow) at a limit of $105 × 1.01 = $106.05
         expect(await h.repos.shadow.pendingOrders("momentum", NEXT)).toMatchObject([
-            { ticker: AAA, side: "buy", qty: 56, limitPrice: 10_605, stopLossPrice: 9_014, status: "pending" },
+            { ticker: AAA, side: "buy", qty: 56, limitPrice: 10_605, stopLossPrice: 8_925, status: "pending" },
         ]);
         expect(await h.repos.shadow.pendingOrders("claude_patient", NEXT)).toMatchObject([
             { ticker: BBB, side: "buy", reasoning: "Reason for BBB." },

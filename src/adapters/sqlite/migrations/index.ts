@@ -1,5 +1,6 @@
 import { initial } from "./001-initial.js";
 import { shadowPortfolios } from "./002-shadow-portfolios.js";
+import { proposalPreviousClose } from "./003-proposal-previous-close.js";
 
 export interface Migration {
     /** Becomes PRAGMA user_version once applied. Versions start at 1 and increase by one. */
@@ -12,4 +13,5 @@ export interface Migration {
 export const MIGRATIONS: readonly Migration[] = [
     { version: 1, name: "initial", sql: initial },
     { version: 2, name: "shadow portfolios", sql: shadowPortfolios },
+    { version: 3, name: "proposal previous close", sql: proposalPreviousClose },
 ];

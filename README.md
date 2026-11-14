@@ -45,7 +45,7 @@ The virtual portfolios are simulated from daily bars with the same order rules a
 | Entry price    | Buys at most 1% above the last close, so an overnight gap isn't chased |
 | Instruments    | Long only, US common stocks, no margin, shorts, options or ETFs        |
 
-A buy carries a stop-loss and a take-profit at the broker. The limits are defaults in
+A buy carries a stop-loss and a take-profit at the broker, both measured from the last close. The limits are defaults in
 [`src/config/schema.ts`](src/config/schema.ts) and can be changed with a settings file.
 
 ## What happens each day

@@ -19,6 +19,7 @@ interface ProposalRow {
     requested_qty: number;
     qty: number;
     limit_price: number;
+    previous_close: number;
     target_weight: number;
     stop_loss_pct: number | null;
     take_profit_pct: number | null;
@@ -37,6 +38,7 @@ const toProposal = (row: ProposalRow): Proposal => ({
     requestedQty: row.requested_qty,
     qty: row.qty,
     limitPrice: row.limit_price as Cents,
+    previousClose: row.previous_close as Cents,
     targetWeight: row.target_weight,
     stopLossPct: orUndefined(row.stop_loss_pct),
     takeProfitPct: orUndefined(row.take_profit_pct),
@@ -53,8 +55,9 @@ export class SqliteProposalsRepository implements ProposalsRepository {
         return promised(() => {
             const insert = this.db.prepare(
                 `INSERT INTO proposals (id, run_id, trade_date, ticker, side, requested_qty, qty, limit_price,
-                    target_weight, stop_loss_pct, take_profit_pct, confidence, reasoning, status, risk_notes)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                    previous_close, target_weight, stop_loss_pct, take_profit_pct, confidence, reasoning, status,
+                    risk_notes)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             );
             this.db.transaction(() => {
                 for (const p of proposals) {
@@ -67,6 +70,7 @@ export class SqliteProposalsRepository implements ProposalsRepository {
                         p.requestedQty,
                         p.qty,
                         p.limitPrice,
+                        p.previousClose,
                         p.targetWeight,
                         p.stopLossPct ?? null,
                         p.takeProfitPct ?? null,

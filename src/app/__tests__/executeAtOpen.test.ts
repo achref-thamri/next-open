@@ -19,6 +19,7 @@ function proposal(id: string, ticker: string, overrides: Partial<Proposal> = {})
         requestedQty: 10,
         qty: 10,
         limitPrice: cents(10_100),
+        previousClose: cents(10_000),
         targetWeight: 0.05,
         stopLossPct: 0.08,
         takeProfitPct: 0.2,
@@ -78,8 +79,8 @@ describe("executeAtOpen", () => {
         });
         // stop 8% below and target 20% above the limit
         expect(order?.legs.map((l) => [l.role, l.stopPrice ?? l.limitPrice])).toEqual([
-            ["take_profit", 12_120],
-            ["stop_loss", 9_292],
+            ["take_profit", 12_000],
+            ["stop_loss", 9_200],
         ]);
         expect(await statuses()).toEqual([["p1", "executed", 10]]);
         expect((await h.repos.orders.getByClientOrderId("no-p1"))?.proposalId).toBe("p1");
@@ -139,8 +140,8 @@ describe("executeAtOpen", () => {
             side: "buy",
             qty: 10,
             limitPrice: cents(10_100),
-            stopLossPrice: cents(9_292),
-            takeProfitPrice: cents(12_120),
+            stopLossPrice: cents(9_200),
+            takeProfitPrice: cents(12_000),
         });
 
         const result = await executeAtOpen(h);
