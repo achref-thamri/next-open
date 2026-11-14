@@ -35,6 +35,7 @@ function proposal(overrides: Partial<Proposal> = {}): Proposal {
         requestedQty: 12,
         qty: 10,
         limitPrice: cents(10_100),
+        previousClose: cents(10_000),
         targetWeight: 0.08,
         stopLossPct: 0.07,
         takeProfitPct: 0.15,

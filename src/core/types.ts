@@ -148,8 +148,10 @@ export interface Proposal {
     /** Quantity after risk checks; 0 when rejected. */
     qty: number;
     limitPrice: Cents;
+    /** Close the limit was set from; the bracket legs are measured from it. */
+    previousClose: Cents;
     targetWeight: number;
-    /** Only for buys: protective bracket legs as fractions of the limit price. */
+    /** Only for buys: protective bracket legs as fractions of the previous close. */
     stopLossPct: number | undefined;
     takeProfitPct: number | undefined;
     confidence: Decision["confidence"];

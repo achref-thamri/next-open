@@ -153,7 +153,7 @@ async function place(
 function orderIntent(proposal: Proposal): OrderIntent {
     const legs =
         proposal.side === "buy" && proposal.stopLossPct !== undefined && proposal.takeProfitPct !== undefined
-            ? bracketPrices(proposal.limitPrice, proposal.stopLossPct, proposal.takeProfitPct)
+            ? bracketPrices(proposal.previousClose, proposal.limitPrice, proposal.stopLossPct, proposal.takeProfitPct)
             : undefined;
     return {
         clientOrderId: clientOrderId(proposal.id),

@@ -128,10 +128,11 @@ async function proposeFor(deps: AppDeps, ctx: ShadowContext, strategy: ShadowStr
 
     const shadowOrders: ShadowOrder[] = checked.orders.flatMap(({ order, qty }) => {
         const decision = decisionOf.get(order.id);
-        if (qty === 0 || !decision) return [];
+        const close = closes.get(order.ticker);
+        if (qty === 0 || !decision || close === undefined) return [];
         const legs =
             order.side === "buy"
-                ? bracketPrices(order.limitPrice, decision.stopLossPct, decision.takeProfitPct)
+                ? bracketPrices(close, order.limitPrice, decision.stopLossPct, decision.takeProfitPct)
                 : undefined;
         return [
             {
