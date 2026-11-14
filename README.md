@@ -24,14 +24,18 @@ later with `/why TICKER`.
 Results only count after fees and estimated Danish tax, and only against strategies that see the same data on the
 same days:
 
-| Strategy             | Trades                                                                        |
-| -------------------- | ----------------------------------------------------------------------------- |
-| AI, real account     | The model's daily decisions, placed on the Alpaca paper account               |
-| Patient AI (virtual) | Same model and data, told to hold for weeks; at most 3 orders a day           |
-| Momentum (virtual)   | No AI: the 10 best 3-month gainers still rising, rebalanced weekly            |
-| VT buy-and-hold      | The global stock ETF bought on day one and never sold (the benchmark to beat) |
+| Strategy                | Trades                                                                        |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| AI, real account        | The model's daily decisions, placed on the Alpaca paper account               |
+| Patient AI (virtual)    | Same model and data, told to hold for weeks; at most 3 orders a day           |
+| Momentum (virtual)      | No AI: the 5 best 3-month gainers still rising, rebalanced weekly             |
+| Close-stop AI (virtual) | The real account's picks, but the stop-loss is only checked at the close      |
+| Time-exit AI (virtual)  | The real account's picks, and anything still held after 28 days is sold       |
+| VT buy-and-hold         | The global stock ETF bought on day one and never sold (the benchmark to beat) |
 
-The virtual portfolios are simulated from daily bars with the same order rules as the broker.
+The virtual portfolios are simulated from daily bars with the same order rules as the broker. The two exit-rule
+portfolios copy the real account's decisions instead of asking the model again, so they cost nothing extra and any
+difference comes from the exit rule alone.
 
 ## Risk rules
 

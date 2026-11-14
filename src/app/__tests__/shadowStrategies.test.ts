@@ -74,6 +74,52 @@ describe("virtual strategies", () => {
         expect(result.status).toBe("failed");
         expect(await h.repos.shadow.pendingOrders("momentum", NEXT)).toHaveLength(1);
         expect(await h.repos.shadow.pendingOrders("claude_patient", NEXT)).toHaveLength(1);
+        // Nothing to copy from the real account tonight.
+        expect(await h.repos.shadow.pendingOrders("claude_close_stop", NEXT)).toEqual([]);
+        expect(await h.repos.shadow.pendingOrders("claude_time_exit", NEXT)).toEqual([]);
+    });
+
+    it("copies the real account's buys into the exit-rule portfolios without another AI call", async () => {
+        await runEveningAnalysis(h);
+
+        expect(h.llm.prompts).toHaveLength(2);
+        for (const strategy of ["claude_close_stop", "claude_time_exit"] as const) {
+            expect(await h.repos.shadow.pendingOrders(strategy, NEXT)).toMatchObject([
+                { ticker: AAA, side: "buy", reasoning: "Reason for AAA." },
+            ]);
+        }
+    });
+
+    it("sells what the time-exit portfolio has held for more than 28 days", async () => {
+        seedStock(h, "OLD");
+        seedStock(h, "NEW");
+        const position = (ticker: string, openedOn: string) => ({
+            ticker: toTicker(ticker),
+            qty: 10,
+            cost: 100_000,
+            stopLossPrice: undefined,
+            takeProfitPrice: undefined,
+            openedOn: toTradingDate(openedOn),
+            lastPrice: cents(10_000),
+        });
+        await h.repos.shadow.openAccount({
+            strategy: "claude_time_exit",
+            portfolio: {
+                cash: cents(9_800_000),
+                positions: [position("OLD", "2026-10-02"), position("NEW", "2026-10-20")],
+            },
+            startDate: ASOF,
+            startValue: cents(10_000_000),
+        });
+
+        await runEveningAnalysis(h);
+
+        expect(
+            (await h.repos.shadow.pendingOrders("claude_time_exit", NEXT)).map((o) => [o.ticker, o.side, o.qty]),
+        ).toEqual([
+            ["AAA", "buy", expect.any(Number)],
+            ["OLD", "sell", 10],
+        ]);
     });
 
     it("simulates the next day once from its bars and reports each strategy", async () => {

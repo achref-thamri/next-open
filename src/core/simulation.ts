@@ -48,13 +48,15 @@ export interface DayResult {
 /**
  * One trading day: orders execute at the open (sells first, then buys while cash lasts, no margin), then
  * protective legs trigger on the day's range (stop-loss before take-profit, filled at the open when the
- * price gapped through), then positions are marked at the close.
+ * price gapped through), then positions are marked at the close. With `stopAtClose` the stop-loss is only
+ * checked against the close and sells at the close, after the take-profit has had the whole day.
  */
 export function simulateDay(
     start: VirtualPortfolio,
     orders: readonly VirtualOrder[],
     bars: ReadonlyMap<Ticker, DailyBar>,
     date: TradingDate,
+    { stopAtClose = false }: { stopAtClose?: boolean } = {},
 ): DayResult {
     let cash: number = start.cash;
     const positions = new Map(start.positions.map((p) => [p.ticker, { ...p }]));
@@ -105,7 +107,7 @@ export function simulateDay(
         const bar = bars.get(position.ticker);
         if (!bar) continue;
         const { stopLossPrice: stop, takeProfitPrice: target } = position;
-        if (stop !== undefined && bar.low <= stop) {
+        if (!stopAtClose && stop !== undefined && bar.low <= stop) {
             const price = cents(Math.min(stop, bar.open));
             cash += position.qty * price;
             fill(position.ticker, "sell", position.qty, price, "stop_loss");
@@ -114,6 +116,10 @@ export function simulateDay(
             const price = cents(Math.max(target, bar.open));
             cash += position.qty * price;
             fill(position.ticker, "sell", position.qty, price, "take_profit");
+            positions.delete(position.ticker);
+        } else if (stopAtClose && stop !== undefined && bar.close <= stop) {
+            cash += position.qty * bar.close;
+            fill(position.ticker, "sell", position.qty, bar.close, "stop_loss");
             positions.delete(position.ticker);
         } else {
             position.lastPrice = bar.close;

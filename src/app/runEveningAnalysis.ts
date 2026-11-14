@@ -131,8 +131,9 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
     // The real strategy first; the virtual ones run afterwards even when it fails, and never fail the run.
     let failure: Error | undefined;
     let result: JobResult | undefined;
+    let liveDecisions: Decision[] = [];
     try {
-        result = await decideAndPropose({
+        ({ result, decisions: liveDecisions } = await decideAndPropose({
             deps,
             runId,
             asOf,
@@ -145,7 +146,7 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
             recentDecisions,
             fills,
             contextTickers,
-        });
+        }));
     } catch (error) {
         failure = error instanceof Error ? error : new Error(String(error));
     }
@@ -160,6 +161,7 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
         contextTickers,
         newsSince: since,
         startEquity: state.account.equity,
+        liveDecisions,
     });
     if (failure !== undefined) throw failure;
     return result ?? { status: "succeeded" };
@@ -181,7 +183,7 @@ interface DecideInput {
 }
 
 /** The real strategy: prompt, AI call, validation, proposals and the owner's notification. */
-async function decideAndPropose(input: DecideInput): Promise<JobResult> {
+async function decideAndPropose(input: DecideInput): Promise<{ result: JobResult; decisions: Decision[] }> {
     const {
         deps,
         runId,
@@ -240,7 +242,10 @@ async function decideAndPropose(input: DecideInput): Promise<JobResult> {
     const proposals = await propose(deps, runId, tradeDate, validation.decisions, shortlist, state);
     await repos.proposals.saveMany(proposals);
     await notify(deps, tradeDate, llmResult.output.marketView, proposals);
-    return { status: "succeeded", message: `${proposals.filter((p) => p.qty > 0).length} proposals` };
+    return {
+        result: { status: "succeeded", message: `${proposals.filter((p) => p.qty > 0).length} proposals` },
+        decisions: validation.decisions,
+    };
 }
 
 /** Sizes buy and sell decisions into orders, runs the risk checks and turns the result into proposals. */

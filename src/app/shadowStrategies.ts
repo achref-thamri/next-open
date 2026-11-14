@@ -11,6 +11,7 @@ import type { NewsItem } from "../ports/news.js";
 import type { ShadowAccount, ShadowOrder, StrategyId } from "../ports/repositories.js";
 import { promptInput, sizeDecisions } from "./analysisShared.js";
 import { weekOf } from "./buildLiquidList.js";
+import { addDays } from "./calendar.js";
 import type { AppDeps } from "./deps.js";
 import { buildPrompt } from "./prompt.js";
 import type { BrokerState } from "./sync.js";
@@ -32,12 +33,16 @@ export interface ShadowContext {
     newsSince: Date;
     /** Starting value of a new virtual portfolio: the real account's equity, so all start equal. */
     startEquity: Cents;
+    /** Tonight's decisions for the real account; empty when its run failed. */
+    liveDecisions: readonly Decision[];
 }
 
 interface ShadowStrategy {
     id: Exclude<StrategyId, "claude">;
     name: string;
     limits(risk: RiskLimits): RiskLimits;
+    /** Check the stop-loss against the close only, instead of the day's low. */
+    stopAtClose?: boolean;
     decide(
         deps: AppDeps,
         ctx: ShadowContext,
@@ -50,6 +55,9 @@ interface ShadowStrategy {
 const PATIENT_STYLE = `This portfolio is managed patiently. Hold positions for weeks to months and let the protective \
 orders handle normal swings. Open a new position only on a clear, lasting reason, at most two a week. Sell only \
 when the reason for holding is gone. When in doubt, hold.`;
+
+/** Time-exit sells what is still held this long after buying, about 20 trading days. */
+const TIME_EXIT_DAYS = 28;
 
 export const SHADOW_STRATEGIES: readonly ShadowStrategy[] = [
     {
@@ -74,7 +82,46 @@ export const SHADOW_STRATEGIES: readonly ShadowStrategy[] = [
             return Promise.resolve(momentumDecisions(affordable, ctx.history, holdings, rules));
         },
     },
+    {
+        id: "claude_close_stop",
+        name: "Close-stop AI",
+        limits: (risk) => risk,
+        stopAtClose: true,
+        decide: (_deps, ctx, _account, state) => Promise.resolve(copiedDecisions(ctx, state)),
+    },
+    {
+        id: "claude_time_exit",
+        name: "Time-exit AI",
+        limits: (risk) => risk,
+        decide: (_deps, ctx, account, state) => {
+            const copied = copiedDecisions(ctx, state);
+            const decided = new Set(copied.map((d) => d.ticker));
+            const expired = account.portfolio.positions.filter(
+                (p) => !decided.has(p.ticker) && addDays(p.openedOn, TIME_EXIT_DAYS) < ctx.asOf,
+            );
+            return Promise.resolve([...copied, ...expired.map((p) => timeExit(p.ticker))]);
+        },
+    },
 ];
+
+/** The real account's buys, and its sells of what this portfolio holds. No extra AI call. */
+function copiedDecisions(ctx: ShadowContext, state: BrokerState): Decision[] {
+    const held = new Set(state.positions.map((p) => p.ticker));
+    return ctx.liveDecisions.filter((d) => d.action === "buy" || (d.action === "sell" && held.has(d.ticker)));
+}
+
+function timeExit(ticker: Ticker): Decision {
+    return {
+        ticker,
+        action: "sell",
+        targetWeight: 0,
+        confidence: 3,
+        stopLossPct: 0,
+        takeProfitPct: 0,
+        horizonDays: 0,
+        reasoning: `Held more than ${TIME_EXIT_DAYS} days without hitting its stop or target.`,
+    };
+}
 
 /** Tickers held by any virtual portfolio, so the evening run builds candidates for them too. */
 export async function shadowHoldings(deps: AppDeps): Promise<Ticker[]> {
@@ -251,7 +298,7 @@ async function simulateFor(deps: AppDeps, strategy: ShadowStrategy, today: Tradi
             if (bar) bars.set(ticker, bar);
         }
     }
-    const result = simulateDay(account.portfolio, orders, bars, today);
+    const result = simulateDay(account.portfolio, orders, bars, today, { stopAtClose: strategy.stopAtClose ?? false });
     const equity = portfolioValue(result.portfolio);
     await repos.shadow.recordDay({
         strategy: strategy.id,
