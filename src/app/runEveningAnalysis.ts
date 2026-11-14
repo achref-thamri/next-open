@@ -15,6 +15,7 @@ import {
 import { filterUniverse, type SecurityFacts } from "../core/universe/filters.js";
 import { rankCandidates } from "../core/universe/ranking.js";
 import { newId } from "../lib/ids.js";
+import type { Cents } from "../core/money.js";
 import type { NewsItem } from "../ports/news.js";
 import type { CandidateRecord, DecisionRecord } from "../ports/repositories.js";
 import { buildCandidate, CONTEXT_SYMBOLS, promptInput, sizeDecisions } from "./analysisShared.js";
@@ -275,12 +276,15 @@ async function propose(
         await deps.notifier.send("🛑 Daily loss stop hit: trading is halted. Send /resume to start again.");
     }
 
-    return result.orders.map((checked) => toProposal(checked, byOrderId, runId, tradeDate, config.mode === "paper"));
+    return result.orders.map((checked) =>
+        toProposal(checked, byOrderId, closes, runId, tradeDate, config.mode === "paper"),
+    );
 }
 
 function toProposal(
     checked: CheckedOrder,
     decisions: ReadonlyMap<string, Decision>,
+    closes: ReadonlyMap<Ticker, Cents>,
     runId: string,
     tradeDate: TradingDate,
     autoApprove: boolean,
@@ -288,6 +292,8 @@ function toProposal(
     const { order } = checked;
     const decision = decisions.get(order.id);
     if (!decision) throw new Error(`No decision for order ${order.id}`);
+    const previousClose = closes.get(order.ticker);
+    if (previousClose === undefined) throw new Error(`No close for ${order.ticker}`);
     const isBuy = order.side === "buy";
     return {
         id: order.id,
@@ -298,6 +304,7 @@ function toProposal(
         requestedQty: order.qty,
         qty: checked.qty,
         limitPrice: order.limitPrice,
+        previousClose,
         targetWeight: decision.targetWeight,
         stopLossPct: isBuy ? decision.stopLossPct : undefined,
         takeProfitPct: isBuy ? decision.takeProfitPct : undefined,

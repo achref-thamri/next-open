@@ -21,3 +21,11 @@ live mode. Overnight news can gap a stock far from the price the decision was ba
 
 - Predictable cost (about $0.03 per call) and a human-friendly approval window.
 - Some good trades are missed on gaps. Accepted: chasing gaps is how fast traders buy tops.
+
+## Changes
+
+- 2026-11-14: the stop-loss and take-profit are measured from the previous close, not from the limit price. A buy
+  usually fills below its limit, so a stop measured from the limit sat closer than the model asked for. On
+  13 Nov CSCO filled at $100.47 with a 7% stop that was really 4.6%, and it was sold two hours later. The fill
+  price isn't known when the bracket is placed, so the previous close is the closest stand-in. Both legs still stay
+  at least a cent away from the limit, which Alpaca requires.

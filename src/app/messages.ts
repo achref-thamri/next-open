@@ -10,7 +10,12 @@ export function proposalText(p: Proposal): string {
         `Target ${shortPercent(p.targetWeight)} of equity · confidence ${p.confidence}/5 · ≈ ${formatCents(multiplyCents(p.limitPrice, p.qty))}`,
     ];
     if (p.side === "buy" && p.stopLossPct !== undefined && p.takeProfitPct !== undefined) {
-        const { stopLossPrice, takeProfitPrice } = bracketPrices(p.limitPrice, p.stopLossPct, p.takeProfitPct);
+        const { stopLossPrice, takeProfitPrice } = bracketPrices(
+            p.previousClose,
+            p.limitPrice,
+            p.stopLossPct,
+            p.takeProfitPct,
+        );
         lines.push(
             `Stop ${formatCents(stopLossPrice)} (−${shortPercent(p.stopLossPct)}) · target ${formatCents(takeProfitPrice)} (+${shortPercent(p.takeProfitPct)})`,
         );

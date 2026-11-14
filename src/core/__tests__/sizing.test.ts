@@ -107,15 +107,29 @@ describe("limitPrice", () => {
 });
 
 describe("bracketPrices", () => {
-    it("places stop below and target above the limit", () => {
-        expect(bracketPrices(cents(10_000), 0.08, 0.15)).toEqual({ stopLossPrice: 9_200, takeProfitPrice: 11_500 });
+    it("measures stop and target from the previous close, not the limit", () => {
+        // CSCO on 13 Nov 2026: close $102.01, limit $103.03, 7% stop. From the limit the stop was $95.82.
+        expect(bracketPrices(cents(10_201), cents(10_303), 0.07, 0.12)).toEqual({
+            stopLossPrice: 9_486,
+            takeProfitPrice: 11_426,
+        });
     });
 
     it("rounds the stop down and the target up", () => {
-        expect(bracketPrices(cents(18_929), 0.07, 0.12)).toEqual({ stopLossPrice: 17_603, takeProfitPrice: 21_201 });
+        expect(bracketPrices(cents(18_929), cents(18_929), 0.07, 0.12)).toEqual({
+            stopLossPrice: 17_603,
+            takeProfitPrice: 21_201,
+        });
     });
 
     it("keeps at least one cent between the legs and the limit", () => {
-        expect(bracketPrices(cents(500), 0, 0)).toEqual({ stopLossPrice: 499, takeProfitPrice: 501 });
+        expect(bracketPrices(cents(500), cents(500), 0, 0)).toEqual({ stopLossPrice: 499, takeProfitPrice: 501 });
+    });
+
+    it("keeps the target above a limit that sits further from the close than the target", () => {
+        expect(bracketPrices(cents(10_000), cents(10_300), 0.05, 0.02)).toEqual({
+            stopLossPrice: 9_500,
+            takeProfitPrice: 10_301,
+        });
     });
 });
