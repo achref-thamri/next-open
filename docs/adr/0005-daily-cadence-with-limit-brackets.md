@@ -4,8 +4,8 @@ Date: 2026-10-30 · Status: accepted
 
 ## Context
 
-Next Open is not competing on speed, an LLM call is slow and costs money, and the owner approves trades by phone in
-live mode. Overnight news can gap a stock far from the price the decision was based on.
+Next Open is not competing on speed, an LLM call is slow and costs money, and in live mode each trade is approved
+by phone. Overnight news can gap a stock far from the price the decision was based on.
 
 ## Decision
 
