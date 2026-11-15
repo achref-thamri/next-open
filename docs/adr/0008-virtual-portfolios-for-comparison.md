@@ -25,6 +25,6 @@ estimated tax.
 - 15 November 2026: two exit-rule portfolios copy the real account's buys and sells instead of making their own
   call, so they cost nothing and differ only in how they exit. `claude_close_stop` checks the stop-loss against the
   close and sells there, after CSCO was stopped out two hours after buying on 13 November. `claude_time_exit` keeps
-  the usual brackets and sells anything held more than 28 days. They copy what the model decided whether or not the
-  owner approves it, and they start on their own first evening, so the reports label them with that date.
+  the usual brackets and sells anything held more than 28 days. They copy what the model decided, approved or not, and
+  they start on their own first evening, so the reports label them with that date.
 - Simulated fills from daily bars are approximate; the real account is the reference for execution quality.
