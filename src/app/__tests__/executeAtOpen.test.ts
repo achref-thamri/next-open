@@ -192,6 +192,83 @@ describe("executeAtOpen", () => {
         expect(h.notifier.texts()[0]).toContain("⛔ buy AAA refused by the broker: asset not tradable");
     });
 
+    it("keeps placing after a temporary broker error and reports every order", async () => {
+        await seed(h, [proposal("p1", "AAA"), proposal("p2", "BBB"), proposal("p3", "CCC")]);
+
+        const result = await executeAtOpen(withFailureOnSecondOrder(h));
+
+        expect(result).toEqual({ status: "failed", message: "1 of 3 orders hit an error" });
+        expect(h.broker.allOrders().map((o) => o.clientOrderId)).toEqual(["no-p1", "no-p3"]);
+        expect(await statuses()).toEqual([
+            ["p1", "executed", 10],
+            ["p2", "approved", 10],
+            ["p3", "executed", 10],
+        ]);
+        // One summary, naming what went through and what did not; no "no trades were made" alert.
+        expect(h.notifier.texts()).toHaveLength(1);
+        const [summary] = h.notifier.texts();
+        expect(summary).toContain("🟢 buy 10 AAA");
+        expect(summary).toContain("⚠️ buy BBB not placed: connection reset");
+        expect(summary).toContain("🟢 buy 10 CCC");
+    });
+
+    it("records an order that reached the broker even though the call errored", async () => {
+        await seed(h, [proposal("p1", "AAA")]);
+        const place = h.broker.placeOrder.bind(h.broker);
+        h.broker.placeOrder = async (intent) => {
+            await place(intent);
+            throw new TransientError("timeout");
+        };
+
+        const result = await executeAtOpen(h);
+
+        expect(result.status).toBe("succeeded");
+        expect(await statuses()).toEqual([["p1", "executed", 10]]);
+        expect(h.notifier.texts()[0]).toContain("🟢 buy 10 AAA");
+    });
+
+    it.each([
+        ["refused", new PermanentError("asset not tradable"), "⛔ sell BBB refused by the broker: asset not tradable"],
+        ["errored", new TransientError("connection reset"), "⚠️ sell BBB not placed: connection reset"],
+    ])(
+        "warns that the position has no stop-loss when a sell is %s after its legs were cancelled",
+        async (_, error, line) => {
+            h.broker.seedPosition(toTicker("BBB"), 20, cents(10_000));
+            await h.broker.placeOrder({
+                clientOrderId: "no-old",
+                ticker: toTicker("BBB"),
+                side: "buy",
+                qty: 5,
+                limitPrice: cents(10_000),
+                stopLossPrice: cents(9_000),
+                takeProfitPrice: cents(12_000),
+            });
+            h.broker.openMarket(new Map([[toTicker("BBB"), cents(10_000)]]));
+            await seed(h, [
+                proposal("p1", "BBB", { side: "sell", qty: 25, stopLossPct: undefined, takeProfitPct: undefined }),
+            ]);
+            h.broker.failures.failNext("placeOrder", error);
+
+            await executeAtOpen(h);
+
+            const summary = h.notifier.texts()[0] ?? "";
+            expect(summary).toContain(line);
+            expect(summary).toContain("BBB now has no stop-loss or take-profit");
+        },
+    );
+
+    it("says nothing about protection when the legs were never cancelled", async () => {
+        h.broker.seedPosition(toTicker("BBB"), 20, cents(10_000));
+        await seed(h, [
+            proposal("p1", "BBB", { side: "sell", qty: 20, stopLossPct: undefined, takeProfitPct: undefined }),
+        ]);
+        h.broker.failures.failNext("placeOrder", new TransientError("connection reset"));
+
+        await executeAtOpen(h);
+
+        expect(h.notifier.texts()[0]).not.toContain("stop-loss");
+    });
+
     it("expires unapproved proposals and never executes them", async () => {
         await seed(h, [proposal("p1", "AAA", { status: "pending" })]);
 
