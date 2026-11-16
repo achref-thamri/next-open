@@ -117,8 +117,8 @@ docker compose logs -f
 - A nightly online backup of the SQLite database runs at 02:00 New York time into `BACKUP_DIR`; 14 days are kept.
 - The scheduler touches a heartbeat file every minute, and the Docker health check fails when it is older than
   three minutes.
-- `HEALTHCHECK_PING_URL` (for example healthchecks.io, with a 5-minute period) is pinged while the scheduler runs,
-  so you hear about it when the whole server goes quiet.
+- `HEALTHCHECK_PING_URL` (for example healthchecks.io, with a 5-minute period) is pinged while the scheduler runs
+  and Telegram polling is up, so you hear about it when the whole server goes quiet or nobody can approve orders.
 - A restart without a clean shutdown sends a Telegram alert, at most once an hour.
 
 ## Read-only access

@@ -126,6 +126,12 @@ and estimated Danish tax, so the paper period answers whether the AI adds anythi
 - Daily vendor quotas are budgeted per day in SQLite (`api_usage`); hitting one pauses the job until the next day
   instead of failing it.
 - Orders use `client_order_id` derived from the proposal id, so retries and restarts cannot double-submit.
+- At the open, an order that errors does not stop the others. After a timeout or 5xx the order is looked up by its
+  client order id, since it may have reached the broker. The "Orders for…" message lists every order either way,
+  and says so when a failed sell leaves a position without its stop-loss and take-profit.
+- Telegram polling that fails is retried every 5 minutes, with one alert per outage (`lib/keepPolling.ts`).
+- On shutdown each step runs even if one before it fails, and the running job gets up to 100 seconds to finish
+  (`lib/shutdown.ts`). Docker's `stop_grace_period` is 2 minutes, above that limit.
 - At startup Next Open switches margin and short selling off at the broker and refuses to run if it cannot verify it.
 - Going live needs both `TRADING_MODE=live` and a `/golive` confirmation in Telegram.
 

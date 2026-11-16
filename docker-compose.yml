@@ -7,6 +7,9 @@ services:
             dockerfile: docker/Dockerfile
         image: next-open:latest
         restart: unless-stopped
+        # Docker's default 10 s would kill a running job (such as the open) mid-way on a restart or reboot;
+        # shutdown waits for it. Keep this above SHUTDOWN_LIMIT_MS in src/main.ts.
+        stop_grace_period: 2m
         env_file: .env
         environment:
             DATABASE_PATH: /data/next-open.db

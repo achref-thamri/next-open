@@ -93,6 +93,7 @@ async function execute(deps: AppDeps, today: TradingDate): Promise<JobResult | u
 
     const byId = new Map(remaining.map((p) => [p.id, p]));
     const heldQty = new Map(positions.map((p) => [p.ticker, p.qty]));
+    let errors = 0;
     for (const checked of result.orders) {
         const proposal = byId.get(checked.order.id);
         if (!proposal) continue;
@@ -109,45 +110,88 @@ async function execute(deps: AppDeps, today: TradingDate): Promise<JobResult | u
                 `✂️ ${proposal.side} ${proposal.ticker} trimmed from ${proposal.qty} to ${qty}: ${checked.notes.join("; ")}`,
             );
         }
-        lines.push(await place(deps, { ...proposal, qty }, openOrders, heldQty.get(proposal.ticker) ?? 0, today));
+        // One order's error must not stop the others or hide the ones already placed from the summary.
+        try {
+            const placed = await place(
+                deps,
+                { ...proposal, qty },
+                openOrders,
+                heldQty.get(proposal.ticker) ?? 0,
+                today,
+            );
+            lines.push(placed.line);
+            if (placed.error) errors++;
+        } catch (error) {
+            errors++;
+            deps.logger.error({ err: error, proposal: proposal.id }, "order handling failed");
+            lines.push(
+                `⚠️ ${proposal.side} ${proposal.ticker} hit an error: ${messageOf(error)}. Check the broker before acting.`,
+            );
+        }
     }
 
     await notifier.send([`Orders for ${today}:`, ...lines].join("\n"));
+    // The summary above already told the owner, so the run is marked failed without a second alert.
+    if (errors > 0) return { status: "failed", message: `${errors} of ${result.orders.length} orders hit an error` };
     return undefined;
 }
 
-/** Places one order, cancelling the position's bracket legs first for a sell (they reserve the shares). */
+/**
+ * Places one order, cancelling the position's bracket legs first for a sell (they reserve the shares). Broker
+ * errors become a line for the summary; `error` marks one that was neither placed nor refused.
+ */
 async function place(
     deps: AppDeps,
     proposal: Proposal,
     openOrders: BrokerOrder[],
     held: number,
     today: TradingDate,
-): Promise<string> {
-    const { broker, repos } = deps;
+): Promise<{ line: string; error?: true }> {
+    const { broker, repos, logger } = deps;
     const intent = orderIntent(proposal);
-    let note = "";
-    if (proposal.side === "sell") {
-        const legs = openOrders
-            .filter((o) => o.ticker === proposal.ticker)
-            .flatMap((o) => [o, ...o.legs])
-            .filter((o) => o.role === "stop_loss" || o.role === "take_profit");
-        for (const leg of legs) await broker.cancelOrder(leg.id);
-        if (legs.length > 0 && held > proposal.qty) note = " (the remaining shares no longer have a stop-loss)";
-    }
+    const label = `${proposal.side} ${proposal.ticker}`;
+    let legsCancelled = false;
+    let order: BrokerOrder | undefined;
     try {
-        const order = await broker.placeOrder(intent);
-        await recordPlaced(deps, proposal, order, today);
-        return `${proposal.side === "buy" ? "🟢" : "🔴"} ${proposal.side} ${proposal.qty} ${proposal.ticker} at ${proposal.side === "buy" ? "≤" : "≥"} ${formatCents(proposal.limitPrice)}${note}`;
+        if (proposal.side === "sell") {
+            const legs = openOrders
+                .filter((o) => o.ticker === proposal.ticker)
+                .flatMap((o) => [o, ...o.legs])
+                .filter((o) => o.role === "stop_loss" || o.role === "take_profit");
+            for (const leg of legs) {
+                await broker.cancelOrder(leg.id);
+                legsCancelled = true;
+            }
+        }
+        order = await broker.placeOrder(intent);
     } catch (error) {
-        if (!(error instanceof PermanentError)) throw error;
-        await repos.proposals.updateRisk(proposal.id, proposal.qty, [
-            ...proposal.riskNotes,
-            `broker refused: ${error.message}`,
-        ]);
-        await repos.proposals.transition(proposal.id, ["approved"], "rejected");
-        return `⛔ ${proposal.side} ${proposal.ticker} refused by the broker: ${error.message}`;
+        const unprotected = legsCancelled
+            ? `\n   ⚠️ ${proposal.ticker} now has no stop-loss or take-profit: set one by hand at the broker.`
+            : "";
+        if (error instanceof PermanentError) {
+            await repos.proposals.updateRisk(proposal.id, proposal.qty, [
+                ...proposal.riskNotes,
+                `broker refused: ${error.message}`,
+            ]);
+            await repos.proposals.transition(proposal.id, ["approved"], "rejected");
+            return { line: `⛔ ${label} refused by the broker: ${error.message}${unprotected}` };
+        }
+        // A timeout or 5xx can still have reached the broker; the stable client order id tells.
+        order = await broker.getOrderByClientId(intent.clientOrderId).catch(() => undefined);
+        if (!order) {
+            logger.error({ err: error, proposal: proposal.id }, "order not placed");
+            return { line: `⚠️ ${label} not placed: ${messageOf(error)}${unprotected}`, error: true };
+        }
     }
+    await recordPlaced(deps, proposal, order, today);
+    const note = legsCancelled && held > proposal.qty ? " (the remaining shares no longer have a stop-loss)" : "";
+    return {
+        line: `${proposal.side === "buy" ? "🟢" : "🔴"} ${proposal.side} ${proposal.qty} ${proposal.ticker} at ${proposal.side === "buy" ? "≤" : "≥"} ${formatCents(proposal.limitPrice)}${note}`,
+    };
+}
+
+function messageOf(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
 }
 
 function orderIntent(proposal: Proposal): OrderIntent {
