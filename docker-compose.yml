@@ -10,6 +10,8 @@ services:
         # Docker's default 10 s would kill a running job (such as the open) mid-way on a restart or reboot;
         # shutdown waits for it. Keep this above SHUTDOWN_LIMIT_MS in src/main.ts.
         stop_grace_period: 2m
+        # Shares the server with Closing Line; it uses about 70 MB, so this only stops a runaway process.
+        mem_limit: 512m
         env_file: .env
         environment:
             DATABASE_PATH: /data/next-open.db
