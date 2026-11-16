@@ -162,6 +162,23 @@ describe("executeAtOpen", () => {
         expect(h.notifier.texts()[0]).toContain("⛔ buy AAA not placed: trading is halted");
     });
 
+    it("still places sells while the daily loss stop halt is on", async () => {
+        h.broker.seedPosition(toTicker("BBB"), 10, cents(10_000));
+        await seed(h, [
+            proposal("p1", "AAA"),
+            proposal("p2", "BBB", { side: "sell", stopLossPct: undefined, takeProfitPct: undefined }),
+        ]);
+        await h.repos.settings.update({ halted: true, haltReason: "daily loss stop on 2026-11-02" });
+
+        await executeAtOpen(h);
+
+        expect(h.broker.allOrders().map((o) => [o.clientOrderId, o.side])).toEqual([["no-p2", "sell"]]);
+        expect(await statuses()).toEqual([
+            ["p1", "rejected", 0],
+            ["p2", "executed", 10],
+        ]);
+    });
+
     it("records trims made against the live account", async () => {
         // $100,500 equity but only $10,500 cash: keeping $10,050 leaves $450, enough for 4 shares at $101.
         const calendar = h.broker.calendar;

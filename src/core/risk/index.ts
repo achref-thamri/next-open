@@ -12,6 +12,7 @@ import { universeRule } from "./universe.js";
 
 export type { OrderRequest, RiskContext, RiskRule, SimulatedPortfolio } from "./types.js";
 export { dailyLossBreached } from "./dailyLoss.js";
+export { haltOf, LOSS_STOP_REASON } from "./halted.js";
 
 /** Run in this order, the same as the list in docs/architecture.md. */
 const RISK_RULES: readonly RiskRule[] = [

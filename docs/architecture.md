@@ -82,14 +82,15 @@ token usage and cost are stored per call so any decision can be replayed and exp
 `src/core/risk` has one file per rule, run in order by `runRiskChecks`. Each returns accept, trim (with a new size)
 or reject, and the reason is stored and shown in Telegram.
 
-1. Halted (manual `/stop` or daily loss stop): reject new orders.
+1. Halted: after a manual `/stop`, reject every order; after the daily loss stop, reject buys and let sells through.
 2. Long only: no short positions.
 3. Universe: the ticker must still pass the filters.
 4. Max position size (20% of equity): trim.
 5. Max positions (5): reject new buys unless a sell frees a slot.
 6. Min cash (10%): trim buys.
 7. Daily caps (10 orders, 40% of equity traded).
-8. Daily loss (−3% against the previous close): halt and alert.
+8. Daily loss (−3% against the previous close): reject buys, halt and alert. Sells still go through, since they
+   only lower the money at risk.
 
 Limits come from config (`src/config/schema.ts`), validated at startup. The defaults are sized for an account of
 about $3,000 ([ADR 0009](adr/0009-sized-for-a-small-account.md)). Before any of this, the evening leaves out stocks

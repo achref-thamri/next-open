@@ -89,23 +89,43 @@ describe("runRiskChecks", () => {
         expect(result.portfolio.ordersToday).toBe(0);
     });
 
-    it("rejects everything when halted", () => {
+    it("rejects everything after a manual /stop", () => {
         const result = runRiskChecks(
             [order("AAA", "sell", 1), order("BBB", "buy", 1)],
             portfolio({ holdings: { AAA: 1 } }),
-            context({ halted: true }),
+            context({ halted: "manual" }),
         );
 
         expect(result.orders.every((o) => o.status === "rejected" && o.notes[0] === "trading is halted")).toBe(true);
     });
 
-    it("sets the halt flag and rejects all orders on the daily loss stop", () => {
+    it("sets the halt flag and rejects buys but not sells on the daily loss stop", () => {
         const account = { equity: cents(9_700_000), cash: cents(5_000_000), previousCloseEquity: EQUITY };
 
-        const result = runRiskChecks([order("AAA", "buy", 1)], portfolio(), context({ account }));
+        const result = runRiskChecks(
+            [order("AAA", "buy", 1), order("BBB", "sell", 1)],
+            portfolio({ holdings: { BBB: 1 } }),
+            context({ account }),
+        );
 
         expect(result.halt).toBe(true);
-        expect(result.orders[0]?.status).toBe("rejected");
+        expect(result.orders.map((o) => [o.order.ticker, o.status])).toEqual([
+            ["BBB", "accepted"],
+            ["AAA", "rejected"],
+        ]);
+    });
+
+    it("keeps letting sells through on later days while the loss stop halt stays on", () => {
+        const result = runRiskChecks(
+            [order("AAA", "buy", 1), order("BBB", "sell", 1)],
+            portfolio({ holdings: { BBB: 1 } }),
+            context({ halted: "loss_stop" }),
+        );
+
+        expect(result.orders.map((o) => [o.order.ticker, o.status])).toEqual([
+            ["BBB", "accepted"],
+            ["AAA", "rejected"],
+        ]);
     });
 
     it("sets the halt flag even with no orders", () => {

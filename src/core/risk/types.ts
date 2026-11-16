@@ -12,11 +12,14 @@ export interface OrderRequest {
     limitPrice: Cents;
 }
 
+/** No halt, a manual /stop, or the daily loss stop (which still lets sells through). */
+export type Halt = false | "manual" | "loss_stop";
+
 /** Fixed inputs for one pipeline run. */
 export interface RiskContext {
     limits: RiskLimits;
     universeLimits: UniverseLimits;
-    halted: boolean;
+    halted: Halt;
     account: Account;
     /** Latest facts for the universe filters; a missing ticker is rejected for buys. */
     securities: ReadonlyMap<Ticker, SecurityFacts>;

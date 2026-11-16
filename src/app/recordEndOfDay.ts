@@ -1,5 +1,5 @@
 import { percent, signedPercent } from "../core/format.js";
-import { dailyLossBreached } from "../core/risk/index.js";
+import { dailyLossBreached, LOSS_STOP_REASON } from "../core/risk/index.js";
 import { cents, formatCents } from "../core/money.js";
 import { toTicker, tradingDateOf, type Account, type Cents, type TradingDate } from "../core/types.js";
 import { OPEN_ORDER_STATUSES, type BrokerFill, type BrokerOrder } from "../ports/broker.js";
@@ -67,8 +67,8 @@ async function endOfDay(deps: AppDeps, today: TradingDate): Promise<void> {
         !settings.halted &&
         dailyLossBreached(account.equity, account.previousCloseEquity, config.risk.dailyLossStopPct)
     ) {
-        await repos.settings.update({ halted: true, haltReason: `daily loss stop on ${today}` });
-        lines.push("🛑 Daily loss stop hit: trading is halted. Send /resume to start again.");
+        await repos.settings.update({ halted: true, haltReason: `${LOSS_STOP_REASON} on ${today}` });
+        lines.push("🛑 Daily loss stop hit: no new buys until you send /resume. Sells still go through.");
     }
 
     const perf = await performance({ repos, clock, config }, positions);
