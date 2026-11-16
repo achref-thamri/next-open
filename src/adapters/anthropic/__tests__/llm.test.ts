@@ -123,10 +123,21 @@ describe("AnthropicLlm", () => {
         });
     });
 
-    it("records zero cost for a model without a price", async () => {
+    it("prices an answer from an unlisted fallback model at the configured model's price", async () => {
         const other = { ...(fixture("valid.json") as object), model: "claude-future-9" };
 
-        expect((await llm(other).adapter.decide(prompt)).call.costUsd).toBe(0);
+        expect((await llm(other).adapter.decide(prompt)).call.costUsd).toBeCloseTo(0.0394, 6);
+    });
+
+    it("refuses a configured model without a price, so AI costs never read 0", () => {
+        expect(
+            () =>
+                new AnthropicLlm({
+                    client: { beta: { messages: { create: vi.fn() } } } as unknown as MessagesClient,
+                    model: "claude-future-9",
+                    logger: pino({ level: "silent" }),
+                }),
+        ).toThrow("no price for ANTHROPIC_MODEL=claude-future-9");
     });
 
     it("lets API errors propagate", async () => {

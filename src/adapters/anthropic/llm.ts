@@ -49,6 +49,12 @@ export class AnthropicLlm implements Llm {
     private readonly now: () => number;
 
     constructor(private readonly options: AnthropicLlmOptions) {
+        // Fail at startup rather than record every call as free.
+        if (!PRICES[options.model]) {
+            throw new Error(
+                `no price for ANTHROPIC_MODEL=${options.model}; add it to PRICES in src/adapters/anthropic/llm.ts`,
+            );
+        }
         this.now = options.now ?? Date.now;
     }
 
@@ -96,10 +102,11 @@ export class AnthropicLlm implements Llm {
             cache_creation_input_tokens: number | null;
         },
     ): number {
-        const price = PRICES[model];
+        let price = PRICES[model];
         if (!price) {
-            this.options.logger.warn({ model }, "no price for model; cost recorded as 0");
-            return 0;
+            // A server-side fallback can answer on another model; the configured one is the closest estimate.
+            this.options.logger.warn({ model, pricedAs: this.options.model }, "no price for the answering model");
+            price = PRICES[this.options.model] ?? { input: 0, output: 0, cacheRead: 0 };
         }
         const perToken = (usd: number) => usd / 1_000_000;
         return (

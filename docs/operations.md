@@ -14,6 +14,9 @@ Copy `.env.example` to `.env` and fill it in. Each line there says what it is fo
 
 Next Open checks the config at startup and refuses to start if anything is wrong, listing every problem at once.
 
+`ANTHROPIC_MODEL` defaults to `claude-sonnet-5-5`. Next Open refuses to start with a model that has no price in
+`PRICES` (`src/adapters/anthropic/llm.ts`), so the AI cost figures are never silently 0.
+
 ## Settings
 
 Risk limits, universe filters and tax rates have defaults in [`src/config/schema.ts`](../src/config/schema.ts). To
