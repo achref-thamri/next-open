@@ -1,5 +1,5 @@
 import { cents, formatCents } from "../core/money.js";
-import { runRiskChecks, simulatePortfolio, type OrderRequest } from "../core/risk/index.js";
+import { haltOf, LOSS_STOP_REASON, runRiskChecks, simulatePortfolio, type OrderRequest } from "../core/risk/index.js";
 import { bracketPrices } from "../core/sizing.js";
 import { tradingDateOf, type OrderIntent, type Proposal, type Ticker, type TradingDate } from "../core/types.js";
 import type { SecurityFacts } from "../core/universe/filters.js";
@@ -81,14 +81,14 @@ async function execute(deps: AppDeps, today: TradingDate): Promise<JobResult | u
         {
             limits: config.risk,
             universeLimits: config.universe,
-            halted: settings.halted,
+            halted: haltOf(settings),
             account,
             securities: candidates,
         },
     );
     if (result.halt && !settings.halted) {
-        await repos.settings.update({ halted: true, haltReason: "daily loss stop" });
-        lines.push("🛑 Daily loss stop hit: trading is halted. Send /resume to start again.");
+        await repos.settings.update({ halted: true, haltReason: LOSS_STOP_REASON });
+        lines.push("🛑 Daily loss stop hit: no new buys until you send /resume. Sells still go through.");
     }
 
     const byId = new Map(remaining.map((p) => [p.id, p]));

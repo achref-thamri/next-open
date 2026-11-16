@@ -21,3 +21,8 @@ limits, and news headlines in the prompt are untrusted text that could try to st
 - The worst a bad answer can do is bounded by config, not by the model's judgment.
 - Limits are testable without calling a model.
 - The rules are informational in the prompt too, so the model rarely proposes trades that get trimmed.
+
+## Updates
+
+- 2026-11-16: the daily loss stop now blocks buys only. Sells still go through, during the halt and on later days
+  until `/resume`, because a sell can only lower the money at risk. A manual `/stop` still blocks every order.

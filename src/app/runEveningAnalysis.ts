@@ -1,4 +1,4 @@
-import { runRiskChecks, simulatePortfolio, type CheckedOrder } from "../core/risk/index.js";
+import { haltOf, LOSS_STOP_REASON, runRiskChecks, simulatePortfolio, type CheckedOrder } from "../core/risk/index.js";
 import { oneShareFits } from "../core/sizing.js";
 import { positionOpenDates } from "../core/trades.js";
 import {
@@ -272,13 +272,13 @@ async function propose(
     const result = runRiskChecks(orders, simulatePortfolio(state.account, state.positions), {
         limits: config.risk,
         universeLimits: config.universe,
-        halted: settings.halted,
+        halted: haltOf(settings),
         account: state.account,
         securities,
     });
     if (result.halt && !settings.halted) {
-        await repos.settings.update({ halted: true, haltReason: "daily loss stop" });
-        await deps.notifier.send("🛑 Daily loss stop hit: trading is halted. Send /resume to start again.");
+        await repos.settings.update({ halted: true, haltReason: LOSS_STOP_REASON });
+        await deps.notifier.send("🛑 Daily loss stop hit: no new buys until you send /resume. Sells still go through.");
     }
 
     return result.orders.map((checked) =>

@@ -39,15 +39,15 @@ difference comes from the exit rule alone.
 
 ## Risk rules
 
-| Rule           | Limit                                                                  |
-| -------------- | ---------------------------------------------------------------------- |
-| Position size  | At most 20% of equity per stock                                        |
-| Positions      | At most 5 at once                                                      |
-| Cash           | At least 10% of equity stays in cash                                   |
-| Daily activity | At most 10 orders and 40% of equity traded per day                     |
-| Daily loss     | Trading halts when equity falls 3% below the previous close            |
-| Entry price    | Buys at most 1% above the last close, so an overnight gap isn't chased |
-| Instruments    | Long only, US common stocks, no margin, shorts, options or ETFs        |
+| Rule           | Limit                                                                   |
+| -------------- | ----------------------------------------------------------------------- |
+| Position size  | At most 20% of equity per stock                                         |
+| Positions      | At most 5 at once                                                       |
+| Cash           | At least 10% of equity stays in cash                                    |
+| Daily activity | At most 10 orders and 40% of equity traded per day                      |
+| Daily loss     | Buying halts when equity falls 3% below the previous close; sells go on |
+| Entry price    | Buys at most 1% above the last close, so an overnight gap isn't chased  |
+| Instruments    | Long only, US common stocks, no margin, shorts, options or ETFs         |
 
 A buy carries a stop-loss and a take-profit at the broker, both measured from the last close. The limits are defaults in
 [`src/config/schema.ts`](src/config/schema.ts) and can be changed with a settings file.

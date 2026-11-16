@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { cents } from "../../money.js";
 import { dailyCapsRule } from "../dailyCaps.js";
 import { dailyLossBreached, dailyLossRule } from "../dailyLoss.js";
-import { haltedRule } from "../halted.js";
+import { haltedRule, haltOf } from "../halted.js";
 import { longOnlyRule } from "../longOnly.js";
 import { maxPositionRule } from "../maxPosition.js";
 import { maxPositionsRule } from "../maxPositions.js";
@@ -13,12 +13,33 @@ import { context, EQUITY, order, portfolio, security } from "./fixtures.js";
 const accept = { kind: "accept" };
 
 describe("haltedRule", () => {
-    it("rejects every order when halted", () => {
-        expect(haltedRule(order("AAA", "sell", 1), portfolio(), context({ halted: true }))).toEqual({
-            kind: "reject",
-            reason: "trading is halted",
-        });
+    it("rejects every order after a manual /stop", () => {
+        for (const side of ["buy", "sell"] as const) {
+            expect(haltedRule(order("AAA", side, 1), portfolio(), context({ halted: "manual" }))).toEqual({
+                kind: "reject",
+                reason: "trading is halted",
+            });
+        }
         expect(haltedRule(order("AAA", "buy", 1), portfolio(), context())).toEqual(accept);
+    });
+
+    it("lets sells through after the daily loss stop, since they only lower the risk", () => {
+        const halted = context({ halted: "loss_stop" });
+        expect(haltedRule(order("AAA", "sell", 1), portfolio(), halted)).toEqual(accept);
+        expect(haltedRule(order("AAA", "buy", 1), portfolio(), halted)).toEqual({
+            kind: "reject",
+            reason: "trading is halted by the daily loss stop; only sells go through",
+        });
+    });
+});
+
+describe("haltOf", () => {
+    it("tells the daily loss stop from a manual halt, and treats anything unknown as manual", () => {
+        expect(haltOf({ halted: false, haltReason: undefined })).toBe(false);
+        expect(haltOf({ halted: true, haltReason: "daily loss stop" })).toBe("loss_stop");
+        expect(haltOf({ halted: true, haltReason: "daily loss stop on 2026-11-16" })).toBe("loss_stop");
+        expect(haltOf({ halted: true, haltReason: "manual /stop" })).toBe("manual");
+        expect(haltOf({ halted: true, haltReason: undefined })).toBe("manual");
     });
 });
 
@@ -182,6 +203,10 @@ describe("dailyLossRule", () => {
     it("accepts just above the -3% stop and rejects at it", () => {
         expect(dailyLossRule(order("AAA", "buy", 1), portfolio(), withEquity(9_700_001))).toEqual(accept);
         expect(dailyLossRule(order("AAA", "buy", 1), portfolio(), withEquity(9_700_000)).kind).toBe("reject");
+    });
+
+    it("lets sells through at the stop", () => {
+        expect(dailyLossRule(order("AAA", "sell", 1), portfolio(), withEquity(9_000_000))).toEqual(accept);
     });
 
     it("never triggers without a previous close", () => {
