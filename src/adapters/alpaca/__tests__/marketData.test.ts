@@ -57,7 +57,7 @@ describe("AlpacaMarketData", () => {
             close: 33_268,
             volume: 31_304_503,
         });
-        expect(bars.map((b) => b.date)).toEqual([...bars.map((b) => b.date)].sort());
+        expect(bars.map((bar) => bar.date)).toEqual([...bars.map((bar) => bar.date)].sort());
     });
 
     it("always requests the SIP feed with split and dividend adjustment", async () => {
@@ -67,16 +67,16 @@ describe("AlpacaMarketData", () => {
 
         expect(urls[0]?.searchParams.get("feed")).toBe("sip");
         expect(urls[0]?.searchParams.get("adjustment")).toBe("all");
-        expect(urls.some((u) => u.searchParams.get("feed") === "iex")).toBe(false);
+        expect(urls.some((url) => url.searchParams.get("feed") === "iex")).toBe(false);
     });
 
     it("batches symbols 100 per request", async () => {
         const { marketData, urls } = setup(() => ({ bars: {}, next_page_token: null }));
-        const tickers = Array.from({ length: 250 }, (_, i) => toTicker(`T${i}`));
+        const tickers = Array.from({ length: 250 }, (_, index) => toTicker(`T${index}`));
 
         await marketData.getDailyBars(tickers, from, to);
 
-        expect(urls.map((u) => u.searchParams.get("symbols")?.split(",").length)).toEqual([100, 100, 50]);
+        expect(urls.map((url) => url.searchParams.get("symbols")?.split(",").length)).toEqual([100, 100, 50]);
     });
 
     it("follows pagination and merges pages per symbol", async () => {
@@ -97,8 +97,8 @@ describe("AlpacaMarketData", () => {
         const bars = await marketData.getDailyBars([toTicker("AAA"), toTicker("BBB")], from, to);
 
         expect(urls).toHaveLength(2);
-        expect(bars.get(toTicker("AAA"))?.map((b) => b.close)).toEqual([1000, 1100]);
-        expect(bars.get(toTicker("BBB"))?.map((b) => b.close)).toEqual([2000]);
+        expect(bars.get(toTicker("AAA"))?.map((dailyBar) => dailyBar.close)).toEqual([1000, 1100]);
+        expect(bars.get(toTicker("BBB"))?.map((dailyBar) => dailyBar.close)).toEqual([2000]);
     });
 
     it("never asks for SIP data from the last 15 minutes", async () => {
@@ -142,14 +142,14 @@ describe("AlpacaNews", () => {
             symbols: ["AAPL"],
         });
         const { news, urls } = setup((url) => ({
-            news: Array.from({ length: Number(url.searchParams.get("limit")) }, (_, i) => item(i)),
+            news: Array.from({ length: Number(url.searchParams.get("limit")) }, (_, index) => item(index)),
             next_page_token: "more",
         }));
 
         const items = await news.getNews({ since, until, tickers: [toTicker("AAPL")], limit: 70 });
 
         expect(items).toHaveLength(70);
-        expect(urls.map((u) => u.searchParams.get("limit"))).toEqual(["50", "20"]);
+        expect(urls.map((url) => url.searchParams.get("limit"))).toEqual(["50", "20"]);
         expect(urls[0]?.searchParams.get("symbols")).toBe("AAPL");
     });
 

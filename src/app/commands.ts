@@ -16,7 +16,10 @@ export const COMMANDS = [
     { command: "golive", description: "Confirm live trading (live mode only, gate must pass)" },
 ];
 
-export const HELP = ["Commands:", ...COMMANDS.map((c) => `${c.usage ?? `/${c.command}`}: ${c.description}`)].join("\n");
+export const HELP = [
+    "Commands:",
+    ...COMMANDS.map((entry) => `${entry.usage ?? `/${entry.command}`}: ${entry.description}`),
+].join("\n");
 
 /** Handles one owner command and returns the reply. Messages from any other chat get no reply. */
 export async function handleCommand(
@@ -60,8 +63,8 @@ async function status(deps: AppDeps): Promise<string> {
             : []),
         positions.length === 0 ? "No positions." : `Positions (${positions.length}):`,
         ...positions.map(
-            (p) =>
-                `• ${p.ticker} ${p.qty} @ ${formatCents(p.avgEntryPrice)} → ${formatCents(p.currentPrice)} (${signedPercent(p.avgEntryPrice > 0 ? p.currentPrice / p.avgEntryPrice - 1 : 0)})`,
+            (position) =>
+                `• ${position.ticker} ${position.qty} @ ${formatCents(position.avgEntryPrice)} → ${formatCents(position.currentPrice)} (${signedPercent(position.avgEntryPrice > 0 ? position.currentPrice / position.avgEntryPrice - 1 : 0)})`,
         ),
         `Open orders: ${openOrders.length} · pending approvals: ${pending.length}`,
     ];
@@ -72,7 +75,10 @@ async function status(deps: AppDeps): Promise<string> {
 async function stop(deps: AppDeps): Promise<string> {
     await deps.repos.settings.update({ halted: true, haltReason: "manual /stop" });
     const open = await deps.broker.listOpenOrders();
-    const toCancel = open.filter((o) => (o.role === "entry" || o.role === "exit") && o.filledQty < o.qty);
+    const toCancel = open.filter(
+        (brokerOrder) =>
+            (brokerOrder.role === "entry" || brokerOrder.role === "exit") && brokerOrder.filledQty < brokerOrder.qty,
+    );
     for (const order of toCancel) await deps.broker.cancelOrder(order.id);
     deps.logger.warn({ cancelled: toCancel.length }, "trading halted by owner");
     return `⛔ Trading halted. Cancelled ${toCancel.length} open order${toCancel.length === 1 ? "" : "s"}; stop-losses stay in place. Send /resume to start again.`;

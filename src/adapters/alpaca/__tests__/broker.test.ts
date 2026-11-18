@@ -154,7 +154,13 @@ describe("AlpacaBroker", () => {
                 status: "filled",
                 submittedAt: new Date("2026-11-03T14:30:01.120Z"),
             });
-            expect(order.legs.map((l) => [l.role, l.status, l.limitPrice ?? l.stopPrice])).toEqual([
+            expect(
+                order.legs.map((brokerOrder) => [
+                    brokerOrder.role,
+                    brokerOrder.status,
+                    brokerOrder.limitPrice ?? brokerOrder.stopPrice,
+                ]),
+            ).toEqual([
                 ["take_profit", "open", 22_715],
                 ["stop_loss", "open", 17_403],
             ]);
@@ -249,8 +255,8 @@ describe("AlpacaBroker", () => {
 
         it("follows pages of 100", async () => {
             const page = (start: number, count: number) =>
-                Array.from({ length: count }, (_, i) => ({
-                    id: `f${start + i}`,
+                Array.from({ length: count }, (_, index) => ({
+                    id: `f${start + index}`,
                     order_id: "o",
                     symbol: "AAPL",
                     side: "buy",

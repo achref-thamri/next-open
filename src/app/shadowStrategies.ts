@@ -73,13 +73,13 @@ export const SHADOW_STRATEGIES: readonly ShadowStrategy[] = [
         name: "Momentum rule",
         limits: (risk) => risk,
         decide: (_deps, ctx, _account, state, limits) => {
-            const holdings = new Set(state.positions.map((p) => p.ticker));
+            const holdings = new Set(state.positions.map((position) => position.ticker));
             // Rebalance on the last trading day of the week, and on the first run.
             const rebalance = weekOf(ctx.tradeDate) !== weekOf(ctx.asOf) || holdings.size === 0;
             if (!rebalance) return Promise.resolve([]);
             const rules = momentumRules(limits);
-            const affordable = ctx.eligible.filter((c) =>
-                oneShareFits(c.close, state.account.equity, rules.targetWeight),
+            const affordable = ctx.eligible.filter((candidate) =>
+                oneShareFits(candidate.close, state.account.equity, rules.targetWeight),
             );
             return Promise.resolve(momentumDecisions(affordable, ctx.history, holdings, rules));
         },
@@ -97,19 +97,23 @@ export const SHADOW_STRATEGIES: readonly ShadowStrategy[] = [
         limits: (risk) => risk,
         decide: (_deps, ctx, account, state) => {
             const copied = copiedDecisions(ctx, state);
-            const decided = new Set(copied.map((d) => d.ticker));
+            const decided = new Set(copied.map((decision) => decision.ticker));
             const expired = account.portfolio.positions.filter(
-                (p) => !decided.has(p.ticker) && addDays(p.openedOn, TIME_EXIT_DAYS) < ctx.asOf,
+                (virtualPosition) =>
+                    !decided.has(virtualPosition.ticker) &&
+                    addDays(virtualPosition.openedOn, TIME_EXIT_DAYS) < ctx.asOf,
             );
-            return Promise.resolve([...copied, ...expired.map((p) => timeExit(p.ticker))]);
+            return Promise.resolve([...copied, ...expired.map((virtualPosition) => timeExit(virtualPosition.ticker))]);
         },
     },
 ];
 
 /** The real account's buys, and its sells of what this portfolio holds. No extra AI call. */
 function copiedDecisions(ctx: ShadowContext, state: BrokerState): Decision[] {
-    const held = new Set(state.positions.map((p) => p.ticker));
-    return ctx.liveDecisions.filter((d) => d.action === "buy" || (d.action === "sell" && held.has(d.ticker)));
+    const held = new Set(state.positions.map((position) => position.ticker));
+    return ctx.liveDecisions.filter(
+        (decision) => decision.action === "buy" || (decision.action === "sell" && held.has(decision.ticker)),
+    );
 }
 
 function timeExit(ticker: Ticker): Decision {
@@ -130,7 +134,7 @@ export async function shadowHoldings(deps: AppDeps): Promise<Ticker[]> {
     const tickers: Ticker[] = [];
     for (const strategy of SHADOW_STRATEGIES) {
         const account = await deps.repos.shadow.getAccount(strategy.id);
-        tickers.push(...(account?.portfolio.positions.map((p) => p.ticker) ?? []));
+        tickers.push(...(account?.portfolio.positions.map((virtualPosition) => virtualPosition.ticker) ?? []));
     }
     return tickers;
 }
@@ -156,16 +160,16 @@ async function proposeFor(deps: AppDeps, ctx: ShadowContext, strategy: ShadowStr
     const snapshots = await repos.shadow.snapshots(strategy.id);
     const marked: VirtualPortfolio = {
         cash: account.portfolio.cash,
-        positions: account.portfolio.positions.map((p) => ({
-            ...p,
-            lastPrice: ctx.candidates.get(p.ticker)?.close ?? p.lastPrice,
+        positions: account.portfolio.positions.map((virtualPosition) => ({
+            ...virtualPosition,
+            lastPrice: ctx.candidates.get(virtualPosition.ticker)?.close ?? virtualPosition.lastPrice,
         })),
     };
     const state = asBrokerState(marked, snapshots.at(-1)?.equity ?? account.startValue);
     const limits = strategy.limits(config.risk);
 
     const decisions = await strategy.decide(deps, ctx, account, state, limits);
-    const closes = new Map([...ctx.candidates.values()].map((c) => [c.ticker, c.close]));
+    const closes = new Map([...ctx.candidates.values()].map((candidate) => [candidate.ticker, candidate.close]));
     const { orders, decisionOf } = sizeDecisions(decisions, closes, state, limits.maxEntryGapPct, logger);
     const checked = runRiskChecks(orders, simulatePortfolio(state.account, state.positions), {
         limits,
@@ -223,7 +227,7 @@ async function patientDecisions(
     state: BrokerState,
     limits: RiskLimits,
 ): Promise<Decision[]> {
-    const held = new Set(state.positions.map((p) => p.ticker));
+    const held = new Set(state.positions.map((position) => position.ticker));
     const pool: Candidate[] = [];
     for (const c of ctx.eligible) {
         if (held.has(c.ticker) || !oneShareFits(c.close, state.account.equity, limits.maxPositionWeight)) continue;
@@ -238,7 +242,7 @@ async function patientDecisions(
     const tickerNews = await deps.news.getNews({
         since: ctx.newsSince,
         until: deps.clock.now(),
-        tickers: shortlist.map((c) => c.ticker),
+        tickers: shortlist.map((candidate) => candidate.ticker),
         limit: 100,
     });
     const prompt = buildPrompt(
@@ -251,7 +255,12 @@ async function patientDecisions(
             marketNews: ctx.marketNews,
             tickerNews,
             recentDecisions: [],
-            openDates: new Map(account.portfolio.positions.map((p) => [p.ticker, p.openedOn])),
+            openDates: new Map(
+                account.portfolio.positions.map((virtualPosition) => [
+                    virtualPosition.ticker,
+                    virtualPosition.openedOn,
+                ]),
+            ),
             contextTickers: ctx.contextTickers,
             limits,
             ...(ctx.earnings ? { earnings: ctx.earnings } : {}),
@@ -261,7 +270,12 @@ async function patientDecisions(
     const result = await deps.llm.decide(prompt);
     await deps.repos.llmCalls.save(ctx.runId, result.call);
     if (!result.ok) throw new Error(`invalid LLM output: ${result.error}`);
-    const validation = validateDecisions(result.output, new Set(shortlist.map((c) => c.ticker)), held, limits);
+    const validation = validateDecisions(
+        result.output,
+        new Set(shortlist.map((candidate) => candidate.ticker)),
+        held,
+        limits,
+    );
     if (!validation.ok) throw new Error(`invalid LLM output: ${validation.errors.join("; ")}`);
     return withStopFloors(validation.decisions, ctx.history);
 }
@@ -293,11 +307,16 @@ async function simulateFor(deps: AppDeps, strategy: ShadowStrategy, today: Tradi
     if (account.lastSimulated !== undefined && account.lastSimulated >= today) return undefined;
 
     const orders = await repos.shadow.pendingOrders(strategy.id, today);
-    const tickers = [...new Set([...orders.map((o) => o.ticker), ...account.portfolio.positions.map((p) => p.ticker)])];
+    const tickers = [
+        ...new Set([
+            ...orders.map((shadowOrder) => shadowOrder.ticker),
+            ...account.portfolio.positions.map((virtualPosition) => virtualPosition.ticker),
+        ]),
+    ];
     const bars = new Map<Ticker, DailyBar>();
     if (tickers.length > 0) {
         for (const [ticker, list] of await marketData.getDailyBars(tickers, today, today)) {
-            const bar = list.find((b) => b.date === today);
+            const bar = list.find((dailyBar) => dailyBar.date === today);
             if (bar) bars.set(ticker, bar);
         }
     }
@@ -308,7 +327,9 @@ async function simulateFor(deps: AppDeps, strategy: ShadowStrategy, today: Tradi
         date: today,
         portfolio: result.portfolio,
         fills: result.fills,
-        filledOrderIds: orders.filter((o) => !result.unfilled.includes(o)).map((o) => o.id),
+        filledOrderIds: orders
+            .filter((shadowOrder) => !result.unfilled.includes(shadowOrder))
+            .map((filledOrder) => filledOrder.id),
         equity,
     });
     const change = account.startValue > 0 ? equity / account.startValue - 1 : 0;

@@ -28,6 +28,6 @@ export class FakeNotifier implements Notifier {
 
     /** All message texts, for simple assertions. */
     texts(): string[] {
-        return this.sent.map((m) => m.text);
+        return this.sent.map((sentMessage) => sentMessage.text);
     }
 }

@@ -125,7 +125,7 @@ describe("FakeBroker", () => {
             broker.tradeRange(AAA, cents(8_900), cents(10_100));
 
             const legs = (await broker.getOrderByClientId("no-1"))?.legs ?? [];
-            expect(legs.map((l) => [l.role, l.status])).toEqual([
+            expect(legs.map((brokerOrder) => [brokerOrder.role, brokerOrder.status])).toEqual([
                 ["take_profit", "canceled"],
                 ["stop_loss", "filled"],
             ]);
@@ -137,7 +137,7 @@ describe("FakeBroker", () => {
             broker.tradeRange(AAA, cents(9_900), cents(12_000));
 
             const legs = (await broker.getOrderByClientId("no-1"))?.legs ?? [];
-            expect(legs.map((l) => l.status)).toEqual(["filled", "canceled"]);
+            expect(legs.map((brokerOrder) => brokerOrder.status)).toEqual(["filled", "canceled"]);
             expect((await broker.getAccount()).cash).toBe(10_000_000 + 20_000);
         });
 
@@ -145,16 +145,18 @@ describe("FakeBroker", () => {
             broker.tradeRange(AAA, cents(9_500), cents(11_000));
 
             const open = await broker.listOpenOrders();
-            expect(open[0]?.legs.map((l) => l.role)).toEqual(["take_profit", "stop_loss"]);
+            expect(open[0]?.legs.map((brokerOrder) => brokerOrder.role)).toEqual(["take_profit", "stop_loss"]);
         });
 
         it("reserves the shares, so a sell needs the legs cancelled first", async () => {
             await expect(broker.placeOrder(sell("no-2", 10))).rejects.toThrow("insufficient qty available");
 
-            const stopLeg = (await broker.getOrderByClientId("no-1"))?.legs.find((l) => l.role === "stop_loss");
+            const stopLeg = (await broker.getOrderByClientId("no-1"))?.legs.find(
+                (brokerOrder) => brokerOrder.role === "stop_loss",
+            );
             await broker.cancelOrder(stopLeg?.id ?? "");
 
-            expect((await broker.getOrderByClientId("no-1"))?.legs.map((l) => l.status)).toEqual([
+            expect((await broker.getOrderByClientId("no-1"))?.legs.map((brokerOrder) => brokerOrder.status)).toEqual([
                 "canceled",
                 "canceled",
             ]);
@@ -168,7 +170,7 @@ describe("FakeBroker", () => {
 
             const entry = await broker.getOrderByClientId("no-3");
             expect(entry?.status).toBe("canceled");
-            expect(entry?.legs.map((l) => [l.qty, l.status])).toEqual([
+            expect(entry?.legs.map((brokerOrder) => [brokerOrder.qty, brokerOrder.status])).toEqual([
                 [4, "open"],
                 [4, "open"],
             ]);

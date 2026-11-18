@@ -57,26 +57,29 @@ async function execute(deps: AppDeps, today: TradingDate): Promise<JobResult | u
     const openOrders = await broker.listOpenOrders();
     const placedToday = await repos.orders.list({ tradeDate: today });
     const start = simulatePortfolio(account, positions, {
-        orders: placedToday.filter((o) => o.role === "entry" || o.role === "exit").length,
-        traded: placedToday.reduce((sum, o) => sum + o.qty * (o.limitPrice ?? 0), 0),
+        orders: placedToday.filter((orderRecord) => orderRecord.role === "entry" || orderRecord.role === "exit").length,
+        traded: placedToday.reduce((sum, orderRecord) => sum + orderRecord.qty * (orderRecord.limitPrice ?? 0), 0),
     });
     const openBuys = openOrders
-        .filter((o) => o.role === "entry")
-        .reduce((sum, o) => sum + (o.qty - o.filledQty) * (o.limitPrice ?? 0), 0);
+        .filter((brokerOrder) => brokerOrder.role === "entry")
+        .reduce(
+            (sum, brokerOrder) => sum + (brokerOrder.qty - brokerOrder.filledQty) * (brokerOrder.limitPrice ?? 0),
+            0,
+        );
 
     const settings = await repos.settings.get();
     const candidates = await latestSecurities(
         deps,
-        remaining.map((p) => p.ticker),
+        remaining.map((proposal) => proposal.ticker),
     );
     const result = runRiskChecks(
-        remaining.map((p): OrderRequest => ({
-            id: p.id,
-            ticker: p.ticker,
-            side: p.side,
-            qty: p.qty,
-            limitPrice: p.limitPrice,
-            stopLossPct: p.stopLossPct,
+        remaining.map((proposal): OrderRequest => ({
+            id: proposal.id,
+            ticker: proposal.ticker,
+            side: proposal.side,
+            qty: proposal.qty,
+            limitPrice: proposal.limitPrice,
+            stopLossPct: proposal.stopLossPct,
         })),
         { ...start, cash: cents(start.cash - openBuys) },
         {
@@ -92,8 +95,8 @@ async function execute(deps: AppDeps, today: TradingDate): Promise<JobResult | u
         lines.push("🛑 Daily loss stop hit: no new buys until you send /resume. Sells still go through.");
     }
 
-    const byId = new Map(remaining.map((p) => [p.id, p]));
-    const heldQty = new Map(positions.map((p) => [p.ticker, p.qty]));
+    const byId = new Map(remaining.map((proposal) => [proposal.id, proposal]));
+    const heldQty = new Map(positions.map((position) => [position.ticker, position.qty]));
     let errors = 0;
     for (const checked of result.orders) {
         const proposal = byId.get(checked.order.id);
@@ -156,9 +159,9 @@ async function place(
     try {
         if (proposal.side === "sell") {
             const legs = openOrders
-                .filter((o) => o.ticker === proposal.ticker)
-                .flatMap((o) => [o, ...o.legs])
-                .filter((o) => o.role === "stop_loss" || o.role === "take_profit");
+                .filter((brokerOrder) => brokerOrder.ticker === proposal.ticker)
+                .flatMap((brokerOrder) => [brokerOrder, ...brokerOrder.legs])
+                .filter((brokerOrder) => brokerOrder.role === "stop_loss" || brokerOrder.role === "take_profit");
             for (const leg of legs) {
                 await broker.cancelOrder(leg.id);
                 legsCancelled = true;
@@ -248,7 +251,7 @@ async function latestSecurities(deps: AppDeps, tickers: Ticker[]): Promise<Map<T
     const { repos, clock } = deps;
     const today = tradingDateOf(clock.now());
     const proposals = await repos.proposals.list({ tradeDate: today });
-    const runIds = [...new Set(proposals.map((p) => p.runId))];
+    const runIds = [...new Set(proposals.map((proposal) => proposal.runId))];
     const securities = new Map<Ticker, SecurityFacts>();
     for (const runId of runIds) {
         for (const record of await repos.candidates.listByRun(runId)) {

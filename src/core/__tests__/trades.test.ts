@@ -41,7 +41,7 @@ describe("closedTrades", () => {
             fill("AAA", "sell", 15, 10_000),
         ]);
 
-        expect(trades.map((t) => t.realizedPl)).toEqual([10_000, -15_000]);
+        expect(trades.map((closedTrade) => closedTrade.realizedPl)).toEqual([10_000, -15_000]);
     });
 
     it("includes buy fees in the cost and sell fees in the proceeds", () => {

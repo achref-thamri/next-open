@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as zod from "zod";
 import { dollarsToCents } from "../../core/money.js";
 import {
     isTicker,
@@ -18,41 +18,41 @@ const SYMBOLS_PER_REQUEST = 100;
 const SIP_DELAY_MS = 16 * 60_000;
 const NEWS_PAGE_SIZE = 50;
 
-const assetsSchema = z.array(
-    z.object({
-        symbol: z.string(),
-        name: z.string(),
-        exchange: z.string(),
-        status: z.string(),
-        tradable: z.boolean(),
+const assetsSchema = zod.array(
+    zod.object({
+        symbol: zod.string(),
+        name: zod.string(),
+        exchange: zod.string(),
+        status: zod.string(),
+        tradable: zod.boolean(),
     }),
 );
 
-const barSchema = z.object({
-    t: z.string(),
-    o: z.number(),
-    h: z.number(),
-    l: z.number(),
-    c: z.number(),
-    v: z.number(),
+const barSchema = zod.object({
+    t: zod.string(),
+    o: zod.number(),
+    h: zod.number(),
+    l: zod.number(),
+    c: zod.number(),
+    v: zod.number(),
 });
-const barsSchema = z.object({
-    bars: z.record(z.string(), z.array(barSchema)).nullish(),
-    next_page_token: z.string().nullish(),
+const barsSchema = zod.object({
+    bars: zod.record(zod.string(), zod.array(barSchema)).nullish(),
+    next_page_token: zod.string().nullish(),
 });
 
-const newsSchema = z.object({
-    news: z.array(
-        z.object({
-            id: z.number(),
-            headline: z.string(),
-            summary: z.string().nullish(),
-            source: z.string(),
-            created_at: z.string(),
-            symbols: z.array(z.string()),
+const newsSchema = zod.object({
+    news: zod.array(
+        zod.object({
+            id: zod.number(),
+            headline: zod.string(),
+            summary: zod.string().nullish(),
+            source: zod.string(),
+            created_at: zod.string(),
+            symbols: zod.array(zod.string()),
         }),
     ),
-    next_page_token: z.string().nullish(),
+    next_page_token: zod.string().nullish(),
 });
 
 /** Assets and daily bars from Alpaca. Bars always use the SIP feed: IEX volume is ~2% of the real figure. */
@@ -67,8 +67,8 @@ export class AlpacaMarketData implements MarketData {
             query: { status: "active", asset_class: "us_equity" },
         });
         return assets
-            .filter((a) => a.tradable && a.status === "active" && isTicker(a.symbol))
-            .map((a) => ({ ticker: a.symbol as Ticker, exchange: a.exchange, name: a.name }));
+            .filter((asset) => asset.tradable && asset.status === "active" && isTicker(asset.symbol))
+            .map((asset) => ({ ticker: asset.symbol as Ticker, exchange: asset.exchange, name: asset.name }));
     }
 
     async getDailyBars(
@@ -110,7 +110,7 @@ export class AlpacaMarketData implements MarketData {
     }
 }
 
-function toBar(bar: z.output<typeof barSchema>): DailyBar {
+function toBar(bar: zod.output<typeof barSchema>): DailyBar {
     return {
         date: tradingDateOf(new Date(bar.t)),
         open: dollarsToCents(bar.o),

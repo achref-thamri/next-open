@@ -37,7 +37,7 @@ export async function approveAll(
     if (pending.length === 0) return { ok: true, text: "Nothing pending." };
     const replies = [];
     for (const proposal of pending) replies.push(await decide(deps, proposal, "approve"));
-    const approved = replies.filter((r) => r.ok).length;
+    const approved = replies.filter((approvalReply) => approvalReply.ok).length;
     return { ok: approved === pending.length, text: `Approved ${approved} of ${pending.length}.` };
 }
 

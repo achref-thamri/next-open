@@ -125,7 +125,7 @@ describe("maxPositionRule", () => {
 });
 
 describe("maxPositionsRule", () => {
-    const fourteen = Object.fromEntries(Array.from({ length: 14 }, (_, i) => [`H${i}`, 1]));
+    const fourteen = Object.fromEntries(Array.from({ length: 14 }, (_, index) => [`H${index}`, 1]));
     const fifteen = { ...fourteen, H14: 1 };
 
     it("accepts a new position below the max", () => {

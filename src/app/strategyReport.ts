@@ -32,40 +32,42 @@ export async function compareStrategies(
 ): Promise<StrategyComparison | undefined> {
     const { repos, config } = deps;
     const virtual = await Promise.all(
-        SHADOW_STRATEGIES.map(async (s) => ({
-            name: s.name,
-            snapshots: await repos.shadow.snapshots(s.id),
-            fills: await repos.shadow.fills(s.id),
+        SHADOW_STRATEGIES.map(async (strategy) => ({
+            name: strategy.name,
+            snapshots: await repos.shadow.snapshots(strategy.id),
+            fills: await repos.shadow.fills(strategy.id),
         })),
     );
-    const since = virtual.flatMap((v) => (v.snapshots[0] ? [v.snapshots[0].date] : [])).sort()[0];
+    const since = virtual
+        .flatMap((portfolio) => (portfolio.snapshots[0] ? [portfolio.snapshots[0].date] : []))
+        .sort()[0];
     if (since === undefined) return undefined;
 
-    const real = (await repos.equity.list()).filter((s) => s.date >= since);
-    const realFills = (await repos.fills.list()).filter((f) => f.date >= since);
+    const real = (await repos.equity.list()).filter((snapshot) => snapshot.date >= since);
+    const realFills = (await repos.fills.list()).filter((brokerFill) => brokerFill.date >= since);
     const results: StrategyResult[] = [
         result(
             "AI (real paper account)",
-            real.map((s) => s.equity),
+            real.map((snapshot) => snapshot.equity),
             realFills,
         ),
         // A strategy added later is shown from its own first day, so its return covers a shorter window.
-        ...virtual.flatMap((v) => {
-            const first = v.snapshots[0]?.date;
+        ...virtual.flatMap((portfolio) => {
+            const first = portfolio.snapshots[0]?.date;
             if (first === undefined) return [];
-            const name = first > since ? `${v.name} (from ${first})` : v.name;
+            const name = first > since ? `${portfolio.name} (from ${first})` : portfolio.name;
             return [
                 result(
                     name,
-                    v.snapshots.map((s) => s.equity),
-                    v.fills,
+                    portfolio.snapshots.map((snapshot) => snapshot.equity),
+                    portfolio.fills,
                 ),
             ];
         }),
         {
             ...result(
                 `${config.benchmarkSymbol} buy-and-hold`,
-                real.map((s) => s.benchmarkValue),
+                real.map((snapshot) => snapshot.benchmarkValue),
                 [],
             ),
             isBenchmark: true,
@@ -115,13 +117,13 @@ const MAX_PICKS = 1_000;
  * picks themselves, apart from sizing, stops and fills, and builds up much faster than closed trades.
  */
 async function pickScores(deps: Pick<AppDeps, "repos" | "marketData" | "clock">): Promise<PickScore[]> {
-    const buys = (await deps.repos.decisions.recent(MAX_PICKS)).filter((d) => d.action === "buy");
-    const first = buys.map((d) => d.tradeDate).sort()[0];
+    const buys = (await deps.repos.decisions.recent(MAX_PICKS)).filter((decision) => decision.action === "buy");
+    const first = buys.map((decision) => decision.tradeDate).sort()[0];
     if (first === undefined) return [];
-    const tickers = [...new Set([...buys.map((d) => d.ticker), PICK_INDEX])];
+    const tickers = [...new Set([...buys.map((decision) => decision.ticker), PICK_INDEX])];
     const history = await deps.marketData.getDailyBars(tickers, first, tradingDateOf(deps.clock.now()));
     return scorePicks(
-        buys.map((d) => ({ ticker: d.ticker, date: d.tradeDate })),
+        buys.map((decision) => ({ ticker: decision.ticker, date: decision.tradeDate })),
         history,
         history.get(PICK_INDEX) ?? [],
         PICK_HORIZONS,

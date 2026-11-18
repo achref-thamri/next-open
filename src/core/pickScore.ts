@@ -36,14 +36,16 @@ export function scorePicks(
         return {
             horizon,
             picks: excess.length,
-            avgExcess: excess.length === 0 ? 0 : excess.reduce((sum, x) => sum + x, 0) / excess.length,
-            beatShare: excess.length === 0 ? 0 : excess.filter((x) => x > 0).length / excess.length,
+            avgExcess:
+                excess.length === 0 ? 0 : excess.reduce((sum, excessReturn) => sum + excessReturn, 0) / excess.length,
+            beatShare:
+                excess.length === 0 ? 0 : excess.filter((excessReturn) => excessReturn > 0).length / excess.length,
         };
     });
 }
 
 function forward(bars: readonly DailyBar[], date: TradingDate, horizon: number): number | undefined {
-    const start = bars.findIndex((b) => b.date === date);
+    const start = bars.findIndex((bar) => bar.date === date);
     const from = bars[start];
     const to = bars[start + horizon];
     return start < 0 || from === undefined || to === undefined ? undefined : to.close / from.close - 1;

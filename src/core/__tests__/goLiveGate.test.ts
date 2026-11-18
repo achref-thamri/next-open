@@ -34,13 +34,14 @@ function passing(overrides: Partial<GoLiveInput> = {}): GoLiveInput {
     };
 }
 
-const criterion = (input: GoLiveInput, name: string) => evaluateGoLiveGate(input).criteria.find((c) => c.name === name);
+const criterion = (input: GoLiveInput, name: string) =>
+    evaluateGoLiveGate(input).criteria.find((criterion) => criterion.name === name);
 
 describe("evaluateGoLiveGate", () => {
     it("passes when all four criteria hold", () => {
         const result = evaluateGoLiveGate(passing());
 
-        expect(result.criteria.map((c) => [c.name, c.pass])).toEqual([
+        expect(result.criteria.map((criterion) => [criterion.name, criterion.pass])).toEqual([
             ["Paper trading period", true],
             ["Beats benchmark after fees and tax", true],
             ["Max drawdown", true],

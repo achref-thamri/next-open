@@ -5,18 +5,18 @@ import { momentumDecisions, momentumRules } from "../momentum.js";
 
 /** 64 daily bars with closes from `price(i)`. */
 function series(price: (i: number) => number): DailyBar[] {
-    return Array.from({ length: 64 }, (_, i) => {
-        const close = cents(Math.round(price(i)));
+    return Array.from({ length: 64 }, (_, day) => {
+        const close = cents(Math.round(price(day)));
         return { date: toTradingDate("2026-11-02"), open: close, high: close, low: close, close, volume: 1 };
     });
 }
 
 /** A steady trend with the given 3-month return. */
-const trend = (m3: number) => series((i) => 10_000 * (1 + (m3 * i) / 63));
+const trend = (m3: number) => series((day) => 10_000 * (1 + (m3 * day) / 63));
 
 /** Up 50% for two months, then down 10% in the last month: 3-month return positive, 1-month negative. */
 const rolledOver = () =>
-    series((i) => (i <= 42 ? 10_000 * (1 + (0.5 * i) / 42) : 15_000 * (1 - (0.1 * (i - 42)) / 21)));
+    series((day) => (day <= 42 ? 10_000 * (1 + (0.5 * day) / 42) : 15_000 * (1 - (0.1 * (day - 42)) / 21)));
 
 const candidate = (ticker: string) => ({ ticker: toTicker(ticker) }) as Candidate;
 
@@ -34,7 +34,7 @@ describe("momentumDecisions", () => {
 
         const decisions = momentumDecisions(eligible, history, new Set(), rules);
 
-        expect(decisions.map((d) => [d.action, d.ticker, d.targetWeight])).toEqual([
+        expect(decisions.map((decision) => [decision.action, decision.ticker, decision.targetWeight])).toEqual([
             ["buy", "BBB", 0.09],
             ["buy", "CCC", 0.09],
         ]);
@@ -50,7 +50,7 @@ describe("momentumDecisions", () => {
 
         const decisions = momentumDecisions(eligible, history, new Set([toTicker("AAA")]), rules);
 
-        expect(decisions.map((d) => [d.action, d.ticker])).toEqual([["buy", "BBB"]]);
+        expect(decisions.map((decision) => [decision.action, decision.ticker])).toEqual([["buy", "BBB"]]);
     });
 
     it("sells holdings that fell out of the keep rank or are no longer eligible", () => {
@@ -58,11 +58,18 @@ describe("momentumDecisions", () => {
 
         const decisions = momentumDecisions(eligible, history, new Set([toTicker("DDD"), toTicker("ZZZ")]), rules);
 
-        expect(decisions.filter((d) => d.action === "sell").map((d) => [d.ticker, d.reasoning])).toEqual([
+        expect(
+            decisions
+                .filter((decision) => decision.action === "sell")
+                .map((decision) => [decision.ticker, decision.reasoning]),
+        ).toEqual([
             ["DDD", "Dropped to rank 4."],
             ["ZZZ", "Trend broken or no longer eligible."],
         ]);
-        expect(decisions.filter((d) => d.action === "buy").map((d) => d.ticker)).toEqual(["BBB", "CCC"]);
+        expect(decisions.filter((decision) => decision.action === "buy").map((decision) => decision.ticker)).toEqual([
+            "BBB",
+            "CCC",
+        ]);
     });
 
     it("skips stocks whose last month turned down, and stocks without three months of history", () => {
@@ -72,7 +79,9 @@ describe("momentumDecisions", () => {
         history.set(toTicker("NEW"), trend(0.5).slice(-30));
         eligible.push(candidate("NEW"));
 
-        expect(momentumDecisions(eligible, history, new Set(), rules).map((d) => d.ticker)).toEqual(["BBB"]);
+        expect(momentumDecisions(eligible, history, new Set(), rules).map((decision) => decision.ticker)).toEqual([
+            "BBB",
+        ]);
     });
 });
 

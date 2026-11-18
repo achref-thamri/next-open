@@ -59,14 +59,19 @@ export function simulateDay(
     { stopAtClose = false }: { stopAtClose?: boolean } = {},
 ): DayResult {
     let cash: number = start.cash;
-    const positions = new Map(start.positions.map((p) => [p.ticker, { ...p }]));
+    const positions = new Map(
+        start.positions.map((virtualPosition) => [virtualPosition.ticker, { ...virtualPosition }]),
+    );
     const fills: SimulatedFill[] = [];
     const unfilled: VirtualOrder[] = [];
     const fill = (ticker: Ticker, side: Side, qty: number, price: Cents, reason: FillReason) => {
         fills.push({ ticker, side, qty, price, fee: cents(0), date, reason });
     };
 
-    const sorted = [...orders.filter((o) => o.side === "sell"), ...orders.filter((o) => o.side === "buy")];
+    const sorted = [
+        ...orders.filter((virtualOrder) => virtualOrder.side === "sell"),
+        ...orders.filter((virtualOrder) => virtualOrder.side === "buy"),
+    ];
     for (const order of sorted) {
         const bar = bars.get(order.ticker);
         const held = positions.get(order.ticker);
@@ -141,7 +146,13 @@ function reduce(positions: Map<Ticker, VirtualPosition>, held: VirtualPosition, 
 
 /** Cash plus positions at their latest known price. */
 export function portfolioValue(portfolio: VirtualPortfolio): Cents {
-    return cents(portfolio.cash + portfolio.positions.reduce((sum, p) => sum + p.qty * p.lastPrice, 0));
+    return cents(
+        portfolio.cash +
+            portfolio.positions.reduce(
+                (sum, virtualPosition) => sum + virtualPosition.qty * virtualPosition.lastPrice,
+                0,
+            ),
+    );
 }
 
 /** The portfolio in the broker's terms, so sizing and risk checks work unchanged. */
@@ -151,13 +162,13 @@ export function asBrokerState(
 ): { account: Account; positions: Position[] } {
     return {
         account: { equity: portfolioValue(portfolio), cash: portfolio.cash, previousCloseEquity },
-        positions: portfolio.positions.map((p) => ({
-            ticker: p.ticker,
-            qty: p.qty,
-            avgEntryPrice: cents(Math.round(p.cost / p.qty)),
-            currentPrice: p.lastPrice,
-            marketValue: cents(p.qty * p.lastPrice),
-            unrealizedPl: cents(Math.round(p.qty * p.lastPrice - p.cost)),
+        positions: portfolio.positions.map((virtualPosition) => ({
+            ticker: virtualPosition.ticker,
+            qty: virtualPosition.qty,
+            avgEntryPrice: cents(Math.round(virtualPosition.cost / virtualPosition.qty)),
+            currentPrice: virtualPosition.lastPrice,
+            marketValue: cents(virtualPosition.qty * virtualPosition.lastPrice),
+            unrealizedPl: cents(Math.round(virtualPosition.qty * virtualPosition.lastPrice - virtualPosition.cost)),
         })),
     };
 }

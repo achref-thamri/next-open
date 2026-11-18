@@ -1,6 +1,6 @@
 import { pino } from "pino";
 import { describe, expect, it, vi } from "vitest";
-import { z } from "zod";
+import * as zod from "zod";
 import { HttpError, PermanentError, TransientError } from "../../../lib/errors.js";
 import { RateLimiter } from "../../../lib/http.js";
 import { AlpacaClient, queryString } from "../client.js";
@@ -24,7 +24,7 @@ function client(handler: Handler, mode: "paper" | "live" = "paper") {
 
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
     new Response(JSON.stringify(body), { status, headers });
-const account = z.object({ equity: z.string() });
+const account = zod.object({ equity: zod.string() });
 
 describe("AlpacaClient", () => {
     it("sends auth headers to the paper trading URL", async () => {
@@ -43,7 +43,7 @@ describe("AlpacaClient", () => {
         await alpaca.trading("/v2/account", account);
         await alpaca.data("/v2/stocks/bars", account, { symbols: ["AAPL", "MSFT"], feed: "sip" });
 
-        expect(fetch.mock.calls.map((c) => c[0])).toEqual([
+        expect(fetch.mock.calls.map((call) => call[0])).toEqual([
             "https://api.alpaca.markets/v2/account",
             "https://data.alpaca.markets/v2/stocks/bars?symbols=AAPL%2CMSFT&feed=sip",
         ]);
@@ -62,7 +62,7 @@ describe("AlpacaClient", () => {
     it("accepts empty responses when the schema allows them", async () => {
         const { alpaca } = client(() => new Response(null, { status: 204 }));
 
-        await expect(alpaca.trading("/v2/orders/1", z.undefined(), { method: "DELETE" })).resolves.toBeUndefined();
+        await expect(alpaca.trading("/v2/orders/1", zod.undefined(), { method: "DELETE" })).resolves.toBeUndefined();
     });
 
     it("retries 429 using Retry-After, then succeeds", async () => {
@@ -92,7 +92,7 @@ describe("AlpacaClient", () => {
     it("maps other 4xx to a permanent error with the vendor message, without retrying", async () => {
         const { alpaca, fetch } = client(() => json({ code: 40310000, message: "insufficient qty available" }, 403));
 
-        const error = await alpaca.trading("/v2/orders", account).catch((e: unknown) => e);
+        const error = await alpaca.trading("/v2/orders", account).catch((caught: unknown) => caught);
 
         expect(error).toBeInstanceOf(HttpError);
         expect(error).toMatchObject({ status: 403, message: "Alpaca GET /v2/orders: 403 insufficient qty available" });

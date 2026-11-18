@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as zod from "zod";
 import { cents, centsToDollars, dollarsToCents, type Cents } from "../../core/money.js";
 import {
     newYorkInstant,
@@ -15,14 +15,14 @@ import type { Logger } from "../../lib/logger.js";
 import type { Broker, BrokerFill, BrokerOrder, MarketDay, OrderRole, OrderStatus } from "../../ports/broker.js";
 import type { AlpacaClient } from "./client.js";
 
-const money = z.string().transform((value) => dollarsToCents(Number(value)));
+const money = zod.string().transform((value) => dollarsToCents(Number(value)));
 const optionalMoney = money.nullish().transform((value) => value ?? undefined);
-const quantity = z.string().transform(Number);
+const quantity = zod.string().transform(Number);
 
-const accountSchema = z.object({ equity: money, cash: money, last_equity: money });
+const accountSchema = zod.object({ equity: money, cash: money, last_equity: money });
 
-const positionSchema = z.object({
-    symbol: z.string(),
+const positionSchema = zod.object({
+    symbol: zod.string(),
     qty: quantity,
     avg_entry_price: money,
     current_price: money,
@@ -30,7 +30,7 @@ const positionSchema = z.object({
     unrealized_pl: money,
 });
 
-const calendarSchema = z.array(z.object({ date: z.string(), open: z.string(), close: z.string() }));
+const calendarSchema = zod.array(zod.object({ date: zod.string(), open: zod.string(), close: zod.string() }));
 
 interface AlpacaOrder {
     id: string;
@@ -48,40 +48,40 @@ interface AlpacaOrder {
     legs: AlpacaOrder[];
 }
 
-const orderSchema: z.ZodType<AlpacaOrder> = z.lazy(() =>
-    z.object({
-        id: z.string(),
-        client_order_id: z.string(),
-        symbol: z.string(),
-        side: z.enum(["buy", "sell"]),
-        type: z.string(),
+const orderSchema: zod.ZodType<AlpacaOrder> = zod.lazy(() =>
+    zod.object({
+        id: zod.string(),
+        client_order_id: zod.string(),
+        symbol: zod.string(),
+        side: zod.enum(["buy", "sell"]),
+        type: zod.string(),
         qty: quantity,
         filled_qty: quantity,
         filled_avg_price: optionalMoney,
         limit_price: optionalMoney,
         stop_price: optionalMoney,
-        status: z.string(),
-        submitted_at: z.string(),
-        legs: z
+        status: zod.string(),
+        submitted_at: zod.string(),
+        legs: zod
             .array(orderSchema)
             .nullish()
             .transform((legs) => legs ?? []),
     }),
 );
 
-const fillSchema = z.object({
-    id: z.string(),
-    order_id: z.string(),
-    symbol: z.string(),
-    side: z.enum(["buy", "sell", "sell_short"]),
+const fillSchema = zod.object({
+    id: zod.string(),
+    order_id: zod.string(),
+    symbol: zod.string(),
+    side: zod.enum(["buy", "sell", "sell_short"]),
     qty: quantity,
     price: money,
-    transaction_time: z.string(),
+    transaction_time: zod.string(),
 });
 
-const configurationsSchema = z.object({
-    no_shorting: z.boolean(),
-    max_margin_multiplier: z.string(),
+const configurationsSchema = zod.object({
+    no_shorting: zod.boolean(),
+    max_margin_multiplier: zod.string(),
 });
 
 const STATUS: Record<string, OrderStatus> = {
@@ -106,22 +106,22 @@ export class AlpacaBroker implements Broker {
     }
 
     async getPositions(): Promise<Position[]> {
-        const positions = await this.client.trading("/v2/positions", z.array(positionSchema));
-        return positions.map((p) => ({
-            ticker: toTicker(p.symbol),
-            qty: p.qty,
-            avgEntryPrice: p.avg_entry_price,
-            currentPrice: p.current_price,
-            marketValue: p.market_value,
-            unrealizedPl: p.unrealized_pl,
+        const positions = await this.client.trading("/v2/positions", zod.array(positionSchema));
+        return positions.map((position) => ({
+            ticker: toTicker(position.symbol),
+            qty: position.qty,
+            avgEntryPrice: position.avg_entry_price,
+            currentPrice: position.current_price,
+            marketValue: position.market_value,
+            unrealizedPl: position.unrealized_pl,
         }));
     }
 
     async getCalendar(from: TradingDate, to: TradingDate): Promise<MarketDay[]> {
         const days = await this.client.trading("/v2/calendar", calendarSchema, { query: { start: from, end: to } });
-        return days.map((d) => {
-            const date = toTradingDate(d.date);
-            return { date, open: newYorkInstant(date, d.open), close: newYorkInstant(date, d.close) };
+        return days.map((day) => {
+            const date = toTradingDate(day.date);
+            return { date, open: newYorkInstant(date, day.open), close: newYorkInstant(date, day.close) };
         });
     }
 
@@ -155,15 +155,15 @@ export class AlpacaBroker implements Broker {
     }
 
     async listOpenOrders(): Promise<BrokerOrder[]> {
-        const orders = await this.client.trading("/v2/orders", z.array(orderSchema), {
+        const orders = await this.client.trading("/v2/orders", zod.array(orderSchema), {
             query: { status: "open", nested: true, limit: 500, direction: "asc" },
         });
-        return orders.map((o) => toBrokerOrder(o));
+        return orders.map((order) => toBrokerOrder(order));
     }
 
     async cancelOrder(orderId: string): Promise<void> {
         try {
-            await this.client.trading(`/v2/orders/${encodeURIComponent(orderId)}`, z.unknown(), { method: "DELETE" });
+            await this.client.trading(`/v2/orders/${encodeURIComponent(orderId)}`, zod.unknown(), { method: "DELETE" });
         } catch (error) {
             // 422: the order is already filled, cancelled or expired, so there is nothing to cancel.
             if (error instanceof HttpError && error.status === 422) return;
@@ -175,7 +175,7 @@ export class AlpacaBroker implements Broker {
         const fills: BrokerFill[] = [];
         let pageToken: string | undefined;
         do {
-            const page = await this.client.trading("/v2/account/activities/FILL", z.array(fillSchema), {
+            const page = await this.client.trading("/v2/account/activities/FILL", zod.array(fillSchema), {
                 query: { after: since.toISOString(), direction: "asc", page_size: 100, page_token: pageToken },
             });
             for (const f of page) {
@@ -203,8 +203,8 @@ export class AlpacaBroker implements Broker {
 
     /** Makes sure margin and shorting are off, switching them off if needed, and fails if that does not stick. */
     async verifyAccountSafety(): Promise<void> {
-        const safe = (c: z.output<typeof configurationsSchema>) =>
-            c.no_shorting && Number(c.max_margin_multiplier) === 1;
+        const safe = (configuration: zod.output<typeof configurationsSchema>) =>
+            configuration.no_shorting && Number(configuration.max_margin_multiplier) === 1;
         const current = await this.client.trading("/v2/account/configurations", configurationsSchema);
         if (safe(current)) return;
         this.logger.warn(current, "account allows margin or shorting; switching both off");

@@ -52,7 +52,7 @@ describe("AnthropicLlm", () => {
 
         expect(result.ok).toBe(true);
         if (!result.ok) return;
-        expect(result.output.decisions.map((d) => d.ticker)).toEqual(["AAPL", "MSFT"]);
+        expect(result.output.decisions.map((decision) => decision.ticker)).toEqual(["AAPL", "MSFT"]);
         expect(result.output.marketView).toBe("Risk-on after the Fed.");
         expect(result.call).toMatchObject({
             model: "claude-sonnet-5-5",

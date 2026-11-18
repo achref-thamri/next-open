@@ -49,7 +49,7 @@ async function endOfDay(deps: AppDeps, today: TradingDate): Promise<void> {
         lines.push(`Benchmark ${config.benchmarkSymbol}: ${formatCents(benchmarkValue)}`);
     }
 
-    const fills = (await repos.fills.list()).filter((f) => f.date === today);
+    const fills = (await repos.fills.list()).filter((brokerFill) => brokerFill.date === today);
     const exits = await protectiveExits(deps, fills);
     for (const fill of fills) {
         const kind = exits.get(fill.orderId);
@@ -111,10 +111,11 @@ async function closeOutEntries(deps: AppDeps, today: TradingDate): Promise<Broke
 /** Maps broker order ids of bracket legs that filled today to their role. */
 async function protectiveExits(deps: AppDeps, fills: BrokerFill[]): Promise<Map<string, string>> {
     const roles = new Map<string, string>();
-    const sells = fills.filter((f) => f.side === "sell");
+    const sells = fills.filter((brokerFill) => brokerFill.side === "sell");
     if (sells.length === 0) return roles;
     const entries = (await deps.repos.orders.list({})).filter(
-        (o) => o.role === "entry" && sells.some((s) => s.ticker === o.ticker),
+        (orderRecord) =>
+            orderRecord.role === "entry" && sells.some((brokerFill) => brokerFill.ticker === orderRecord.ticker),
     );
     for (const entry of entries) {
         const order = await deps.broker.getOrderByClientId(entry.clientOrderId);

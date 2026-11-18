@@ -92,9 +92,11 @@ describe("handleCommand", () => {
         expect(await h.repos.settings.get()).toMatchObject({ halted: true, haltReason: "manual /stop" });
         const status = async (id: string) => (await h.broker.getOrderByClientId(id))?.status;
         expect([await status("no-entry"), await status("no-exit")]).toEqual(["canceled", "canceled"]);
-        const legs = (await h.broker.getOrderByClientId(filled.clientOrderId))?.legs.map((l) => l.status);
+        const legs = (await h.broker.getOrderByClientId(filled.clientOrderId))?.legs.map(
+            (brokerOrder) => brokerOrder.status,
+        );
         expect(legs).toEqual(["open", "open"]);
-        expect((await h.broker.getPositions()).map((p) => p.ticker).sort()).toEqual(["AAA", "BBB"]);
+        expect((await h.broker.getPositions()).map((position) => position.ticker).sort()).toEqual(["AAA", "BBB"]);
     });
 
     it("/resume clears the halt", async () => {

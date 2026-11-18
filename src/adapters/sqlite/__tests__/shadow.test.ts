@@ -59,7 +59,7 @@ describe("SqliteShadowRepository", () => {
         await shadow.saveOrders("momentum", d1, [order("o1"), order("o2")]);
         await shadow.saveOrders("momentum", d1, [order("o3")]);
 
-        expect((await shadow.pendingOrders("momentum", d1)).map((o) => o.id)).toEqual(["o3"]);
+        expect((await shadow.pendingOrders("momentum", d1)).map((shadowOrder) => shadowOrder.id)).toEqual(["o3"]);
         expect(await shadow.pendingOrders("momentum", d1)).toEqual([order("o3")]);
     });
 

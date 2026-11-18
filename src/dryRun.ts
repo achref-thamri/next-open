@@ -87,7 +87,7 @@ async function dryRun(): Promise<void> {
     const cacheDeps: AppDeps = { ...real.deps, notifier: consoleNotifier };
     const args = process.argv.slice(2);
     const quick = args.includes("--quick");
-    const dateArg = args.find((a) => !a.startsWith("--"));
+    const dateArg = args.find((arg) => !arg.startsWith("--"));
     const asOf = dateArg ? toTradingDate(dateArg) : await latestClosedDay(cacheDeps);
 
     if (quick) {
@@ -140,7 +140,7 @@ async function latestClosedDay(deps: AppDeps): Promise<TradingDate> {
     const now = deps.clock.now();
     const today = tradingDateOf(now);
     const days = await deps.broker.getCalendar(addDays(today, -10), today);
-    const closed = days.filter((d) => d.close.getTime() + 20 * 60_000 <= now.getTime());
+    const closed = days.filter((marketDay) => marketDay.close.getTime() + 20 * 60_000 <= now.getTime());
     const last = closed.at(-1);
     if (!last) throw new Error("No closed trading day in the last 10 days");
     return last.date;

@@ -1,9 +1,9 @@
-import type { z } from "zod";
+import type * as zod from "zod";
 import { HttpError, PermanentError, RateLimitError, TransientError } from "./errors.js";
 
 export type Fetch = typeof fetch;
 
-export interface HttpRequest<S extends z.ZodType> {
+export interface HttpRequest<S extends zod.ZodType> {
     method?: "GET" | "POST" | "PATCH" | "DELETE";
     url: string;
     headers?: Record<string, string>;
@@ -22,7 +22,7 @@ export interface HttpRequest<S extends z.ZodType> {
  * - Network errors, timeouts, 429 and 5xx throw TransientError (429 carries Retry-After as the minimum wait).
  * - Other non-2xx throw HttpError (permanent); an unexpected response shape throws PermanentError.
  */
-export async function requestJson<S extends z.ZodType>(request: HttpRequest<S>): Promise<z.output<S>> {
+export async function requestJson<S extends zod.ZodType>(request: HttpRequest<S>): Promise<zod.output<S>> {
     const { method = "GET", url, headers = {}, body, schema, timeoutMs = 15_000, label } = request;
     const doFetch = request.fetch ?? fetch;
     let response: Response;
@@ -88,7 +88,8 @@ export class RateLimiter {
     constructor(
         perMinute: number,
         private readonly now: () => number = Date.now,
-        private readonly sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
+        private readonly sleep: (ms: number) => Promise<void> = (ms) =>
+            new Promise((resolve) => setTimeout(resolve, ms)),
         private readonly intervalMs = 60_000 / perMinute,
     ) {}
 

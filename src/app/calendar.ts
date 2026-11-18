@@ -18,7 +18,7 @@ export interface TradingDays {
 /** Looks up `date` and the next trading day in the broker calendar. */
 export async function tradingDays(broker: Broker, date: TradingDate): Promise<TradingDays> {
     const days = await broker.getCalendar(date, addDays(date, 14));
-    const next = days.find((d) => d.date > date);
+    const next = days.find((marketDay) => marketDay.date > date);
     if (!next) throw new Error(`No trading day found in the two weeks after ${date}`);
-    return { today: days.find((d) => d.date === date), next };
+    return { today: days.find((marketDay) => marketDay.date === date), next };
 }

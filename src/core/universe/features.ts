@@ -65,8 +65,8 @@ export interface TrendFeatures {
 export function trendFeatures(bars: readonly DailyBar[]): TrendFeatures | undefined {
     const latest = bars.at(-1)?.close;
     if (latest === undefined) return undefined;
-    const year = bars.slice(-PERIOD_DAYS.m12 - 1).map((b) => b.close);
-    const last200 = bars.slice(-200).map((b) => b.close);
+    const year = bars.slice(-PERIOD_DAYS.m12 - 1).map((bar) => bar.close);
+    const last200 = bars.slice(-200).map((bar) => bar.close);
     const vol = annualizedVolatility(bars, 20);
     return {
         fromHigh52w: latest / Math.max(...year) - 1,
@@ -77,10 +77,10 @@ export function trendFeatures(bars: readonly DailyBar[]): TrendFeatures | undefi
 
 /** Annualised volatility of daily returns over the last `days` returns; undefined with fewer than two. */
 export function annualizedVolatility(bars: readonly DailyBar[], days: number): number | undefined {
-    const closes = bars.slice(-days - 1).map((b) => b.close);
-    const returns = closes.slice(1).map((close, i) => close / (closes[i] ?? close) - 1);
+    const closes = bars.slice(-days - 1).map((bar) => bar.close);
+    const returns = closes.slice(1).map((close, index) => close / (closes[index] ?? close) - 1);
     if (returns.length < 2) return undefined;
-    const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length;
-    const variance = returns.reduce((sum, r) => sum + (r - mean) ** 2, 0) / (returns.length - 1);
+    const mean = returns.reduce((sum, dailyReturn) => sum + dailyReturn, 0) / returns.length;
+    const variance = returns.reduce((sum, dailyReturn) => sum + (dailyReturn - mean) ** 2, 0) / (returns.length - 1);
     return Math.sqrt(variance * TRADING_DAYS_PER_YEAR);
 }

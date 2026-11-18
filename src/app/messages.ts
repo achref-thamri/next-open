@@ -33,8 +33,8 @@ export function eveningSummaryText(
     proposals: readonly Proposal[],
     autoApproved: boolean,
 ): string {
-    const active = proposals.filter((p) => p.qty > 0);
-    const rejected = proposals.filter((p) => p.qty === 0);
+    const active = proposals.filter((proposal) => proposal.qty > 0);
+    const rejected = proposals.filter((proposal) => proposal.qty === 0);
     const header =
         active.length === 0
             ? `No trades for ${tradeDate}.`
@@ -43,7 +43,7 @@ export function eveningSummaryText(
     if (autoApproved) parts.push(...active.map(proposalText));
     if (rejected.length > 0) {
         parts.push(
-            `Rejected by risk checks:\n${rejected.map((p) => `• ${p.side} ${p.ticker}: ${p.riskNotes.join("; ")}`).join("\n")}`,
+            `Rejected by risk checks:\n${rejected.map((proposal) => `• ${proposal.side} ${proposal.ticker}: ${proposal.riskNotes.join("; ")}`).join("\n")}`,
         );
     }
     return parts.join("\n\n");

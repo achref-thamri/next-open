@@ -56,7 +56,9 @@ const OFFSET = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", 
 export function newYorkInstant(date: TradingDate, time: string): Date {
     const naive = new Date(`${date}T${time}:00Z`);
     // The offset at noon UTC that day is the offset all trading hours use (DST switches at 02:00).
-    const name = OFFSET.formatToParts(new Date(`${date}T12:00:00Z`)).find((p) => p.type === "timeZoneName")?.value;
+    const name = OFFSET.formatToParts(new Date(`${date}T12:00:00Z`)).find(
+        (part) => part.type === "timeZoneName",
+    )?.value;
     const match = /GMT([+-])(\d{2}):(\d{2})/.exec(name ?? "");
     if (!match) throw new Error(`Cannot read the New York UTC offset for ${date}`);
     const [, sign, hours, minutes] = match;

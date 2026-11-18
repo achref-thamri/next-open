@@ -34,14 +34,14 @@ async function seedHistory(h: Harness): Promise<void> {
             strategy,
             date: d(date),
             portfolio: { cash: cents(equity), positions: [] },
-            fills: fills.map((f) => ({
+            fills: fills.map((fill) => ({
                 ticker: toTicker("AAA"),
-                side: f.side,
+                side: fill.side,
                 qty: 10,
-                price: cents(f.price),
+                price: cents(fill.price),
                 fee: cents(0),
                 date: d(date),
-                reason: f.side === "buy" ? ("entry" as const) : ("take_profit" as const),
+                reason: fill.side === "buy" ? ("entry" as const) : ("take_profit" as const),
             })),
             filledOrderIds: [],
             equity: cents(equity),

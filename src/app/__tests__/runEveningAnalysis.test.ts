@@ -56,7 +56,7 @@ describe("runEveningAnalysis", () => {
 
         const run = await runs();
         const candidates = await h.repos.candidates.listByRun(run?.id ?? "");
-        expect(candidates.map((c) => [c.candidate.ticker, c.passed, c.rejectReason])).toEqual([
+        expect(candidates.map((record) => [record.candidate.ticker, record.passed, record.rejectReason])).toEqual([
             ["AAA", true, undefined],
             ["BBB", true, undefined],
             ["TINY", false, "market cap $500M below $2B"],
@@ -238,7 +238,7 @@ describe("runEveningAnalysis", () => {
         await runEveningAnalysis(h);
 
         const proposals = await h.repos.proposals.list({ tradeDate: NEXT });
-        expect(proposals.map((p) => p.ticker)).toEqual(["AAA"]);
+        expect(proposals.map((proposal) => proposal.ticker)).toEqual(["AAA"]);
     });
 
     it("sends proposals with buttons in live mode and leaves them pending", async () => {
@@ -249,8 +249,13 @@ describe("runEveningAnalysis", () => {
         await runEveningAnalysis(h);
 
         const proposals = await h.repos.proposals.list({ tradeDate: NEXT });
-        expect(proposals.map((p) => p.status)).toEqual(["pending", "pending"]);
-        expect(h.notifier.sent.map((m) => m.kind)).toEqual(["text", "proposal", "proposal", "approve_all"]);
+        expect(proposals.map((proposal) => proposal.status)).toEqual(["pending", "pending"]);
+        expect(h.notifier.sent.map((sentMessage) => sentMessage.kind)).toEqual([
+            "text",
+            "proposal",
+            "proposal",
+            "approve_all",
+        ]);
     });
 
     it("records risk trims with their reasons", async () => {

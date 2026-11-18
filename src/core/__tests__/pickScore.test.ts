@@ -4,10 +4,10 @@ import { scorePicks } from "../pickScore.js";
 import { toTicker, toTradingDate, type DailyBar } from "../types.js";
 
 function bars(closes: number[]): DailyBar[] {
-    return closes.map((close, i) => {
+    return closes.map((close, index) => {
         const price = cents(close);
         return {
-            date: toTradingDate(`2026-11-${String(i + 2).padStart(2, "0")}`),
+            date: toTradingDate(`2026-11-${String(index + 2).padStart(2, "0")}`),
             open: price,
             high: price,
             low: price,
@@ -17,7 +17,7 @@ function bars(closes: number[]): DailyBar[] {
     });
 }
 
-const day = (n: number) => toTradingDate(`2026-11-${String(n).padStart(2, "0")}`);
+const day = (dayOfMonth: number) => toTradingDate(`2026-11-${String(dayOfMonth).padStart(2, "0")}`);
 
 describe("scorePicks", () => {
     const index = bars([100, 101, 102, 103]);
@@ -46,7 +46,7 @@ describe("scorePicks", () => {
     it("leaves out picks without enough days since", () => {
         const scores = scorePicks([{ ticker: toTicker("WIN"), date: day(4) }], history, index, [1, 5]);
 
-        expect(scores.map((s) => s.picks)).toEqual([1, 0]);
+        expect(scores.map((pickScore) => pickScore.picks)).toEqual([1, 0]);
         expect(scores[1]).toMatchObject({ avgExcess: 0, beatShare: 0 });
     });
 

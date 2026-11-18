@@ -12,17 +12,17 @@ export function moveScore(candidate: Pick<Candidate, "changePct" | "relativeVolu
  * news, then to the highest move scores. Ties break by ticker so runs are reproducible.
  */
 export function rankCandidates(candidates: readonly Candidate[], max: number): Candidate[] {
-    const holdings = candidates.filter((c) => c.isHolding).sort(byTicker);
-    const others = candidates.filter((c) => !c.isHolding);
+    const holdings = candidates.filter((candidate) => candidate.isHolding).sort(byTicker);
+    const others = candidates.filter((candidate) => !candidate.isHolding);
     const slots = Math.max(0, max - holdings.length);
 
     const trend = others
-        .filter((c) => c.uptrend6m !== undefined)
+        .filter((candidate) => candidate.uptrend6m !== undefined)
         .sort((a, b) => (b.uptrend6m ?? 0) - (a.uptrend6m ?? 0) || byTicker(a, b))
         .slice(0, Math.floor(slots / 2));
-    const picked = new Set(trend.map((c) => c.ticker));
+    const picked = new Set(trend.map((candidate) => candidate.ticker));
     const events = others
-        .filter((c) => !picked.has(c.ticker))
+        .filter((candidate) => !picked.has(candidate.ticker))
         .sort((a, b) => Number(b.inNews) - Number(a.inNews) || moveScore(b) - moveScore(a) || byTicker(a, b))
         .slice(0, slots - trend.length);
     return [...holdings, ...trend, ...events];

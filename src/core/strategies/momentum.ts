@@ -41,12 +41,12 @@ export function momentumDecisions(
     rules: MomentumRules,
 ): Decision[] {
     const ranked = eligible
-        .flatMap((c) => {
-            const r = periodReturns(history.get(c.ticker) ?? []);
-            return r.m3 !== undefined && r.m1 !== undefined && r.m1 > 0 ? [{ ticker: c.ticker, m3: r.m3 }] : [];
+        .flatMap((candidate) => {
+            const r = periodReturns(history.get(candidate.ticker) ?? []);
+            return r.m3 !== undefined && r.m1 !== undefined && r.m1 > 0 ? [{ ticker: candidate.ticker, m3: r.m3 }] : [];
         })
         .sort((a, b) => b.m3 - a.m3 || (a.ticker < b.ticker ? -1 : 1));
-    const rank = new Map(ranked.map((r, i) => [r.ticker, i + 1]));
+    const rank = new Map(ranked.map((stock, index) => [stock.ticker, index + 1]));
 
     const decisions: Decision[] = [];
     let kept = 0;

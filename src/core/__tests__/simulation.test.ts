@@ -118,7 +118,7 @@ describe("simulateDay", () => {
             day,
         );
 
-        expect(result.fills.map((f) => [f.ticker, f.side])).toEqual([
+        expect(result.fills.map((simulatedFill) => [simulatedFill.ticker, simulatedFill.side])).toEqual([
             [BBB, "sell"],
             [AAA, "buy"],
         ]);
@@ -193,7 +193,7 @@ describe("simulateDay", () => {
             day,
         );
 
-        expect(result.fills.map((f) => f.reason)).toEqual(["entry", "stop_loss"]);
+        expect(result.fills.map((simulatedFill) => simulatedFill.reason)).toEqual(["entry", "stop_loss"]);
     });
 
     it("with stops at the close, holds through a dip that recovers and sells at a close below the stop", () => {

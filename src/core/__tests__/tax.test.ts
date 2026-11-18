@@ -45,7 +45,7 @@ describe("realizedShareTax", () => {
             rates,
         );
 
-        expect(years.map((y) => y.tax)).toEqual([135_000, 480_000]);
+        expect(years.map((yearTax) => yearTax.tax)).toEqual([135_000, 480_000]);
     });
 
     it("carries a net loss forward against later gains", () => {
@@ -91,7 +91,7 @@ describe("markToMarketTax", () => {
             rates,
         );
 
-        expect(years.map((y) => y.tax)).toEqual([27_000, 27_000]);
+        expect(years.map((yearTax) => yearTax.tax)).toEqual([27_000, 27_000]);
         expect(totalTax(years)).toBe(54_000);
     });
 
@@ -107,7 +107,7 @@ describe("markToMarketTax", () => {
             rates,
         );
 
-        expect(years.map((y) => [y.year, y.gain, y.tax, y.lossCarriedForward])).toEqual([
+        expect(years.map((yearTax) => [yearTax.year, yearTax.gain, yearTax.tax, yearTax.lossCarriedForward])).toEqual([
             [2026, 200_000, 54_000, 0],
             [2027, -150_000, 0, 150_000],
             [2028, 100_000, 0, 50_000],

@@ -23,11 +23,11 @@ describe("runRiskChecks", () => {
             context(),
         );
 
-        expect(result.orders.map((o) => o.order.id)).toEqual(["sell-BBB", "buy-AAA", "buy-CCC"]);
+        expect(result.orders.map((checked) => checked.order.id)).toEqual(["sell-BBB", "buy-AAA", "buy-CCC"]);
     });
 
     it("lets a sell free a slot for a buy", () => {
-        const full = Object.fromEntries(Array.from({ length: 15 }, (_, i) => [`H${i}`, 1]));
+        const full = Object.fromEntries(Array.from({ length: 15 }, (_, index) => [`H${index}`, 1]));
 
         const blocked = runRiskChecks([order("AAA", "buy", 1)], portfolio({ holdings: full }), context());
         const freed = runRiskChecks(
@@ -37,7 +37,7 @@ describe("runRiskChecks", () => {
         );
 
         expect(blocked.orders[0]?.status).toBe("rejected");
-        expect(freed.orders.map((o) => o.status)).toEqual(["accepted", "accepted"]);
+        expect(freed.orders.map((checked) => checked.status)).toEqual(["accepted", "accepted"]);
     });
 
     it("lets sell proceeds fund a buy above the cash floor", () => {
@@ -46,7 +46,7 @@ describe("runRiskChecks", () => {
 
         const result = runRiskChecks([order("AAA", "buy", 80), order("BBB", "sell", 50)], start, context());
 
-        expect(result.orders.map((o) => [o.order.id, o.qty])).toEqual([
+        expect(result.orders.map((checked) => [checked.order.id, checked.qty])).toEqual([
             ["sell-BBB", 50],
             ["buy-AAA", 50],
         ]);
@@ -60,7 +60,7 @@ describe("runRiskChecks", () => {
 
         const result = runRiskChecks([order("AAA", "buy", 100), order("BBB", "buy", 100)], start, context());
 
-        expect(result.orders.map((o) => [o.status, o.qty])).toEqual([
+        expect(result.orders.map((checked) => [checked.status, checked.qty])).toEqual([
             ["accepted", 100],
             ["trimmed", 50],
         ]);
@@ -96,7 +96,9 @@ describe("runRiskChecks", () => {
             context({ halted: "manual" }),
         );
 
-        expect(result.orders.every((o) => o.status === "rejected" && o.notes[0] === "trading is halted")).toBe(true);
+        expect(
+            result.orders.every((checked) => checked.status === "rejected" && checked.notes[0] === "trading is halted"),
+        ).toBe(true);
     });
 
     it("sets the halt flag and rejects buys but not sells on the daily loss stop", () => {
@@ -109,7 +111,7 @@ describe("runRiskChecks", () => {
         );
 
         expect(result.halt).toBe(true);
-        expect(result.orders.map((o) => [o.order.ticker, o.status])).toEqual([
+        expect(result.orders.map((checked) => [checked.order.ticker, checked.status])).toEqual([
             ["BBB", "accepted"],
             ["AAA", "rejected"],
         ]);
@@ -122,7 +124,7 @@ describe("runRiskChecks", () => {
             context({ halted: "loss_stop" }),
         );
 
-        expect(result.orders.map((o) => [o.order.ticker, o.status])).toEqual([
+        expect(result.orders.map((checked) => [checked.order.ticker, checked.status])).toEqual([
             ["BBB", "accepted"],
             ["AAA", "rejected"],
         ]);
@@ -141,7 +143,7 @@ describe("runRiskChecks", () => {
             context(),
         );
 
-        expect(result.orders.map((o) => o.status)).toEqual(["accepted", "rejected"]);
+        expect(result.orders.map((checked) => checked.status)).toEqual(["accepted", "rejected"]);
     });
 
     it("runs custom rules in the given order", () => {

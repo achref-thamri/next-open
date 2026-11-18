@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import type { z } from "zod";
+import type * as zod from "zod";
 import { envSchema, settingsSchema, type RiskLimits, type TaxRates, type UniverseLimits } from "./schema.js";
 
 export type TradingMode = "paper" | "live";
@@ -56,7 +56,7 @@ export function parseConfig(env: Record<string, string | undefined>, settings: u
     };
 }
 
-function formatIssues(error: z.ZodError | undefined, source: string): string[] {
+function formatIssues(error: zod.ZodError | undefined, source: string): string[] {
     return (error?.issues ?? []).map((issue) => `  - ${source} ${issue.path.join(".") || "(root)"}: ${issue.message}`);
 }
 

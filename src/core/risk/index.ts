@@ -56,7 +56,9 @@ export function simulatePortfolio(
 ): SimulatedPortfolio {
     return {
         cash: account.cash,
-        holdings: new Map(positions.filter((p) => p.qty > 0).map((p) => [p.ticker, p.qty])),
+        holdings: new Map(
+            positions.filter((position) => position.qty > 0).map((position) => [position.ticker, position.qty]),
+        ),
         ordersToday: today.orders,
         tradedToday: cents(today.traded),
     };
@@ -73,7 +75,10 @@ export function runRiskChecks(
     context: RiskContext,
     rules: readonly RiskRule[] = RISK_RULES,
 ): RiskCheckResult {
-    const sorted = [...orders.filter((o) => o.side === "sell"), ...orders.filter((o) => o.side === "buy")];
+    const sorted = [
+        ...orders.filter((order) => order.side === "sell"),
+        ...orders.filter((order) => order.side === "buy"),
+    ];
     let portfolio = start;
     const checked = sorted.map((order): CheckedOrder => {
         const result = checkOrder(order, portfolio, context, rules);
