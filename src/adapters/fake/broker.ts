@@ -90,7 +90,7 @@ export class FakeBroker implements Broker {
 
     async placeOrder(intent: OrderIntent): Promise<BrokerOrder> {
         await this.failures.check("placeOrder");
-        const existing = this.orders.find((o) => o.clientOrderId === intent.clientOrderId);
+        const existing = this.orders.find((brokerOrder) => brokerOrder.clientOrderId === intent.clientOrderId);
         if (existing) return structuredClone(existing);
 
         if (!Number.isSafeInteger(intent.qty) || intent.qty <= 0) {
@@ -139,20 +139,25 @@ export class FakeBroker implements Broker {
 
     async getOrderByClientId(clientOrderId: string): Promise<BrokerOrder | undefined> {
         await this.failures.check("getOrderByClientId");
-        const order = this.orders.find((o) => o.clientOrderId === clientOrderId);
+        const order = this.orders.find((brokerOrder) => brokerOrder.clientOrderId === clientOrderId);
         return order && structuredClone(order);
     }
 
     async listOpenOrders(): Promise<BrokerOrder[]> {
         await this.failures.check("listOpenOrders");
         return this.orders
-            .filter((o) => isOpen(o) || o.legs.some(isOpen))
-            .map((o) => ({ ...structuredClone(o), legs: o.legs.filter(isOpen).map((l) => structuredClone(l)) }));
+            .filter((brokerOrder) => isOpen(brokerOrder) || brokerOrder.legs.some(isOpen))
+            .map((brokerOrder) => ({
+                ...structuredClone(brokerOrder),
+                legs: brokerOrder.legs.filter(isOpen).map((brokerOrder) => structuredClone(brokerOrder)),
+            }));
     }
 
     async cancelOrder(orderId: string): Promise<void> {
         await this.failures.check("cancelOrder");
-        const parent = this.orders.find((o) => o.id === orderId || o.legs.some((l) => l.id === orderId));
+        const parent = this.orders.find(
+            (brokerOrder) => brokerOrder.id === orderId || brokerOrder.legs.some((leg) => leg.id === orderId),
+        );
         if (!parent) throw new PermanentError(`order not found: ${orderId}`);
         if (parent.id === orderId) {
             if (isOpen(parent)) parent.status = "canceled";
@@ -166,7 +171,7 @@ export class FakeBroker implements Broker {
 
     async getFills(since: Date): Promise<BrokerFill[]> {
         await this.failures.check("getFills");
-        return this.fills.filter((f) => f.time >= since).map((f) => ({ ...f }));
+        return this.fills.filter((brokerFill) => brokerFill.time >= since).map((brokerFill) => ({ ...brokerFill }));
     }
 
     async verifyAccountSafety(): Promise<void> {
@@ -200,16 +205,18 @@ export class FakeBroker implements Broker {
 
     /** Partially fills an open entry or exit order at its limit price. */
     partialFill(clientOrderId: string, qty: number): void {
-        const order = this.orders.find((o) => o.clientOrderId === clientOrderId);
+        const order = this.orders.find((brokerOrder) => brokerOrder.clientOrderId === clientOrderId);
         if (!order?.limitPrice || !isOpen(order)) throw new Error(`no open order ${clientOrderId}`);
         this.fill(order, qty, order.limitPrice);
     }
 
     /** Trades through a day's range: bracket legs of filled entries trigger (stop-loss checked first). */
     tradeRange(ticker: Ticker, low: Cents, high: Cents): void {
-        for (const entry of this.orders.filter((o) => o.ticker === ticker && o.filledQty > 0)) {
-            const stop = entry.legs.find((l) => l.role === "stop_loss" && isOpen(l));
-            const take = entry.legs.find((l) => l.role === "take_profit" && isOpen(l));
+        for (const entry of this.orders.filter(
+            (brokerOrder) => brokerOrder.ticker === ticker && brokerOrder.filledQty > 0,
+        )) {
+            const stop = entry.legs.find((brokerOrder) => brokerOrder.role === "stop_loss" && isOpen(brokerOrder));
+            const take = entry.legs.find((brokerOrder) => brokerOrder.role === "take_profit" && isOpen(brokerOrder));
             if (stop?.stopPrice !== undefined && low <= stop.stopPrice) {
                 this.fill(stop, stop.qty, stop.stopPrice);
                 if (take) cancel(take);
@@ -300,18 +307,22 @@ export class FakeBroker implements Broker {
     private availableToSell(ticker: Ticker): number {
         const held = this.holdings.get(ticker)?.qty ?? 0;
         let reserved = 0;
-        for (const order of this.orders.filter((o) => o.ticker === ticker)) {
+        for (const order of this.orders.filter((brokerOrder) => brokerOrder.ticker === ticker)) {
             if (order.side === "sell" && isOpen(order)) reserved += order.qty - order.filledQty;
             // Both legs cover the same shares (one-cancels-other), so count them once.
-            if (order.filledQty > 0 && order.legs.some(isOpen)) reserved += Math.max(...order.legs.map((l) => l.qty));
+            if (order.filledQty > 0 && order.legs.some(isOpen))
+                reserved += Math.max(...order.legs.map((brokerOrder) => brokerOrder.qty));
         }
         return held - reserved;
     }
 
     private openBuyCommitment(): number {
         return this.orders
-            .filter((o) => o.side === "buy" && isOpen(o))
-            .reduce((sum, o) => sum + (o.qty - o.filledQty) * (o.limitPrice ?? 0), 0);
+            .filter((brokerOrder) => brokerOrder.side === "buy" && isOpen(brokerOrder))
+            .reduce(
+                (sum, brokerOrder) => sum + (brokerOrder.qty - brokerOrder.filledQty) * (brokerOrder.limitPrice ?? 0),
+                0,
+            );
     }
 
     private priceOf(ticker: Ticker): Cents {

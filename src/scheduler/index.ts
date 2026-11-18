@@ -45,17 +45,17 @@ export function dailySchedule(jobs: {
     const after = (instant: Date, minutes: number) => new Date(instant.getTime() + minutes * MINUTE);
     const isSunday = (date: TradingDate) => new Date(`${date}T12:00:00Z`).getUTCDay() === 0;
     return [
-        { type: "backup", dueAt: (d) => at(d, "02:00"), windowMs: 6 * 60 * MINUTE, run: jobs.backup },
-        { type: "liquid_list", dueAt: (d) => at(d, "07:00"), windowMs: 12 * 60 * MINUTE, run: jobs.liquidList },
+        { type: "backup", dueAt: (date) => at(date, "02:00"), windowMs: 6 * 60 * MINUTE, run: jobs.backup },
+        { type: "liquid_list", dueAt: (date) => at(date, "07:00"), windowMs: 12 * 60 * MINUTE, run: jobs.liquidList },
         {
             type: "weekly_report",
-            dueAt: (d) => (isSunday(d) ? at(d, "10:00") : undefined),
+            dueAt: (date) => (isSunday(date) ? at(date, "10:00") : undefined),
             windowMs: 12 * 60 * MINUTE,
             run: jobs.weeklyReport,
         },
         {
             type: "approval_reminder",
-            dueAt: (d, day) => day && at(d, "06:00"),
+            dueAt: (date, day) => day && at(date, "06:00"),
             windowMs: 60 * MINUTE,
             run: jobs.approvalReminder,
         },
@@ -96,7 +96,7 @@ export class Scheduler {
 
     start(): void {
         this.cron = new Cron("* * * * *", { timezone: "America/New_York", protect: true }, () => this.tick());
-        this.deps.logger.info({ jobs: this.jobs.map((j) => j.type) }, "scheduler started");
+        this.deps.logger.info({ jobs: this.jobs.map((jobSpec) => jobSpec.type) }, "scheduler started");
         void this.tick();
     }
 

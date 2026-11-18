@@ -110,7 +110,7 @@ describe("Telegram handlers", () => {
             [OWNER, "01ABC", "approve"],
             [OWNER, "01DEF", "reject"],
         ]);
-        expect(calls.map((c) => c.method)).toEqual([
+        expect(calls.map((apiCall) => apiCall.method)).toEqual([
             "answerCallbackQuery",
             "editMessageReplyMarkup",
             "sendMessage",
@@ -132,14 +132,14 @@ describe("Telegram handlers", () => {
 
         await telegram.handleUpdate(button(OWNER, "approve:01ABC"));
 
-        expect(calls.map((c) => c.method)).toEqual(["answerCallbackQuery", "sendMessage"]);
+        expect(calls.map((apiCall) => apiCall.method)).toEqual(["answerCallbackQuery", "sendMessage"]);
     });
 
     it("ignores button presses from anyone else", async () => {
         await telegram.handleUpdate(button(STRANGER, "approve:01ABC"));
 
         expect(handlers.onDecision).not.toHaveBeenCalled();
-        expect(calls.map((c) => c.method)).toEqual(["answerCallbackQuery"]);
+        expect(calls.map((apiCall) => apiCall.method)).toEqual(["answerCallbackQuery"]);
     });
 });
 

@@ -106,15 +106,15 @@ function demoReport(): string {
     const today = days.at(-1) ?? toTradingDate("2027-01-11");
     const account = walk(7, days.length, 0.0009, 0.011);
     const benchmark = walk(3, days.length, 0.0004, 0.008);
-    const snapshots = days.map((date, i) => ({
+    const snapshots = days.map((date, index) => ({
         date,
-        equity: cents(account[i] ?? 0),
+        equity: cents(account[index] ?? 0),
         cash: cents(1_500_000),
-        benchmarkValue: cents(benchmark[i] ?? 0),
+        benchmarkValue: cents(benchmark[index] ?? 0),
     }));
-    const closedTrades = [312_00, -184_00, 455_00, 97_00, -230_00, 268_00].map((pl, i) => ({
-        ticker: toTicker(["MSFT", "TSLA", "AVGO", "COST", "NFLX", "JPM"][i] ?? "AAA"),
-        date: days[10 + i * 5] ?? today,
+    const closedTrades = [312_00, -184_00, 455_00, 97_00, -230_00, 268_00].map((pl, index) => ({
+        ticker: toTicker(["MSFT", "TSLA", "AVGO", "COST", "NFLX", "JPM"][index] ?? "AAA"),
+        date: days[10 + index * 5] ?? today,
         qty: 10,
         realizedPl: cents(pl),
     }));
@@ -167,7 +167,7 @@ function escape(text: string): string {
 /** Chat bubbles in a neutral style. */
 function chat(title: string, messages: Message[]): string {
     const bubbles = messages
-        .map((m) => `<div class="msg ${m.from}"><div class="bubble">${escape(m.text)}</div></div>`)
+        .map((message) => `<div class="msg ${message.from}"><div class="bubble">${escape(message.text)}</div></div>`)
         .join("");
     return `<!doctype html><meta charset="utf-8"><style>
         body { margin: 0; background: #e8edf2; font: 15px/1.4 -apple-system, "Segoe UI", sans-serif; }

@@ -6,8 +6,9 @@ import { MIGRATIONS, type Migration } from "./migrations/index.js";
  * failing migration leaves the database at the previous version. Returns the versions applied.
  */
 export function migrate(db: Db, migrations: readonly Migration[] = MIGRATIONS): number[] {
-    migrations.forEach((m, i) => {
-        if (m.version !== i + 1) throw new Error(`Migration ${m.name} has version ${m.version}, expected ${i + 1}`);
+    migrations.forEach((migration, index) => {
+        if (migration.version !== index + 1)
+            throw new Error(`Migration ${migration.name} has version ${migration.version}, expected ${index + 1}`);
     });
     const current = db.pragma("user_version", { simple: true }) as number;
     if (current > migrations.length) {

@@ -60,7 +60,7 @@ export function markToMarketTax(
 }
 
 export function totalTax(years: readonly YearTax[]): Cents {
-    return cents(years.reduce((sum, y) => sum + y.tax, 0));
+    return cents(years.reduce((sum, yearTax) => sum + yearTax.tax, 0));
 }
 
 function carryLosses(gainsByYear: ReadonlyMap<number, Cents>, taxOf: (taxable: Cents) => Cents): YearTax[] {

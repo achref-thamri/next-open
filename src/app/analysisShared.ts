@@ -85,26 +85,29 @@ export function promptInput(s: PromptSources): PromptInput {
     const daysBetween = (from: TradingDate) => Math.round((Date.parse(s.asOf) - Date.parse(from)) / 86_400_000);
     const headlinesFor = (ticker: Ticker) =>
         s.tickerNews
-            .filter((n) => n.tickers.includes(ticker))
+            .filter((item) => item.tickers.includes(ticker))
             .slice(0, HEADLINES_PER_TICKER)
-            .map((n) => n.headline);
+            .map((item) => item.headline);
     const earningsIn = (date: TradingDate | undefined) =>
         date === undefined ? {} : { daysToEarnings: -daysBetween(date) };
-    const closeOn = (ticker: Ticker, date: TradingDate) => s.history.get(ticker)?.find((b) => b.date === date)?.close;
+    const closeOn = (ticker: Ticker, date: TradingDate) =>
+        s.history.get(ticker)?.find((bar) => bar.date === date)?.close;
     const latestClose = (ticker: Ticker) => s.history.get(ticker)?.at(-1)?.close;
 
-    const candidates: PromptCandidate[] = s.shortlist.map((c) => ({
-        ticker: c.ticker,
-        ...earningsIn(s.earnings?.get(c.ticker)),
-        priceUsd: centsToDollars(c.close),
-        returns: periodReturns(s.history.get(c.ticker) ?? []),
-        ...trendFeatures(s.history.get(c.ticker) ?? []),
-        relativeVolume: c.relativeVolume,
-        marketCapUsd: c.marketCapUsd,
-        isHolding: c.isHolding,
-        headlines: headlinesFor(c.ticker),
+    const candidates: PromptCandidate[] = s.shortlist.map((candidate) => ({
+        ticker: candidate.ticker,
+        ...earningsIn(s.earnings?.get(candidate.ticker)),
+        priceUsd: centsToDollars(candidate.close),
+        returns: periodReturns(s.history.get(candidate.ticker) ?? []),
+        ...trendFeatures(s.history.get(candidate.ticker) ?? []),
+        relativeVolume: candidate.relativeVolume,
+        marketCapUsd: candidate.marketCapUsd,
+        isHolding: candidate.isHolding,
+        headlines: headlinesFor(candidate.ticker),
     }));
-    const indexDescriptions = new Map<string, string>(CONTEXT_SYMBOLS.map((c) => [c.symbol, c.description]));
+    const indexDescriptions = new Map<string, string>(
+        CONTEXT_SYMBOLS.map((contextSymbol) => [contextSymbol.symbol, contextSymbol.description]),
+    );
 
     return {
         asOf: s.asOf,
@@ -112,15 +115,15 @@ export function promptInput(s: PromptSources): PromptInput {
         portfolio: {
             equityUsd: centsToDollars(equity),
             cashUsd: centsToDollars(account.cash),
-            positions: positions.map((p: Position) => {
-                const opened = s.openDates.get(p.ticker);
+            positions: positions.map((position: Position) => {
+                const opened = s.openDates.get(position.ticker);
                 return {
-                    ticker: p.ticker,
-                    qty: p.qty,
-                    avgEntryPriceUsd: centsToDollars(p.avgEntryPrice),
-                    priceUsd: centsToDollars(p.currentPrice),
-                    unrealizedPct: p.avgEntryPrice > 0 ? p.currentPrice / p.avgEntryPrice - 1 : 0,
-                    weight: equity > 0 ? p.marketValue / equity : 0,
+                    ticker: position.ticker,
+                    qty: position.qty,
+                    avgEntryPriceUsd: centsToDollars(position.avgEntryPrice),
+                    priceUsd: centsToDollars(position.currentPrice),
+                    unrealizedPct: position.avgEntryPrice > 0 ? position.currentPrice / position.avgEntryPrice - 1 : 0,
+                    weight: equity > 0 ? position.marketValue / equity : 0,
                     daysHeld: opened && daysBetween(opened),
                 };
             }),
@@ -133,17 +136,17 @@ export function promptInput(s: PromptSources): PromptInput {
                 returns: periodReturns(s.history.get(symbol) ?? []),
             })),
             sp500Volatility20d: annualizedVolatility(s.history.get(toTicker("SPY")) ?? [], 20),
-            headlines: s.marketNews.slice(0, MARKET_HEADLINES).map((n) => n.headline),
+            headlines: s.marketNews.slice(0, MARKET_HEADLINES).map((item) => item.headline),
         },
-        recentDecisions: s.recentDecisions.map((d) => {
-            const then = closeOn(d.ticker, d.tradeDate);
-            const now = latestClose(d.ticker);
+        recentDecisions: s.recentDecisions.map((decision) => {
+            const then = closeOn(decision.ticker, decision.tradeDate);
+            const now = latestClose(decision.ticker);
             return {
-                date: d.tradeDate,
-                ticker: d.ticker,
-                action: d.action,
-                targetWeight: d.targetWeight,
-                confidence: d.confidence,
+                date: decision.tradeDate,
+                ticker: decision.ticker,
+                action: decision.action,
+                targetWeight: decision.targetWeight,
+                confidence: decision.confidence,
                 outcomePct: then && now ? now / then - 1 : undefined,
             };
         }),
@@ -160,7 +163,7 @@ export function sizeDecisions(
     gapPct: number,
     logger: Logger,
 ): { orders: OrderRequest[]; decisionOf: Map<string, Decision> } {
-    const held = new Map(state.positions.map((p) => [p.ticker, p.qty]));
+    const held = new Map(state.positions.map((position) => [position.ticker, position.qty]));
     const decisionOf = new Map<string, Decision>();
     const orders: OrderRequest[] = [];
     for (const decision of decisions) {
@@ -194,12 +197,15 @@ export function sizeDecisions(
 
 /** Buys with their stop-loss widened to the volatility floor (see `stopFloor`); other decisions unchanged. */
 export function withStopFloors(decisions: readonly Decision[], history: ReadonlyMap<Ticker, DailyBar[]>): Decision[] {
-    return decisions.map((d) =>
-        d.action === "buy"
+    return decisions.map((decision) =>
+        decision.action === "buy"
             ? {
-                  ...d,
-                  stopLossPct: stopFloor(d.stopLossPct, trendFeatures(history.get(d.ticker) ?? [])?.dailyVolatility),
+                  ...decision,
+                  stopLossPct: stopFloor(
+                      decision.stopLossPct,
+                      trendFeatures(history.get(decision.ticker) ?? [])?.dailyVolatility,
+                  ),
               }
-            : d,
+            : decision,
     );
 }

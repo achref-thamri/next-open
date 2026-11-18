@@ -112,7 +112,7 @@ describe("recordEndOfDay", () => {
         await recordEndOfDay(h);
 
         const open = await h.broker.listOpenOrders();
-        expect(open[0]?.legs.map((l) => l.role)).toEqual(["take_profit", "stop_loss"]);
+        expect(open[0]?.legs.map((brokerOrder) => brokerOrder.role)).toEqual(["take_profit", "stop_loss"]);
     });
 
     it("fails without a benchmark price instead of storing a wrong snapshot", async () => {

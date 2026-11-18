@@ -67,8 +67,8 @@ export class AlpacaMarketData implements MarketData {
             query: { status: "active", asset_class: "us_equity" },
         });
         return assets
-            .filter((a) => a.tradable && a.status === "active" && isTicker(a.symbol))
-            .map((a) => ({ ticker: a.symbol as Ticker, exchange: a.exchange, name: a.name }));
+            .filter((asset) => asset.tradable && asset.status === "active" && isTicker(asset.symbol))
+            .map((asset) => ({ ticker: asset.symbol as Ticker, exchange: asset.exchange, name: asset.name }));
     }
 
     async getDailyBars(

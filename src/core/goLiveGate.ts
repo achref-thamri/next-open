@@ -66,8 +66,8 @@ export function evaluateGoLiveGate(input: GoLiveInput): GoLiveResult {
         detail: `account ${percent(accountReturnAfterTax)} vs benchmark ${percent(benchmarkReturnAfterTax)}`,
     };
 
-    const accountMaxDrawdown = maxDrawdown(snapshots.map((s) => s.equity));
-    const benchmarkMaxDrawdown = maxDrawdown(snapshots.map((s) => s.benchmarkValue));
+    const accountMaxDrawdown = maxDrawdown(snapshots.map((snapshot) => snapshot.equity));
+    const benchmarkMaxDrawdown = maxDrawdown(snapshots.map((snapshot) => snapshot.benchmarkValue));
     const drawdown = {
         name: "Max drawdown",
         pass: accountMaxDrawdown <= benchmarkMaxDrawdown + GO_LIVE_RULES.maxExtraDrawdown + 1e-12,
@@ -87,7 +87,7 @@ export function evaluateGoLiveGate(input: GoLiveInput): GoLiveResult {
 
     const criteria = [paperPeriod, beatsBenchmark, drawdown, noBugs];
     return {
-        pass: criteria.every((c) => c.pass),
+        pass: criteria.every((criterion) => criterion.pass),
         criteria,
         accountReturnAfterTax,
         benchmarkReturnAfterTax,

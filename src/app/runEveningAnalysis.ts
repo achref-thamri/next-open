@@ -58,16 +58,16 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
     const liquid = await repos.liquidLists.latest();
     if (!liquid?.tickers.length) return skip("no stocks on the liquid list yet");
 
-    const holdings = new Set(state.positions.map((p) => p.ticker));
+    const holdings = new Set(state.positions.map((position) => position.ticker));
     const since = new Date(deps.clock.now().getTime() - 24 * 3_600_000);
     const marketNews = await deps.news.getNews({ since, until: deps.clock.now(), limit: 50 });
-    const newsTickers = new Set(marketNews.flatMap((n) => n.tickers));
+    const newsTickers = new Set(marketNews.flatMap((item) => item.tickers));
 
     // A year of bars for everything that could be a candidate, including the virtual portfolios' holdings.
     // News also tags tickers the broker doesn't list (B3SA3 in Brazil, 2026-11-09), and one of those makes Alpaca
     // refuse the whole bars request, so only tradable tickers and current holdings go in.
     const assets = await marketData.listTradableAssets();
-    const tradable = new Set(assets.map((a) => a.ticker));
+    const tradable = new Set(assets.map((asset) => asset.ticker));
     const universe = [
         ...new Set([...liquid.tickers, ...holdings, ...newsTickers, ...(await shadowHoldings(deps))]),
     ].filter((ticker) => tradable.has(ticker) || holdings.has(ticker));
@@ -78,7 +78,7 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
     if (![...recentBars.values()].some((bars) => bars.at(-1)?.date === asOf)) {
         throw new Error(`No daily bars for ${asOf} yet; refusing to analyse stale data`);
     }
-    const exchanges = new Map(assets.map((a) => [a.ticker, a.exchange]));
+    const exchanges = new Map(assets.map((asset) => [asset.ticker, asset.exchange]));
     const records: CandidateRecord[] = [];
     const pool: Candidate[] = [];
     const candidates = new Map<Ticker, Candidate>();
@@ -90,7 +90,7 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
         const candidate = buildCandidate(
             ticker,
             bars?.at(-1)?.date === asOf ? bars : undefined,
-            state.positions.find((p) => p.ticker === ticker)?.currentPrice,
+            state.positions.find((position) => position.ticker === ticker)?.currentPrice,
             exchanges,
             profiles,
             newsTickers,
@@ -117,15 +117,23 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
 
     // History for context ETFs and recently decided tickers that are not candidates tonight.
     const recentDecisions = await repos.decisions.recent(RECENT_DECISIONS);
-    const contextTickers = [...CONTEXT_SYMBOLS.map((c) => c.symbol), config.benchmarkSymbol].map(toTicker);
-    const extraTickers = [...new Set([...contextTickers, ...recentDecisions.map((d) => d.ticker)])].filter(
-        (t) => !recentBars.has(t),
-    );
+    const contextTickers = [
+        ...CONTEXT_SYMBOLS.map((contextSymbol) => contextSymbol.symbol),
+        config.benchmarkSymbol,
+    ].map(toTicker);
+    const extraTickers = [
+        ...new Set([...contextTickers, ...recentDecisions.map((decision) => decision.ticker)]),
+    ].filter((ticker) => !recentBars.has(ticker));
     const [extraBars, tickerNews, fills, earnings] = await Promise.all([
         extraTickers.length > 0
             ? marketData.getDailyBars(extraTickers, addDays(asOf, -HISTORY_DAYS), asOf)
             : Promise.resolve(new Map<Ticker, DailyBar[]>()),
-        deps.news.getNews({ since, until: deps.clock.now(), tickers: shortlist.map((c) => c.ticker), limit: 100 }),
+        deps.news.getNews({
+            since,
+            until: deps.clock.now(),
+            tickers: shortlist.map((candidate) => candidate.ticker),
+            limit: 100,
+        }),
         repos.fills.list(),
         earningsDates(deps, asOf),
     ]);
@@ -216,7 +224,7 @@ async function decideAndPropose(input: DecideInput): Promise<{ result: JobResult
         earnings,
     } = input;
     const { config, repos } = deps;
-    const holdings = new Set(state.positions.map((p) => p.ticker));
+    const holdings = new Set(state.positions.map((position) => position.ticker));
 
     const prompt = buildPrompt(
         promptInput({
@@ -240,15 +248,15 @@ async function decideAndPropose(input: DecideInput): Promise<{ result: JobResult
 
     const validation = validateDecisions(
         llmResult.output,
-        new Set(shortlist.map((c) => c.ticker)),
+        new Set(shortlist.map((candidate) => candidate.ticker)),
         holdings,
         config.risk,
     );
     if (!validation.ok) throw new Error(`invalid LLM output: ${validation.errors.join("; ")}`);
     const createdAt = deps.clock.now();
     await repos.decisions.saveMany(
-        validation.decisions.map((d): DecisionRecord => ({
-            ...d,
+        validation.decisions.map((decision): DecisionRecord => ({
+            ...decision,
             id: newId(),
             runId,
             llmCallId,
@@ -263,7 +271,10 @@ async function decideAndPropose(input: DecideInput): Promise<{ result: JobResult
     await repos.proposals.saveMany(proposals);
     await notify(deps, tradeDate, llmResult.output.marketView, proposals);
     return {
-        result: { status: "succeeded", message: `${proposals.filter((p) => p.qty > 0).length} proposals` },
+        result: {
+            status: "succeeded",
+            message: `${proposals.filter((proposal) => proposal.qty > 0).length} proposals`,
+        },
         decisions,
     };
 }
@@ -278,7 +289,7 @@ async function propose(
     state: BrokerState,
 ): Promise<Proposal[]> {
     const { config, repos, logger } = deps;
-    const closes = new Map(shortlist.map((c) => [c.ticker, c.close]));
+    const closes = new Map(shortlist.map((candidate) => [candidate.ticker, candidate.close]));
     const { orders, decisionOf: byOrderId } = sizeDecisions(
         decisions,
         closes,
@@ -288,7 +299,7 @@ async function propose(
     );
 
     const settings = await repos.settings.get();
-    const securities = new Map<Ticker, SecurityFacts>(shortlist.map((c) => [c.ticker, c]));
+    const securities = new Map<Ticker, SecurityFacts>(shortlist.map((candidate) => [candidate.ticker, candidate]));
     const result = runRiskChecks(orders, simulatePortfolio(state.account, state.positions), {
         limits: config.risk,
         universeLimits: config.universe,
@@ -344,7 +355,7 @@ async function notify(deps: AppDeps, tradeDate: TradingDate, marketView: string,
     const autoApproved = deps.config.mode === "paper";
     await deps.notifier.send(eveningSummaryText(tradeDate, marketView, proposals, autoApproved));
     if (autoApproved) return;
-    const pending = proposals.filter((p) => p.status === "pending");
+    const pending = proposals.filter((proposal) => proposal.status === "pending");
     for (const proposal of pending) await deps.notifier.sendProposal(proposalText(proposal), proposal.id);
     if (pending.length > 1)
         await deps.notifier.sendApproveAll(`Approve all ${pending.length} orders for ${tradeDate}?`, tradeDate);

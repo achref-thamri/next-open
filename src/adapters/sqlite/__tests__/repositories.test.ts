@@ -148,7 +148,7 @@ describe("llm calls and decisions", () => {
         ]);
 
         expect((await repos.decisions.latestForTicker(AAA))?.id).toBe("d3");
-        expect((await repos.decisions.recent(2)).map((d) => d.id)).toEqual(["d3", "d2"]);
+        expect((await repos.decisions.recent(2)).map((record) => record.id)).toEqual(["d3", "d2"]);
         expect(await repos.decisions.latestForTicker(toTicker("ZZZ"))).toBeUndefined();
     });
 });
@@ -184,7 +184,7 @@ describe("proposals", () => {
         ]);
 
         const ids = async (filter: Parameters<Repositories["proposals"]["list"]>[0]) =>
-            (await repos.proposals.list(filter)).map((p) => p.id);
+            (await repos.proposals.list(filter)).map((proposal) => proposal.id);
         expect(await ids({ tradeDate: toTradingDate("2026-11-03") })).toEqual(["p-1", "p-2"]);
         expect(await ids({ statuses: ["pending"] })).toEqual(["p-1", "p-3"]);
         expect(await ids({ tradeDate: toTradingDate("2026-11-03"), statuses: ["approved", "executed"] })).toEqual([
@@ -263,7 +263,7 @@ describe("fills", () => {
         await repos.fills.saveMany([fill("f2", "2026-11-02T15:00:00Z"), fill("f1", "2026-11-02T14:30:00Z")]);
         await repos.fills.saveMany([fill("f1", "2026-11-02T14:30:00Z")]);
 
-        expect((await repos.fills.list()).map((f) => f.id)).toEqual(["f1", "f2"]);
+        expect((await repos.fills.list()).map((brokerFill) => brokerFill.id)).toEqual(["f1", "f2"]);
         expect((await repos.fills.latest())?.id).toBe("f2");
     });
 });
@@ -275,7 +275,7 @@ describe("equity snapshots", () => {
         await repos.equity.save({ ...snap, equity: cents(101) });
         await repos.equity.save({ ...snap, date: toTradingDate("2026-10-30") });
 
-        expect((await repos.equity.list()).map((s) => [s.date, s.equity])).toEqual([
+        expect((await repos.equity.list()).map((snapshot) => [snapshot.date, snapshot.equity])).toEqual([
             ["2026-10-30", 100],
             ["2026-11-02", 101],
         ]);

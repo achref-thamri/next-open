@@ -32,7 +32,7 @@ export function context(overrides: Partial<RiskContext> = {}, tickers: string[] 
         universeLimits: universeSchema.parse({}),
         halted: false,
         account: { equity: EQUITY, cash: cents(5_000_000), previousCloseEquity: EQUITY },
-        securities: new Map(tickers.map((t) => [toTicker(t), security(t)])),
+        securities: new Map(tickers.map((symbol) => [toTicker(symbol), security(symbol)])),
         ...overrides,
     };
 }

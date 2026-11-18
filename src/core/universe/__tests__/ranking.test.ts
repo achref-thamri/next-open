@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { moveScore, rankCandidates } from "../ranking.js";
 import { candidate } from "./fixtures.js";
 
-const tickers = (list: { ticker: string }[]) => list.map((c) => c.ticker);
+const tickers = (list: { ticker: string }[]) => list.map((entry) => entry.ticker);
 
 describe("moveScore", () => {
     it("weights the absolute move by relative volume", () => {
@@ -32,8 +32,8 @@ describe("rankCandidates", () => {
     });
 
     it("caps the list", () => {
-        const many = Array.from({ length: 50 }, (_, i) =>
-            candidate({ ticker: `T${String(i).padStart(2, "0")}`, changePct: i / 100 }),
+        const many = Array.from({ length: 50 }, (_, index) =>
+            candidate({ ticker: `T${String(index).padStart(2, "0")}`, changePct: index / 100 }),
         );
 
         const ranked = rankCandidates(many, 40);

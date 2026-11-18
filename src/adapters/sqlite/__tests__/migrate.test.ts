@@ -9,7 +9,7 @@ import { MIGRATIONS } from "../migrations/index.js";
 const version = (db: Db) => db.pragma("user_version", { simple: true });
 const tables = (db: Db) =>
     (db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").all() as { name: string }[]).map(
-        (t) => t.name,
+        (table) => table.name,
     );
 
 describe("migrate", () => {
@@ -21,7 +21,7 @@ describe("migrate", () => {
     it("migrates a fresh database to the latest version", () => {
         const db = openDatabase(":memory:");
 
-        expect(migrate(db)).toEqual(MIGRATIONS.map((m) => m.version));
+        expect(migrate(db)).toEqual(MIGRATIONS.map((migration) => migration.version));
         expect(version(db)).toBe(MIGRATIONS.length);
         expect(tables(db)).toEqual([
             "api_usage",

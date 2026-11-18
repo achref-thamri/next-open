@@ -165,7 +165,7 @@ describe("FmpFundamentals", () => {
             .getProfile(AAPL)
             .then(
                 () => undefined,
-                (e: unknown) => e,
+                (caught: unknown) => caught,
             );
 
         expect(error).toBeInstanceOf(Error);

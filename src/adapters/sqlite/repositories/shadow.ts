@@ -108,16 +108,16 @@ export class SqliteShadowRepository implements ShadowRepository {
                         "SELECT * FROM shadow_orders WHERE strategy = ? AND trade_date = ? AND status = 'pending' ORDER BY id",
                     )
                     .all(strategy, tradeDate) as OrderRow[]
-            ).map((r) => ({
-                id: r.id,
-                ticker: r.ticker as Ticker,
-                side: r.side as Side,
-                qty: r.qty,
-                limitPrice: r.limit_price as Cents,
-                stopLossPrice: orUndefined(r.stop_loss_price) as Cents | undefined,
-                takeProfitPrice: orUndefined(r.take_profit_price) as Cents | undefined,
-                reasoning: r.reasoning,
-                status: r.status as ShadowOrder["status"],
+            ).map((orderRow) => ({
+                id: orderRow.id,
+                ticker: orderRow.ticker as Ticker,
+                side: orderRow.side as Side,
+                qty: orderRow.qty,
+                limitPrice: orderRow.limit_price as Cents,
+                stopLossPrice: orUndefined(orderRow.stop_loss_price) as Cents | undefined,
+                takeProfitPrice: orUndefined(orderRow.take_profit_price) as Cents | undefined,
+                reasoning: orderRow.reasoning,
+                status: orderRow.status as ShadowOrder["status"],
             })),
         );
     }
@@ -135,8 +135,17 @@ export class SqliteShadowRepository implements ShadowRepository {
                 const insertFill = this.db.prepare(
                     "INSERT INTO shadow_fills (strategy, date, seq, ticker, side, qty, price, reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 );
-                day.fills.forEach((f, seq) =>
-                    insertFill.run(day.strategy, day.date, seq, f.ticker, f.side, f.qty, f.price, f.reason),
+                day.fills.forEach((simulatedFill, seq) =>
+                    insertFill.run(
+                        day.strategy,
+                        day.date,
+                        seq,
+                        simulatedFill.ticker,
+                        simulatedFill.side,
+                        simulatedFill.qty,
+                        simulatedFill.price,
+                        simulatedFill.reason,
+                    ),
                 );
                 const filled = this.db.prepare("UPDATE shadow_orders SET status = 'filled' WHERE id = ?");
                 for (const id of day.filledOrderIds) filled.run(id);
@@ -166,15 +175,15 @@ export class SqliteShadowRepository implements ShadowRepository {
                     price: number;
                     reason: string;
                 }[]
-            ).map((r) => ({
+            ).map((row) => ({
                 strategy,
-                ticker: r.ticker as Ticker,
-                side: r.side as Side,
-                qty: r.qty,
-                price: r.price as Cents,
+                ticker: row.ticker as Ticker,
+                side: row.side as Side,
+                qty: row.qty,
+                price: row.price as Cents,
                 fee: cents(0),
-                date: r.date as TradingDate,
-                reason: r.reason as FillReason,
+                date: row.date as TradingDate,
+                reason: row.reason as FillReason,
             })),
         );
     }
@@ -188,7 +197,7 @@ export class SqliteShadowRepository implements ShadowRepository {
                     date: string;
                     equity: number;
                 }[]
-            ).map((r) => ({ date: r.date as TradingDate, equity: r.equity as Cents })),
+            ).map((row) => ({ date: row.date as TradingDate, equity: row.equity as Cents })),
         );
     }
 }

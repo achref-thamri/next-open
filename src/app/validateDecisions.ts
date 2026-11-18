@@ -37,5 +37,8 @@ export function validateDecisions(
     }
     return errors.length > 0
         ? { ok: false, errors }
-        : { ok: true, decisions: output.decisions.map((d) => ({ ...d, ticker: d.ticker as Ticker })) };
+        : {
+              ok: true,
+              decisions: output.decisions.map((decision) => ({ ...decision, ticker: decision.ticker as Ticker })),
+          };
 }

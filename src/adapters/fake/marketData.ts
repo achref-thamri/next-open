@@ -12,7 +12,7 @@ export class FakeMarketData implements MarketData {
 
     async listTradableAssets(): Promise<TradableAsset[]> {
         await this.failures.check("listTradableAssets");
-        return this.assets.map((a) => ({ ...a }));
+        return this.assets.map((asset) => ({ ...asset }));
     }
 
     async getDailyBars(
@@ -23,18 +23,20 @@ export class FakeMarketData implements MarketData {
         await this.failures.check("getDailyBars");
         this.barRequests.push([...tickers]);
         // Like Alpaca: one symbol it has never heard of fails the whole request (B3SA3, 2026-11-09).
-        const unknown = tickers.find((t) => !this.bars.has(t) && !this.assets.some((a) => a.ticker === t));
+        const unknown = tickers.find(
+            (ticker) => !this.bars.has(ticker) && !this.assets.some((asset) => asset.ticker === ticker),
+        );
         if (unknown !== undefined) {
             const body = JSON.stringify({ message: `invalid symbol: ${unknown}` });
             throw new HttpError(`Alpaca GET /v2/stocks/bars: 400 invalid symbol: ${unknown}`, 400, body);
         }
         const result = new Map<Ticker, DailyBar[]>();
         for (const ticker of tickers) {
-            const bars = (this.bars.get(ticker) ?? []).filter((b) => b.date >= from && b.date <= to);
+            const bars = (this.bars.get(ticker) ?? []).filter((bar) => bar.date >= from && bar.date <= to);
             if (bars.length > 0)
                 result.set(
                     ticker,
-                    bars.map((b) => ({ ...b })),
+                    bars.map((bar) => ({ ...bar })),
                 );
         }
         return result;

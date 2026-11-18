@@ -43,7 +43,7 @@ describe("AlpacaClient", () => {
         await alpaca.trading("/v2/account", account);
         await alpaca.data("/v2/stocks/bars", account, { symbols: ["AAPL", "MSFT"], feed: "sip" });
 
-        expect(fetch.mock.calls.map((c) => c[0])).toEqual([
+        expect(fetch.mock.calls.map((call) => call[0])).toEqual([
             "https://api.alpaca.markets/v2/account",
             "https://data.alpaca.markets/v2/stocks/bars?symbols=AAPL%2CMSFT&feed=sip",
         ]);
@@ -92,7 +92,7 @@ describe("AlpacaClient", () => {
     it("maps other 4xx to a permanent error with the vendor message, without retrying", async () => {
         const { alpaca, fetch } = client(() => json({ code: 40310000, message: "insufficient qty available" }, 403));
 
-        const error = await alpaca.trading("/v2/orders", account).catch((e: unknown) => e);
+        const error = await alpaca.trading("/v2/orders", account).catch((caught: unknown) => caught);
 
         expect(error).toBeInstanceOf(HttpError);
         expect(error).toMatchObject({ status: 403, message: "Alpaca GET /v2/orders: 403 insufficient qty available" });

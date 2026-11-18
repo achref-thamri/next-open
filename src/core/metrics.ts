@@ -38,10 +38,10 @@ export function maxDrawdown(values: readonly number[]): number {
  */
 export function sharpeRatio(values: readonly number[], riskFreeAnnual = 0): number | undefined {
     const riskFreeDaily = (1 + riskFreeAnnual) ** (1 / TRADING_DAYS_PER_YEAR) - 1;
-    const excess = dailyReturns(values).map((r) => r - riskFreeDaily);
+    const excess = dailyReturns(values).map((dailyReturn) => dailyReturn - riskFreeDaily);
     if (excess.length < 2) return undefined;
-    const mean = excess.reduce((sum, r) => sum + r, 0) / excess.length;
-    const variance = excess.reduce((sum, r) => sum + (r - mean) ** 2, 0) / (excess.length - 1);
+    const mean = excess.reduce((sum, dailyReturn) => sum + dailyReturn, 0) / excess.length;
+    const variance = excess.reduce((sum, dailyReturn) => sum + (dailyReturn - mean) ** 2, 0) / (excess.length - 1);
     const sd = Math.sqrt(variance);
     return sd < 1e-12 ? undefined : (mean / sd) * Math.sqrt(TRADING_DAYS_PER_YEAR);
 }
@@ -49,17 +49,17 @@ export function sharpeRatio(values: readonly number[], riskFreeAnnual = 0): numb
 /** Share of closed trades with a positive result. Undefined when nothing was sold. */
 export function winRate(trades: readonly ClosedTrade[]): number | undefined {
     if (trades.length === 0) return undefined;
-    return trades.filter((t) => t.realizedPl > 0).length / trades.length;
+    return trades.filter((closedTrade) => closedTrade.realizedPl > 0).length / trades.length;
 }
 
 /** Value traded (buys and sells) divided by average equity over the period. */
 export function turnover(fills: readonly Fill[], equityValues: readonly number[]): number {
     if (equityValues.length === 0) return 0;
-    const averageEquity = equityValues.reduce((sum, v) => sum + v, 0) / equityValues.length;
-    const traded = fills.reduce((sum, f) => sum + f.qty * f.price, 0);
+    const averageEquity = equityValues.reduce((sum, equity) => sum + equity, 0) / equityValues.length;
+    const traded = fills.reduce((sum, fill) => sum + fill.qty * fill.price, 0);
     return averageEquity > 0 ? traded / averageEquity : 0;
 }
 
 export function totalFees(fills: readonly Fill[]): Cents {
-    return sumCents(fills.map((f) => f.fee));
+    return sumCents(fills.map((fill) => fill.fee));
 }

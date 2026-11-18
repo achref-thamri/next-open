@@ -68,7 +68,7 @@ describe("Scheduler", () => {
     it("runs each job once at its New York time on a trading day", async () => {
         await runDay("2026-11-02T10:00:00Z", "2026-11-03T03:00:00Z");
 
-        expect(ran.filter((r) => !r.startsWith("backup"))).toEqual([
+        expect(ran.filter((jobName) => !jobName.startsWith("backup"))).toEqual([
             "approval_reminder@11:00",
             "liquid_list@12:00",
             "execute_at_open@14:30",
@@ -92,7 +92,7 @@ describe("Scheduler", () => {
     it("moves the end of day and evening jobs with an early close", async () => {
         await runDay("2026-11-27T17:00:00Z", "2026-11-27T20:00:00Z");
 
-        expect(ran.filter((r) => /^(end_of_day|evening_analysis)/.test(r))).toEqual([
+        expect(ran.filter((jobName) => /^(end_of_day|evening_analysis)/.test(jobName))).toEqual([
             "end_of_day@18:20",
             "evening_analysis@18:30",
         ]);
@@ -110,7 +110,7 @@ describe("Scheduler", () => {
         expect(missed).toMatchObject({ status: "skipped", error: expect.stringContaining("missed") as unknown });
 
         await runDay("2026-11-02T15:06:00Z", "2026-11-02T15:08:00Z");
-        expect(notifier.texts().filter((t) => t.includes("Missed execute_at_open"))).toHaveLength(1);
+        expect(notifier.texts().filter((text) => text.includes("Missed execute_at_open"))).toHaveLength(1);
     });
 
     it("does not run a job again after a restart", async () => {
@@ -132,7 +132,7 @@ describe("Scheduler", () => {
         await restarted.tick();
         await restarted.idle();
 
-        expect(ran.filter((r) => r.startsWith("execute_at_open"))).toHaveLength(1);
+        expect(ran.filter((jobName) => jobName.startsWith("execute_at_open"))).toHaveLength(1);
     });
 
     it("keeps ticking when the calendar cannot be read", async () => {
@@ -162,7 +162,7 @@ describe("Scheduler", () => {
             [
                 {
                     type: "liquid_list",
-                    dueAt: (d: TradingDate) => new Date(`${d}T14:00:00Z`),
+                    dueAt: (date: TradingDate) => new Date(`${date}T14:00:00Z`),
                     windowMs: 86_400_000,
                     run: () =>
                         new Promise<void>((resolve) => {
@@ -197,7 +197,7 @@ describe("Scheduler", () => {
         const slow = new Scheduler({ broker, clock, runs: repos.runs, notifier, logger: pino({ level: "silent" }) }, [
             {
                 type: "liquid_list",
-                dueAt: (d: TradingDate) => new Date(`${d}T00:00:00Z`),
+                dueAt: (date: TradingDate) => new Date(`${date}T00:00:00Z`),
                 windowMs: 86_400_000,
                 run: () =>
                     new Promise<void>((resolve) => {

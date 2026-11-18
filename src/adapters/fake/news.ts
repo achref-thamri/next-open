@@ -16,7 +16,7 @@ export class FakeNews implements News {
         const { since, until, tickers, limit } = query;
         return this.items
             .filter((item) => item.createdAt >= since && item.createdAt < until)
-            .filter((item) => !tickers || item.tickers.some((t) => tickers.includes(t)))
+            .filter((item) => !tickers || item.tickers.some((ticker) => tickers.includes(ticker)))
             .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
             .slice(0, limit);
     }

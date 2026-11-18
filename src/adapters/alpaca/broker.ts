@@ -107,21 +107,21 @@ export class AlpacaBroker implements Broker {
 
     async getPositions(): Promise<Position[]> {
         const positions = await this.client.trading("/v2/positions", zod.array(positionSchema));
-        return positions.map((p) => ({
-            ticker: toTicker(p.symbol),
-            qty: p.qty,
-            avgEntryPrice: p.avg_entry_price,
-            currentPrice: p.current_price,
-            marketValue: p.market_value,
-            unrealizedPl: p.unrealized_pl,
+        return positions.map((position) => ({
+            ticker: toTicker(position.symbol),
+            qty: position.qty,
+            avgEntryPrice: position.avg_entry_price,
+            currentPrice: position.current_price,
+            marketValue: position.market_value,
+            unrealizedPl: position.unrealized_pl,
         }));
     }
 
     async getCalendar(from: TradingDate, to: TradingDate): Promise<MarketDay[]> {
         const days = await this.client.trading("/v2/calendar", calendarSchema, { query: { start: from, end: to } });
-        return days.map((d) => {
-            const date = toTradingDate(d.date);
-            return { date, open: newYorkInstant(date, d.open), close: newYorkInstant(date, d.close) };
+        return days.map((day) => {
+            const date = toTradingDate(day.date);
+            return { date, open: newYorkInstant(date, day.open), close: newYorkInstant(date, day.close) };
         });
     }
 
@@ -158,7 +158,7 @@ export class AlpacaBroker implements Broker {
         const orders = await this.client.trading("/v2/orders", zod.array(orderSchema), {
             query: { status: "open", nested: true, limit: 500, direction: "asc" },
         });
-        return orders.map((o) => toBrokerOrder(o));
+        return orders.map((order) => toBrokerOrder(order));
     }
 
     async cancelOrder(orderId: string): Promise<void> {
@@ -203,8 +203,8 @@ export class AlpacaBroker implements Broker {
 
     /** Makes sure margin and shorting are off, switching them off if needed, and fails if that does not stick. */
     async verifyAccountSafety(): Promise<void> {
-        const safe = (c: zod.output<typeof configurationsSchema>) =>
-            c.no_shorting && Number(c.max_margin_multiplier) === 1;
+        const safe = (configuration: zod.output<typeof configurationsSchema>) =>
+            configuration.no_shorting && Number(configuration.max_margin_multiplier) === 1;
         const current = await this.client.trading("/v2/account/configurations", configurationsSchema);
         if (safe(current)) return;
         this.logger.warn(current, "account allows margin or shorting; switching both off");

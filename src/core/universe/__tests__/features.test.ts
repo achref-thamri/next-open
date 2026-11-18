@@ -48,7 +48,7 @@ describe("barFeatures", () => {
 });
 
 describe("periodReturns", () => {
-    const series = (count: number) => Array.from({ length: count }, (_, i) => bar(1, 1000 + i * 10, 1));
+    const series = (count: number) => Array.from({ length: count }, (_, index) => bar(1, 1000 + index * 10, 1));
 
     it("measures 1-day, 1-week, 1-month and 3-month returns", () => {
         const returns = periodReturns(series(64));
@@ -116,7 +116,7 @@ describe("trendFeatures", () => {
     });
 
     it("gives a typical day's move, not an annualised one", () => {
-        const closes = Array.from({ length: 21 }, (_, i) => (i % 2 === 0 ? 10_000 : 10_200));
+        const closes = Array.from({ length: 21 }, (_, index) => (index % 2 === 0 ? 10_000 : 10_200));
 
         const daily = trendFeatures(series(closes))?.dailyVolatility ?? 0;
 

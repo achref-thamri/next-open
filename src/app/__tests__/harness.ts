@@ -107,8 +107,8 @@ export function seedStock(
     } = options;
     const ticker = toTicker(symbol);
     const days = weekdays(toTradingDate("2026-06-01"), until).slice(-90);
-    const bars: DailyBar[] = days.map((date, i) => {
-        const last = i === days.length - 1;
+    const bars: DailyBar[] = days.map((date, index) => {
+        const last = index === days.length - 1;
         const close = cents(Math.round(price * 100 * (last ? 1 + lastMove : 1)));
         return {
             date,

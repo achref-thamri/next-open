@@ -44,7 +44,7 @@ async function build(deps: AppDeps, today: TradingDate, week: TradingDate): Prom
 
     const assets = await marketData.listTradableAssets();
     const bars = await marketData.getDailyBars(
-        assets.map((a) => a.ticker),
+        assets.map((asset) => asset.ticker),
         addDays(today, -HISTORY_DAYS),
         today,
     );
@@ -67,11 +67,11 @@ async function build(deps: AppDeps, today: TradingDate, week: TradingDate): Prom
 
     // Most traded first, so the profiles FMP's daily budget buys go to the stocks most likely to be traded.
     liquid.sort((a, b) => b.avgDollarVolumeUsd - a.avgDollarVolumeUsd);
-    const tickers = liquid.map((s) => s.ticker);
+    const tickers = liquid.map((stock) => stock.ticker);
     const cached = await repos.profiles.getMany(tickers);
     const now = clock.now();
-    const stale = tickers.filter((t) => {
-        const p = cached.get(t);
+    const stale = tickers.filter((ticker) => {
+        const p = cached.get(ticker);
         return !p || now.getTime() - p.fetchedAt.getTime() >= PROFILE_MAX_AGE_MS;
     });
 
@@ -92,9 +92,9 @@ async function build(deps: AppDeps, today: TradingDate, week: TradingDate): Prom
         await repos.profiles.save({ ...profile, fetchedAt: now });
     }
 
-    const known = liquid.flatMap((s) => {
-        const p = profiles.get(s.ticker);
-        return p ? [{ ...s, kind: p.kind, marketCapUsd: p.marketCapUsd }] : [];
+    const known = liquid.flatMap((stock) => {
+        const p = profiles.get(stock.ticker);
+        return p ? [{ ...stock, kind: p.kind, marketCapUsd: p.marketCapUsd }] : [];
     });
     const list = filterLiquid(known, limits);
     const complete = missing === 0;

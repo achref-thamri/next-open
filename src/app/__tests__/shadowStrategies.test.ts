@@ -115,7 +115,11 @@ describe("virtual strategies", () => {
         await runEveningAnalysis(h);
 
         expect(
-            (await h.repos.shadow.pendingOrders("claude_time_exit", NEXT)).map((o) => [o.ticker, o.side, o.qty]),
+            (await h.repos.shadow.pendingOrders("claude_time_exit", NEXT)).map((shadowOrder) => [
+                shadowOrder.ticker,
+                shadowOrder.side,
+                shadowOrder.qty,
+            ]),
         ).toEqual([
             ["AAA", "buy", expect.any(Number)],
             ["OLD", "sell", 10],
@@ -136,7 +140,10 @@ describe("virtual strategies", () => {
             { ticker: AAA, side: "buy", qty: 56, price: 10_550, reason: "entry" },
         ]);
         // Patient: BBB bought at $98, then the day fell through its stop
-        expect((await h.repos.shadow.fills("claude_patient")).map((f) => f.reason)).toEqual(["entry", "stop_loss"]);
+        expect((await h.repos.shadow.fills("claude_patient")).map((fill) => fill.reason)).toEqual([
+            "entry",
+            "stop_loss",
+        ]);
         expect(await h.repos.shadow.snapshots("momentum")).toEqual([{ date: NEXT, equity: 10_008_400 }]);
 
         expect(await simulateShadowDay(h, NEXT)).toEqual([]);
@@ -175,7 +182,13 @@ describe("virtual strategies", () => {
         expect(h.marketData.barRequests[0]).toContain("XYZ");
         // XYZ is not in the liquid list, so momentum sells it at the rebalance.
         const monday = toTradingDate("2026-11-09");
-        expect((await h.repos.shadow.pendingOrders("momentum", monday)).map((o) => [o.ticker, o.side, o.qty])).toEqual([
+        expect(
+            (await h.repos.shadow.pendingOrders("momentum", monday)).map((shadowOrder) => [
+                shadowOrder.ticker,
+                shadowOrder.side,
+                shadowOrder.qty,
+            ]),
+        ).toEqual([
             ["XYZ", "sell", 100],
             ["AAA", "buy", 56],
         ]);

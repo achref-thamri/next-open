@@ -88,7 +88,8 @@ export class RateLimiter {
     constructor(
         perMinute: number,
         private readonly now: () => number = Date.now,
-        private readonly sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
+        private readonly sleep: (ms: number) => Promise<void> = (ms) =>
+            new Promise((resolve) => setTimeout(resolve, ms)),
         private readonly intervalMs = 60_000 / perMinute,
     ) {}
 

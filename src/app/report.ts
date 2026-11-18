@@ -34,8 +34,8 @@ export async function performance(
         repos.runs.lastUnexplainedFailure(),
     ]);
     const trades = closedTrades(fills);
-    const equity = snapshots.map((s) => s.equity);
-    const benchmark = snapshots.map((s) => s.benchmarkValue);
+    const equity = snapshots.map((snapshot) => snapshot.equity);
+    const benchmark = snapshots.map((snapshot) => snapshot.benchmarkValue);
 
     return {
         days: snapshots.length,
@@ -51,7 +51,7 @@ export async function performance(
         gate: evaluateGoLiveGate({
             snapshots,
             closedTrades: trades,
-            unrealizedPl: cents(positions.reduce((sum, p) => sum + p.unrealizedPl, 0)),
+            unrealizedPl: cents(positions.reduce((sum, position) => sum + position.unrealizedPl, 0)),
             lastUnexplainedFailure: failure && tradingDateOf(failure.startedAt),
             today: tradingDateOf(clock.now()),
             taxRates: config.tax,
@@ -71,7 +71,7 @@ export function reportText(p: Performance): string {
         `Fees ${formatCents(p.fees)} · estimated tax on realised gains ${formatCents(p.realizedTax)}`,
         "",
         `Go-live gate: ${p.gate.pass ? "✅ PASSED" : "not yet"}`,
-        ...p.gate.criteria.map((c) => `${c.pass ? "✅" : "❌"} ${c.name}: ${c.detail}`),
+        ...p.gate.criteria.map((criterion) => `${criterion.pass ? "✅" : "❌"} ${criterion.name}: ${criterion.detail}`),
     ];
     return lines.join("\n");
 }
