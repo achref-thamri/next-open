@@ -35,6 +35,8 @@ export interface ShadowContext {
     startEquity: Cents;
     /** Tonight's decisions for the real account; empty when its run failed. */
     liveDecisions: readonly Decision[];
+    /** Next earnings report per ticker, as the real account's prompt sees it. */
+    earnings?: ReadonlyMap<Ticker, TradingDate>;
 }
 
 interface ShadowStrategy {
@@ -252,6 +254,7 @@ async function patientDecisions(
             openDates: new Map(account.portfolio.positions.map((p) => [p.ticker, p.openedOn])),
             contextTickers: ctx.contextTickers,
             limits,
+            ...(ctx.earnings ? { earnings: ctx.earnings } : {}),
             style: PATIENT_STYLE,
         }),
     );

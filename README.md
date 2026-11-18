@@ -70,7 +70,8 @@ Times are New York time and follow the broker's calendar, so holidays and half d
   market cap of at least $2B and $20M traded a day on average.
 - **Evening analysis**: 40 stocks go to the AI with the portfolio, a year of price data and headlines: the holdings,
   the strongest uptrends (best 6-month return while above the 200-day average) for half the rest, then stocks in the
-  news and the day's unusual moves. Its proposals are checked and sent to Telegram.
+  news and the day's unusual moves. Each stock also comes with the days left until its next earnings report, if one is
+  due within three weeks. Its proposals are checked and sent to Telegram.
 - **Execute at open**: the risk rules run again against the live account, then the orders go out.
 - **End of day**: equity and the benchmark are recorded, the virtual portfolios are simulated, and a summary is sent.
 

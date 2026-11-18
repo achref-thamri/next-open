@@ -31,6 +31,8 @@ import { validateDecisions } from "./validateDecisions.js";
 /** A year of trading days plus margin: 12-month returns, the 52-week high and the 200-day average. */
 const HISTORY_DAYS = 380;
 const RECENT_DECISIONS = 20;
+/** How far ahead earnings dates are looked up: about the longest holding period the model plans for. */
+const EARNINGS_DAYS = 21;
 
 /**
  * The evening job: sync → candidates → filter → rank → LLM → validate → size → risk checks →
@@ -119,12 +121,13 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
     const extraTickers = [...new Set([...contextTickers, ...recentDecisions.map((d) => d.ticker)])].filter(
         (t) => !recentBars.has(t),
     );
-    const [extraBars, tickerNews, fills] = await Promise.all([
+    const [extraBars, tickerNews, fills, earnings] = await Promise.all([
         extraTickers.length > 0
             ? marketData.getDailyBars(extraTickers, addDays(asOf, -HISTORY_DAYS), asOf)
             : Promise.resolve(new Map<Ticker, DailyBar[]>()),
         deps.news.getNews({ since, until: deps.clock.now(), tickers: shortlist.map((c) => c.ticker), limit: 100 }),
         repos.fills.list(),
+        earningsDates(deps, asOf),
     ]);
     const history = new Map([...recentBars, ...extraBars]);
 
@@ -146,6 +149,7 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
             recentDecisions,
             fills,
             contextTickers,
+            earnings,
         }));
     } catch (error) {
         failure = error instanceof Error ? error : new Error(String(error));
@@ -162,9 +166,20 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
         newsSince: since,
         startEquity: state.account.equity,
         liveDecisions,
+        earnings,
     });
     if (failure !== undefined) throw failure;
     return result ?? { status: "succeeded" };
+}
+
+/** Upcoming earnings dates, or none when FMP fails: the run goes on without them. */
+async function earningsDates(deps: AppDeps, asOf: TradingDate): Promise<Map<Ticker, TradingDate>> {
+    try {
+        return await deps.fundamentals.earningsDates(asOf, addDays(asOf, EARNINGS_DAYS));
+    } catch (error) {
+        deps.logger.warn({ err: error }, "earnings calendar unavailable; analysing without it");
+        return new Map();
+    }
 }
 
 interface DecideInput {
@@ -180,6 +195,7 @@ interface DecideInput {
     recentDecisions: DecisionRecord[];
     fills: Fill[];
     contextTickers: Ticker[];
+    earnings: Map<Ticker, TradingDate>;
 }
 
 /** The real strategy: prompt, AI call, validation, proposals and the owner's notification. */
@@ -197,6 +213,7 @@ async function decideAndPropose(input: DecideInput): Promise<{ result: JobResult
         recentDecisions,
         fills,
         contextTickers,
+        earnings,
     } = input;
     const { config, repos } = deps;
     const holdings = new Set(state.positions.map((p) => p.ticker));
@@ -214,6 +231,7 @@ async function decideAndPropose(input: DecideInput): Promise<{ result: JobResult
             openDates: positionOpenDates(fills),
             contextTickers,
             limits: config.risk,
+            earnings,
         }),
     );
     const llmResult = await deps.llm.decide(prompt);

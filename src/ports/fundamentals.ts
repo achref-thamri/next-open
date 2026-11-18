@@ -1,4 +1,4 @@
-import type { SecurityKind, Ticker } from "../core/types.js";
+import type { SecurityKind, Ticker, TradingDate } from "../core/types.js";
 
 export interface CompanyProfile {
     ticker: Ticker;
@@ -11,6 +11,11 @@ export interface CompanyProfile {
 export interface Fundamentals {
     /** Undefined when the vendor does not know the ticker or the daily budget is used up. */
     getProfile(ticker: Ticker): Promise<CompanyProfile | undefined>;
+    /**
+     * The next scheduled earnings report per ticker between two dates (inclusive), one request for all tickers.
+     * Empty when the daily budget is used up.
+     */
+    earningsDates(from: TradingDate, to: TradingDate): Promise<Map<Ticker, TradingDate>>;
     /** Remaining vendor requests today, so long jobs can stop before the budget runs out. */
     remainingRequests(): Promise<number>;
 }

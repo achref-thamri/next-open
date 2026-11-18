@@ -25,6 +25,7 @@ function input(headline = "Acme beats estimates and raises guidance"): PromptInp
         candidates: [
             {
                 ticker: "ACME",
+                daysToEarnings: 6,
                 priceUsd: 52.31,
                 returns: { d1: 0.081, w1: 0.12, m1: 0.2, m3: undefined, m6: undefined, m12: undefined },
                 fromHigh52w: -0.02,
