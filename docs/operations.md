@@ -127,7 +127,7 @@ docker compose logs -f
 ## Read-only access
 
 [`scripts/read-access/`](../scripts/read-access/) sets up a second SSH key that can only run one read-only SQL query
-or read the container logs, for checks without the owner's own login:
+or read the container logs. It's for monitoring and debugging with a key that can't change anything:
 
 ```sh
 echo "select type, status, started_at from runs order by started_at desc limit 5" | ssh next-open-read no-db-read

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Server half of read-only access; install.sh runs it over the owner's own SSH key:
+# Server half of read-only access; install.sh runs it over your normal SSH key:
 #   ssh hetzner 'bash -s -- "<public key>"' < server-setup.sh
 # - ~/bin/no-db-read: one SQL query on stdin against Next Open's SQLite file, opened read-only with query_only on, so
 #   only statements that return rows run. Prints one JSON object per row.
