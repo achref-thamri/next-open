@@ -86,6 +86,25 @@ describe("runEveningAnalysis", () => {
         expect(user).toContain('"symbol":"SPY"');
     });
 
+    it("tells the model how many days until a candidate's next earnings report", async () => {
+        h.fundamentals.earnings.set(toTicker("AAA"), toTradingDate("2026-11-05"));
+        h.llm.respondWith(llmOutput());
+
+        await runEveningAnalysis(h);
+
+        const user = h.llm.prompts[0]?.user ?? "";
+        expect(user).toContain('"ticker":"AAA","daysToEarnings":3');
+        expect(user).not.toContain('"ticker":"BBB","daysToEarnings"');
+    });
+
+    it("analyses without earnings dates when the calendar fails", async () => {
+        h.fundamentals.failures.failNext("earningsDates", new TransientError("FMP down"));
+        h.llm.respondWith(llmOutput(decision("AAA")));
+
+        expect((await runEveningAnalysis(h)).status).toBe("succeeded");
+        expect(h.llm.prompts[0]?.user).not.toContain("daysToEarnings");
+    });
+
     it("leaves out stocks whose single share costs more than a full position", async () => {
         // Equity is $100,000 and a position is at most 10% here, so a $12,000 share can never be bought.
         seedStock(h, "PRICY", { price: 12_000 });

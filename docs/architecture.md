@@ -35,15 +35,15 @@ src/
 The scheduler (`src/scheduler`) checks once a minute which jobs are due. Trading-day jobs take their times from the
 broker calendar, so holidays and half days need no special code.
 
-| Job                 | When (New York)     | Window | Does                                                                         |
-| ------------------- | ------------------- | ------ | ---------------------------------------------------------------------------- |
-| `backup`            | 02:00               | 6 h    | SQLite online backup, 14 days kept                                           |
-| `liquid_list`       | 07:00               | 12 h   | Weekly list of liquid common stocks; continues daily while FMP profiles fill |
-| `approval_reminder` | 06:00, trading days | 1 h    | Reminds about pending proposals (live mode)                                  |
-| `execute_at_open`   | session open        | 15 min | Re-checks risk against the live account, places orders                       |
-| `end_of_day`        | close + 20 min      | 1 h    | Equity and benchmark snapshot, virtual portfolios, daily loss check, summary |
-| `evening_analysis`  | close + 30 min      | 90 min | Candidates, Claude decision, validation, sizing, risk checks, proposals      |
-| `weekly_report`     | Sunday 10:00        | 12 h   | Performance against the benchmark and the go-live gate                       |
+| Job                 | When (New York)     | Window | Does                                                                                    |
+| ------------------- | ------------------- | ------ | --------------------------------------------------------------------------------------- |
+| `backup`            | 02:00               | 6 h    | SQLite online backup, 14 days kept                                                      |
+| `liquid_list`       | 07:00               | 12 h   | Weekly list of liquid common stocks; continues daily while FMP profiles fill            |
+| `approval_reminder` | 06:00, trading days | 1 h    | Reminds about pending proposals (live mode)                                             |
+| `execute_at_open`   | session open        | 15 min | Re-checks risk against the live account, places orders                                  |
+| `end_of_day`        | close + 20 min      | 1 h    | Equity and benchmark snapshot, virtual portfolios, daily loss check, summary            |
+| `evening_analysis`  | close + 30 min      | 90 min | Candidates, earnings dates, Claude decision, validation, sizing, risk checks, proposals |
+| `weekly_report`     | Sunday 10:00        | 12 h   | Performance against the benchmark and the go-live gate                                  |
 
 Each job runs at most once per date; the run record in SQLite survives restarts. A job that cannot start inside its
 window is recorded as missed and alerted, never run late on stale prices ([ADR 0006](adr/0006-missed-jobs-are-never-replayed.md)).

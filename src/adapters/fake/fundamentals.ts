@@ -1,4 +1,4 @@
-import type { Ticker } from "../../core/types.js";
+import type { Ticker, TradingDate } from "../../core/types.js";
 import type { CompanyProfile, Fundamentals } from "../../ports/fundamentals.js";
 import { FailureInjector } from "./failures.js";
 
@@ -6,6 +6,8 @@ import { FailureInjector } from "./failures.js";
 export class FakeFundamentals implements Fundamentals {
     readonly failures = new FailureInjector();
     readonly profiles = new Map<Ticker, CompanyProfile>();
+    /** Next report date per ticker. */
+    readonly earnings = new Map<Ticker, TradingDate>();
     requests = 0;
 
     constructor(private readonly dailyBudget = Number.POSITIVE_INFINITY) {}
@@ -15,6 +17,12 @@ export class FakeFundamentals implements Fundamentals {
         if (!this.spend(1)) return undefined;
         const profile = this.profiles.get(ticker);
         return profile && { ...profile };
+    }
+
+    async earningsDates(from: TradingDate, to: TradingDate): Promise<Map<Ticker, TradingDate>> {
+        await this.failures.check("earningsDates");
+        if (!this.spend(1)) return new Map();
+        return new Map([...this.earnings].filter(([, date]) => date >= from && date <= to));
     }
 
     remainingRequests(): Promise<number> {

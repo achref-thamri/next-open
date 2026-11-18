@@ -74,6 +74,8 @@ export interface PromptSources {
     openDates: ReadonlyMap<Ticker, TradingDate>;
     contextTickers: Ticker[];
     limits: RiskLimits;
+    /** Next earnings report per ticker; tickers without one in the window are missing. */
+    earnings?: ReadonlyMap<Ticker, TradingDate>;
     style?: string;
 }
 
@@ -86,11 +88,14 @@ export function promptInput(s: PromptSources): PromptInput {
             .filter((n) => n.tickers.includes(ticker))
             .slice(0, HEADLINES_PER_TICKER)
             .map((n) => n.headline);
+    const earningsIn = (date: TradingDate | undefined) =>
+        date === undefined ? {} : { daysToEarnings: -daysBetween(date) };
     const closeOn = (ticker: Ticker, date: TradingDate) => s.history.get(ticker)?.find((b) => b.date === date)?.close;
     const latestClose = (ticker: Ticker) => s.history.get(ticker)?.at(-1)?.close;
 
     const candidates: PromptCandidate[] = s.shortlist.map((c) => ({
         ticker: c.ticker,
+        ...earningsIn(s.earnings?.get(c.ticker)),
         priceUsd: centsToDollars(c.close),
         returns: periodReturns(s.history.get(c.ticker) ?? []),
         ...trendFeatures(s.history.get(c.ticker) ?? []),

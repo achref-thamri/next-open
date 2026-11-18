@@ -1,5 +1,12 @@
 import { z } from "zod";
-import { isTicker, tradingDateOf, type SecurityKind, type Ticker } from "../../core/types.js";
+import {
+    isTicker,
+    toTradingDate,
+    tradingDateOf,
+    type SecurityKind,
+    type Ticker,
+    type TradingDate,
+} from "../../core/types.js";
 import { HttpError, PermanentError, RateLimitError } from "../../lib/errors.js";
 import { requestJson, type Fetch } from "../../lib/http.js";
 import type { Logger } from "../../lib/logger.js";
@@ -24,6 +31,8 @@ const profileSchema = z.array(
     }),
 );
 
+const earningsSchema = z.array(z.object({ symbol: z.string(), date: z.string() }));
+
 export interface FmpOptions {
     apiKey: string;
     profiles: ProfilesRepository;
@@ -36,7 +45,7 @@ export interface FmpOptions {
 }
 
 /**
- * Company profiles (including market cap) from Financial Modeling Prep. Profiles are cached in SQLite and refreshed
+ * Company profiles (including market cap) and the earnings calendar from Financial Modeling Prep. Profiles are cached in SQLite and refreshed
  * after 30 days; every request counts against a daily budget, and when it is used up the adapter answers from
  * the cache (or not at all) instead of calling the API. The API key travels in the query string, so URLs are
  * never logged or put in error messages.
@@ -67,6 +76,22 @@ export class FmpFundamentals implements Fundamentals {
         };
         await this.options.profiles.save(profile);
         return withoutDate(profile);
+    }
+
+    async earningsDates(from: TradingDate, to: TradingDate): Promise<Map<Ticker, TradingDate>> {
+        const dates = new Map<Ticker, TradingDate>();
+        if (!(await this.spend())) return dates;
+        const rows = await this.get("/earnings-calendar", earningsSchema, { from, to });
+        if (rows === LIMIT_REACHED) return dates;
+        for (const row of rows) {
+            const ticker = fromFmpSymbol(row.symbol);
+            // One odd row (a foreign symbol, a missing date) skips that row, not the whole calendar.
+            if (ticker === undefined || !/^\d{4}-\d{2}-\d{2}$/.test(row.date)) continue;
+            const date = toTradingDate(row.date);
+            const earlier = dates.get(ticker);
+            if (earlier === undefined || date < earlier) dates.set(ticker, date);
+        }
+        return dates;
     }
 
     async remainingRequests(): Promise<number> {
