@@ -9,6 +9,7 @@ export interface Config {
     mode: TradingMode;
     alpaca: { keyId: string; secretKey: string };
     fmp: { apiKey: string };
+    finnhub: { apiKey: string };
     anthropic: { apiKey: string; model: string };
     telegram: { token: string; ownerChatId: number };
     databasePath: string;
@@ -46,6 +47,7 @@ export function parseConfig(env: Record<string, string | undefined>, settings: u
         mode: e.TRADING_MODE,
         alpaca: { keyId, secretKey },
         fmp: { apiKey: e.FMP_API_KEY },
+        finnhub: { apiKey: e.FINNHUB_API_KEY },
         anthropic: { apiKey: e.ANTHROPIC_API_KEY, model: e.ANTHROPIC_MODEL },
         telegram: { token: e.TELEGRAM_TOKEN, ownerChatId: e.TELEGRAM_OWNER_CHAT_ID },
         databasePath: e.DATABASE_PATH,

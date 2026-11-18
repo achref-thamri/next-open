@@ -103,7 +103,7 @@ Needs Node 24. No Docker needed locally.
 ```sh
 npm ci
 npm run check                # format, lint, typecheck, unused code, tests
-cp .env.example .env         # Alpaca paper, FMP (free), Anthropic and Telegram keys
+cp .env.example .env         # Alpaca paper, FMP and Finnhub (both free), Anthropic and Telegram keys
 npm run dry-run -- --quick   # one evening analysis on real data, fake broker, no orders
 npm run dev                  # the scheduler and Telegram
 ```

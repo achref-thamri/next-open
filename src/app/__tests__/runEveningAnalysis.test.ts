@@ -87,7 +87,7 @@ describe("runEveningAnalysis", () => {
     });
 
     it("tells the model how many days until a candidate's next earnings report", async () => {
-        h.fundamentals.earnings.set(toTicker("AAA"), toTradingDate("2026-11-05"));
+        h.earnings.reports.set(toTicker("AAA"), toTradingDate("2026-11-05"));
         h.llm.respondWith(llmOutput());
 
         await runEveningAnalysis(h);
@@ -98,7 +98,7 @@ describe("runEveningAnalysis", () => {
     });
 
     it("analyses without earnings dates when the calendar fails", async () => {
-        h.fundamentals.failures.failNext("earningsDates", new TransientError("FMP down"));
+        h.earnings.failures.failNext("nextReports", new TransientError("Finnhub down"));
         h.llm.respondWith(llmOutput(decision("AAA")));
 
         expect((await runEveningAnalysis(h)).status).toBe("succeeded");

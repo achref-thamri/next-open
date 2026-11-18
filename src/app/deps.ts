@@ -2,6 +2,7 @@ import type { Config } from "../config/index.js";
 import type { Logger } from "../lib/logger.js";
 import type { Broker } from "../ports/broker.js";
 import type { Clock } from "../ports/clock.js";
+import type { EarningsCalendar } from "../ports/earnings.js";
 import type { Fundamentals } from "../ports/fundamentals.js";
 import type { Llm } from "../ports/llm.js";
 import type { MarketData } from "../ports/marketData.js";
@@ -21,6 +22,7 @@ export interface AppDeps {
     marketData: MarketData;
     news: News;
     fundamentals: Fundamentals;
+    earnings: EarningsCalendar;
     llm: Llm;
     notifier: Notifier;
     clock: Clock;

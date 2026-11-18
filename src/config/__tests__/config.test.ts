@@ -5,6 +5,7 @@ const baseEnv = {
     ALPACA_PAPER_KEY_ID: "paper-id",
     ALPACA_PAPER_SECRET_KEY: "paper-secret",
     FMP_API_KEY: "fmp-key",
+    FINNHUB_API_KEY: "finnhub-key",
     ANTHROPIC_API_KEY: "sk-ant-very-secret",
     TELEGRAM_TOKEN: "123:abc",
     TELEGRAM_OWNER_CHAT_ID: "42",

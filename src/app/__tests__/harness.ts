@@ -2,6 +2,7 @@ import { pino } from "pino";
 import {
     FakeBroker,
     FakeClock,
+    FakeEarnings,
     FakeFundamentals,
     FakeLlm,
     FakeMarketData,
@@ -25,6 +26,7 @@ export interface Harness extends AppDeps {
     marketData: FakeMarketData;
     news: FakeNews;
     fundamentals: FakeFundamentals;
+    earnings: FakeEarnings;
     llm: FakeLlm;
     notifier: FakeNotifier;
     clock: FakeClock;
@@ -64,6 +66,7 @@ export function harness(overrides: Partial<AppConfig> = {}, now = EVENING): Harn
         marketData: new FakeMarketData(),
         news: new FakeNews(),
         fundamentals: new FakeFundamentals(),
+        earnings: new FakeEarnings(),
         llm: new FakeLlm(),
         notifier: new FakeNotifier(),
         clock,

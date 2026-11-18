@@ -18,6 +18,7 @@ export const envSchema = zod
         ALPACA_LIVE_KEY_ID: optionalSecret,
         ALPACA_LIVE_SECRET_KEY: optionalSecret,
         FMP_API_KEY: requiredSecret,
+        FINNHUB_API_KEY: requiredSecret,
         ANTHROPIC_API_KEY: requiredSecret,
         ANTHROPIC_MODEL: zod.preprocess(emptyToUndefined, zod.string().trim().min(1).default("claude-sonnet-5-5")),
         TELEGRAM_TOKEN: requiredSecret,
