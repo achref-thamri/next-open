@@ -34,7 +34,9 @@ export async function runJob(
         log.error({ err: error }, "job failed");
         result = { status: "failed", message };
         try {
-            await notifier.send(`⚠️ ${type} failed for ${tradeDate}: ${message}\nNo trades were made from this run.`);
+            // Only a failed analysis is sure to have made no trades; other jobs do not trade or may have partly run.
+            const noTrades = type === "evening_analysis" ? "\nNo trades were made from this run." : "";
+            await notifier.send(`⚠️ ${type} failed for ${tradeDate}: ${message}${noTrades}`);
         } catch (alertError) {
             log.error({ err: alertError }, "failed to send the failure alert");
         }

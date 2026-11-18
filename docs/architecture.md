@@ -131,6 +131,8 @@ and estimated Danish tax, so the paper period answers whether the AI adds anythi
   client order id, since it may have reached the broker. The "Orders for…" message lists every order either way,
   and says so when a failed sell leaves a position without its stop-loss and take-profit.
 - Telegram polling that fails is retried every 5 minutes, with one alert per outage (`lib/keepPolling.ts`).
+- An end-of-day summary that fails to send is logged as a warning and the run still succeeds, since the day is
+  already saved. It is not resent: after a Telegram timeout the message may have arrived anyway.
 - On shutdown each step runs even if one before it fails, and the running job gets up to 100 seconds to finish
   (`lib/shutdown.ts`). Docker's `stop_grace_period` is 2 minutes, above that limit.
 - At startup Next Open switches margin and short selling off at the broker and refuses to run if it cannot verify it.
