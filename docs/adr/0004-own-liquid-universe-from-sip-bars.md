@@ -1,6 +1,6 @@
 # 0004: Own liquid universe from SIP bars, not a movers screener
 
-Date: 2026-10-30 · Status: accepted
+Date: 2026-10-30
 
 ## Context
 

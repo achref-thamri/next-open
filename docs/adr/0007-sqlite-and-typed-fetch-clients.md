@@ -1,6 +1,6 @@
 # 0007: SQLite and typed fetch clients instead of vendor SDKs
 
-Date: 2026-10-30 · Status: accepted
+Date: 2026-10-30
 
 ## Context
 

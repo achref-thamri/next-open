@@ -1,6 +1,6 @@
 # 0002: The LLM proposes, code enforces risk
 
-Date: 2026-10-30 · Status: accepted
+Date: 2026-10-30
 
 ## Context
 
