@@ -9,7 +9,7 @@ change without touching the trading logic.
 | ----------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Core        | `src/core`                      | Pure functions and types. No I/O, no system clock, no network. Risk checks, sizing, universe filters, metrics, Danish tax, portfolio simulation, the momentum strategy. |
 | Ports       | `src/ports`                     | Interfaces for everything outside the process: broker, market data, news, fundamentals, LLM, notifier, clock, repositories.                                             |
-| Adapters    | `src/adapters`                  | One folder per vendor (Alpaca, FMP, Anthropic, Telegram, SQLite). The only code that knows a vendor's API. `fake/` holds in-memory versions of every port.              |
+| Adapters    | `src/adapters`                  | One folder per vendor (Alpaca, FMP, Finnhub, Anthropic, Telegram, SQLite). The only code that knows a vendor's API. `fake/` holds in-memory versions of every port.     |
 | Use cases   | `src/app`                       | One file per job or command. Orchestrate core logic through ports; receive all dependencies as one `AppDeps` object.                                                    |
 | Composition | `src/compose.ts`, `src/main.ts` | Read config, build adapters, inject them, start the scheduler and Telegram.                                                                                             |
 
@@ -24,7 +24,7 @@ src/
   config/               zod schema for env and limits; fails fast on bad config
   core/                 pure domain: risk/, universe/, strategies/, sizing, metrics, tax, simulation
   ports/                broker, marketData, news, fundamentals, llm, notifier, clock, repositories
-  adapters/             alpaca/, fmp/, anthropic/, telegram/, sqlite/ (+ migrations), fake/
+  adapters/             alpaca/, fmp/, finnhub/, anthropic/, telegram/, sqlite/ (+ migrations), fake/
   app/                  one use case per file
   scheduler/            job timing, catch-up windows, missed-job alerts
   lib/                  logging, retry, errors, HTTP
@@ -146,7 +146,7 @@ and estimated Danish tax, so the paper period answers whether the AI adds anythi
 | ----------- | ---------------------------------------------------- | --------------------------------------------------------- |
 | Domain      | Risk, sizing, filters, metrics, tax, simulation      | Plain unit tests                                          |
 | Use cases   | Full daily pipeline, idempotency, halts, missed jobs | In-memory fakes of every port, with injectable failures   |
-| Adapters    | Alpaca, FMP, Anthropic mapping and error handling    | API responses in `__fixtures__`, real shape, made-up data |
+| Adapters    | Alpaca, FMP, Finnhub, Anthropic mapping and errors   | API responses in `__fixtures__`, real shape, made-up data |
 | Persistence | Repositories and migrations                          | In-memory SQLite                                          |
 | Container   | Native module loads, config fails fast, health check | CI Docker job                                             |
 
@@ -155,7 +155,7 @@ Tests live in `__tests__` folders next to the code. `npm run check` runs everyth
 ## Tech stack
 
 Node 24 and TypeScript (strict, `noUncheckedIndexedAccess`, ESM), zod, better-sqlite3, croner, grammY, the
-Anthropic SDK and pino. Alpaca and FMP use small typed `fetch` clients instead of vendor SDKs
+Anthropic SDK and pino. Alpaca, FMP and Finnhub use small typed `fetch` clients instead of vendor SDKs
 ([ADR 0007](adr/0007-sqlite-and-typed-fetch-clients.md)). Tooling is Vitest, ESLint, Prettier, knip, husky with
 lint-staged, Docker and GitHub Actions.
 

@@ -8,6 +8,7 @@ Copy `.env.example` to `.env` and fill it in. Each line there says what it is fo
 | ------------------------ | ------------------------------------------------------------ |
 | `ALPACA_PAPER_*`         | Alpaca dashboard, Paper Trading, API Keys                    |
 | `FMP_API_KEY`            | Financial Modeling Prep; the free plan is enough             |
+| `FINNHUB_API_KEY`        | Finnhub, for earnings dates; the free plan is enough         |
 | `ANTHROPIC_API_KEY`      | Anthropic console; `ANTHROPIC_MODEL` picks the model         |
 | `TELEGRAM_TOKEN`         | BotFather, for Next Open's own Telegram account              |
 | `TELEGRAM_OWNER_CHAT_ID` | Your private chat with that account; no other chat is served |

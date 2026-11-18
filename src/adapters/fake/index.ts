@@ -1,5 +1,6 @@
 export { FakeBroker } from "./broker.js";
 export { FakeClock } from "./clock.js";
+export { FakeEarnings } from "./earnings.js";
 export { FakeFundamentals } from "./fundamentals.js";
 export { FakeLlm } from "./llm.js";
 export { FakeMarketData } from "./marketData.js";

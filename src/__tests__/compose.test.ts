@@ -9,6 +9,7 @@ describe("composeApp", () => {
             ALPACA_PAPER_KEY_ID: "id",
             ALPACA_PAPER_SECRET_KEY: "secret",
             FMP_API_KEY: "fmp",
+            FINNHUB_API_KEY: "finnhub",
             ANTHROPIC_API_KEY: "sk-ant",
             TELEGRAM_TOKEN: "123:abc",
             TELEGRAM_OWNER_CHAT_ID: "42",

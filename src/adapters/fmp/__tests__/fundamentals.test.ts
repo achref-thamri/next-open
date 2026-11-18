@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { pino } from "pino";
 import { beforeEach, describe, expect, it } from "vitest";
-import { toTicker, toTradingDate } from "../../../core/types.js";
+import { toTicker } from "../../../core/types.js";
 import type { Repositories } from "../../../ports/repositories.js";
 import { FakeClock } from "../../fake/clock.js";
 import { openDatabase } from "../../sqlite/db.js";
@@ -131,31 +131,6 @@ describe("FmpFundamentals", () => {
         expect(await adapter.getProfile(toTicker("MSFT"))).toBeUndefined();
         expect(await adapter.remainingRequests()).toBe(0);
         expect(urls).toHaveLength(2); // the first lookup and one refused call, nothing after
-    });
-
-    it("reads the earnings calendar in one request: the earliest date per ticker, odd rows skipped", async () => {
-        respond = () => new Response(fixture("earnings-calendar.json"));
-        const adapter = fmp();
-
-        const dates = await adapter.earningsDates(toTradingDate("2026-11-02"), toTradingDate("2026-11-23"));
-
-        expect(dates).toEqual(
-            new Map([
-                [AAPL, "2026-11-12"],
-                [toTicker("BRK.B"), "2026-11-05"],
-            ]),
-        );
-        expect(urls[0]?.pathname).toBe("/stable/earnings-calendar");
-        expect(urls[0]?.searchParams.get("from")).toBe("2026-11-02");
-        expect(urls[0]?.searchParams.get("to")).toBe("2026-11-23");
-        expect(await adapter.remainingRequests()).toBe(239);
-    });
-
-    it("returns no earnings dates once the budget is used up", async () => {
-        const dates = await fmp(0).earningsDates(toTradingDate("2026-11-02"), toTradingDate("2026-11-23"));
-
-        expect(dates.size).toBe(0);
-        expect(urls).toHaveLength(0);
     });
 
     it("never puts the API key in error messages", async () => {

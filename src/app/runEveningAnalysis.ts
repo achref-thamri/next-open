@@ -180,10 +180,10 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
     return result ?? { status: "succeeded" };
 }
 
-/** Upcoming earnings dates, or none when FMP fails: the run goes on without them. */
+/** Upcoming earnings dates, or none when the calendar fails: the run goes on without them. */
 async function earningsDates(deps: AppDeps, asOf: TradingDate): Promise<Map<Ticker, TradingDate>> {
     try {
-        return await deps.fundamentals.earningsDates(asOf, addDays(asOf, EARNINGS_DAYS));
+        return await deps.earnings.nextReports(asOf, addDays(asOf, EARNINGS_DAYS));
     } catch (error) {
         deps.logger.warn({ err: error }, "earnings calendar unavailable; analysing without it");
         return new Map();

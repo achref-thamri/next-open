@@ -4,6 +4,7 @@ import { AlpacaBroker } from "./adapters/alpaca/broker.js";
 import { AlpacaClient } from "./adapters/alpaca/client.js";
 import { AlpacaMarketData, AlpacaNews } from "./adapters/alpaca/marketData.js";
 import { AnthropicLlm } from "./adapters/anthropic/llm.js";
+import { FinnhubEarnings } from "./adapters/finnhub/earnings.js";
 import { FmpFundamentals } from "./adapters/fmp/fundamentals.js";
 import { backupDatabase, pruneBackups } from "./adapters/sqlite/backup.js";
 import { openDatabase, type Db } from "./adapters/sqlite/db.js";
@@ -68,6 +69,7 @@ export function composeApp(
             clock,
             logger,
         }),
+        earnings: new FinnhubEarnings({ apiKey: config.finnhub.apiKey }),
         llm: new AnthropicLlm({
             client: new Anthropic({ apiKey: config.anthropic.apiKey }),
             model: config.anthropic.model,
