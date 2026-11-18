@@ -91,7 +91,9 @@ The same list shows up in Telegram's command menu next to the message box, so yo
 Nobody else who finds the account sees it.
 
 Telegram also gets the evening proposals, the orders placed at the open, a daily summary and a Sunday report that
-compares every strategy. In live mode each order needs an Approve tap before 09:25.
+compares every strategy. The Sunday report and `/report` also score every AI buy decision against the S&P 500 after
+5 and 20 trading days, approved or not, which shows whether the picks are any good long before closed trades do. In
+live mode each order needs an Approve tap before 09:25.
 
 ## Running it
 
