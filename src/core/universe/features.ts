@@ -31,18 +31,48 @@ function mean(values: readonly number[]): number {
 }
 
 /** Trading days per period for multi-period returns. */
-const PERIOD_DAYS = { d1: 1, w1: 5, m1: 21, m3: 63 } as const;
+const PERIOD_DAYS = { d1: 1, w1: 5, m1: 21, m3: 63, m6: 126, m12: 252 } as const;
 
 export type PeriodReturns = Record<keyof typeof PERIOD_DAYS, number | undefined>;
 
-/** Close-to-close returns over 1 day, 1 week, 1 month and 3 months; undefined when history is too short. */
+/** Close-to-close returns over 1 day to 12 months; undefined when history is too short. */
 export function periodReturns(bars: readonly DailyBar[]): PeriodReturns {
     const latest = bars.at(-1)?.close;
     const back = (days: number) => {
         const base = bars.at(-1 - days)?.close;
         return latest === undefined || base === undefined || base <= 0 ? undefined : latest / base - 1;
     };
-    return { d1: back(PERIOD_DAYS.d1), w1: back(PERIOD_DAYS.w1), m1: back(PERIOD_DAYS.m1), m3: back(PERIOD_DAYS.m3) };
+    return {
+        d1: back(PERIOD_DAYS.d1),
+        w1: back(PERIOD_DAYS.w1),
+        m1: back(PERIOD_DAYS.m1),
+        m3: back(PERIOD_DAYS.m3),
+        m6: back(PERIOD_DAYS.m6),
+        m12: back(PERIOD_DAYS.m12),
+    };
+}
+
+export interface TrendFeatures {
+    /** Latest close against the highest close of the last year (up to 252 bars), e.g. -0.08 is 8% below it. */
+    fromHigh52w: number;
+    /** Latest close against its 200-day average; undefined with less than 200 bars. */
+    vsMa200: number | undefined;
+    /** Standard deviation of the last 20 daily returns, a typical day's move; undefined with fewer than two. */
+    dailyVolatility: number | undefined;
+}
+
+/** Where a stock sits in its longer trend, from daily bars sorted oldest first; undefined without bars. */
+export function trendFeatures(bars: readonly DailyBar[]): TrendFeatures | undefined {
+    const latest = bars.at(-1)?.close;
+    if (latest === undefined) return undefined;
+    const year = bars.slice(-PERIOD_DAYS.m12 - 1).map((b) => b.close);
+    const last200 = bars.slice(-200).map((b) => b.close);
+    const vol = annualizedVolatility(bars, 20);
+    return {
+        fromHigh52w: latest / Math.max(...year) - 1,
+        vsMa200: last200.length === 200 ? latest / mean(last200) - 1 : undefined,
+        dailyVolatility: vol === undefined ? undefined : vol / Math.sqrt(TRADING_DAYS_PER_YEAR),
+    };
 }
 
 /** Annualised volatility of daily returns over the last `days` returns; undefined with fewer than two. */

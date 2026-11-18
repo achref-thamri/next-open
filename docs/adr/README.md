@@ -13,3 +13,4 @@ Short records of decisions that shape the code: the context, what was decided, a
 | [0007](0007-sqlite-and-typed-fetch-clients.md)      | SQLite and typed fetch clients instead of vendor SDKs     |
 | [0008](0008-virtual-portfolios-for-comparison.md)   | Virtual portfolios to compare strategies                  |
 | [0009](0009-sized-for-a-small-account.md)           | Sized for a small account                                 |
+| [0010](0010-trend-in-the-shortlist.md)              | Uptrends in the shortlist, a year of data per stock       |

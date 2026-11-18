@@ -26,7 +26,10 @@ function input(headline = "Acme beats estimates and raises guidance"): PromptInp
             {
                 ticker: "ACME",
                 priceUsd: 52.31,
-                returns: { d1: 0.081, w1: 0.12, m1: 0.2, m3: undefined },
+                returns: { d1: 0.081, w1: 0.12, m1: 0.2, m3: undefined, m6: undefined, m12: undefined },
+                fromHigh52w: -0.02,
+                vsMa200: 0.15,
+                dailyVolatility: 0.021,
                 relativeVolume: 3.2,
                 marketCapUsd: 8_400_000_000,
                 isHolding: false,
@@ -34,7 +37,13 @@ function input(headline = "Acme beats estimates and raises guidance"): PromptInp
             },
         ],
         market: {
-            indices: [{ symbol: "SPY", description: "S&P 500", returns: { d1: -0.004, w1: 0.01, m1: 0.02, m3: 0.05 } }],
+            indices: [
+                {
+                    symbol: "SPY",
+                    description: "S&P 500",
+                    returns: { d1: -0.004, w1: 0.01, m1: 0.02, m3: 0.05, m6: 0.08, m12: 0.14 },
+                },
+            ],
             sp500Volatility20d: 0.14,
             headlines: ["Stocks slip ahead of the Fed decision"],
         },

@@ -1,6 +1,6 @@
 # 0009: Sized for a small account
 
-Date: 2026-11-11 · Status: accepted
+Date: 2026-11-11
 
 ## Context
 

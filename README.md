@@ -66,8 +66,9 @@ Times are New York time and follow the broker's calendar, so holidays and half d
 
 - **Liquid list**, weekly: every tradable US asset on Alpaca is cut down to listed common stocks above $5, with a
   market cap of at least $2B and $20M traded a day on average.
-- **Evening analysis**: the 40 most interesting stocks of the day (holdings, news, unusual moves) go to the AI with
-  the portfolio, prices and headlines. Its proposals are checked and sent to Telegram.
+- **Evening analysis**: 40 stocks go to the AI with the portfolio, a year of price data and headlines: the holdings,
+  the strongest uptrends (best 6-month return while above the 200-day average) for half the rest, then stocks in the
+  news and the day's unusual moves. Its proposals are checked and sent to Telegram.
 - **Execute at open**: the risk rules run again against the live account, then the orders go out.
 - **End of day**: equity and the benchmark are recorded, the virtual portfolios are simulated, and a summary is sent.
 

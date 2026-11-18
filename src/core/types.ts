@@ -106,6 +106,8 @@ export interface Candidate {
     isHolding: boolean;
     /** Named in today's market news. */
     inNews: boolean;
+    /** 6-month return while the stock trades above its 200-day average; undefined when it doesn't or history is short. */
+    uptrend6m?: number | undefined;
 }
 
 /** One daily OHLCV bar (SIP feed). */

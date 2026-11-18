@@ -1,6 +1,6 @@
 # 0003: Forward testing on paper, no backtests of the AI strategy
 
-Date: 2026-10-30 · Status: accepted
+Date: 2026-10-30
 
 ## Context
 

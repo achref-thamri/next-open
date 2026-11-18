@@ -1,6 +1,6 @@
 # 0005: Once a day, limit bracket orders at the open
 
-Date: 2026-10-30 · Status: accepted
+Date: 2026-10-30
 
 ## Context
 
