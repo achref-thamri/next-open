@@ -77,7 +77,12 @@ async function endOfDay(deps: AppDeps, today: TradingDate): Promise<void> {
     );
     const strategies = await simulateShadowDay(deps, today);
     if (strategies.length > 0) lines.push("", "Virtual strategies:", ...strategies);
-    await notifier.send(lines.join("\n"));
+    // The day is already recorded, so a summary that did not go out is a warning, not a failed run.
+    try {
+        await notifier.send(lines.join("\n"));
+    } catch (error) {
+        deps.logger.warn({ err: error, tradeDate: today }, "end-of-day summary was not sent");
+    }
 }
 
 /**

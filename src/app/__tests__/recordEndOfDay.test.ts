@@ -122,6 +122,17 @@ describe("recordEndOfDay", () => {
 
         expect(result).toEqual({ status: "failed", message: "No VT close for 2026-11-03 yet" });
         expect(await h.repos.equity.list()).toEqual([]);
+        expect(h.notifier.texts()[0]).not.toContain("No trades were made");
+    });
+
+    it("still succeeds when the summary cannot be sent", async () => {
+        h.notifier.failures.failNext("send", new Error("Call to 'sendMessage' failed! (504: Gateway Timeout)"));
+
+        const result = await recordEndOfDay(h);
+
+        expect(result.status).toBe("succeeded");
+        expect(await h.repos.equity.list()).toHaveLength(1);
+        expect(h.notifier.sent).toEqual([]);
     });
 
     it("does nothing on a non-trading day", async () => {
