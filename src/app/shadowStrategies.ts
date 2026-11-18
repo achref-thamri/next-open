@@ -26,7 +26,7 @@ export interface ShadowContext {
     candidates: ReadonlyMap<Ticker, Candidate>;
     /** Candidates that pass the universe filters. */
     eligible: readonly Candidate[];
-    /** At least three months of daily bars. */
+    /** A year of daily bars (at least three months for momentum). */
     history: ReadonlyMap<Ticker, DailyBar[]>;
     marketNews: NewsItem[];
     contextTickers: Ticker[];

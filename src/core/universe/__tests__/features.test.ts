@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { cents } from "../../money.js";
 import { toTradingDate, type DailyBar } from "../../types.js";
-import { annualizedVolatility, barFeatures, periodReturns } from "../features.js";
+import { annualizedVolatility, barFeatures, periodReturns, trendFeatures } from "../features.js";
 
 function bar(day: number, closeCents: number, volume: number): DailyBar {
     const price = cents(closeCents);
@@ -69,7 +69,14 @@ describe("periodReturns", () => {
             undefined,
             undefined,
         ]);
-        expect(periodReturns([])).toEqual({ d1: undefined, w1: undefined, m1: undefined, m3: undefined });
+        expect(periodReturns([])).toEqual({
+            d1: undefined,
+            w1: undefined,
+            m1: undefined,
+            m3: undefined,
+            m6: undefined,
+            m12: undefined,
+        });
     });
 });
 
@@ -84,5 +91,40 @@ describe("annualizedVolatility", () => {
 
     it("needs at least two returns", () => {
         expect(annualizedVolatility([bar(1, 1000, 1), bar(2, 1000, 1)], 20)).toBeUndefined();
+    });
+});
+
+describe("trendFeatures", () => {
+    const series = (closes: number[]) => closes.map((close) => bar(1, close, 100));
+
+    it("measures the distance from the yearly high and the 200-day average", () => {
+        // 200 bars at $100, then up to $150 and back down to $120.
+        const closes = [...Array.from({ length: 198 }, () => 10_000), 15_000, 12_000];
+
+        const trend = trendFeatures(series(closes));
+
+        expect(trend?.fromHigh52w).toBeCloseTo(12_000 / 15_000 - 1);
+        const average = (198 * 10_000 + 15_000 + 12_000) / 200;
+        expect(trend?.vsMa200).toBeCloseTo(12_000 / average - 1);
+    });
+
+    it("leaves the 200-day average out with a shorter history", () => {
+        const trend = trendFeatures(series([10_000, 10_100, 10_000]));
+
+        expect(trend?.vsMa200).toBeUndefined();
+        expect(trend?.fromHigh52w).toBeCloseTo(10_000 / 10_100 - 1);
+    });
+
+    it("gives a typical day's move, not an annualised one", () => {
+        const closes = Array.from({ length: 21 }, (_, i) => (i % 2 === 0 ? 10_000 : 10_200));
+
+        const daily = trendFeatures(series(closes))?.dailyVolatility ?? 0;
+
+        expect(daily).toBeGreaterThan(0.015);
+        expect(daily).toBeLessThan(0.025);
+    });
+
+    it("returns undefined without bars", () => {
+        expect(trendFeatures([])).toBeUndefined();
     });
 });

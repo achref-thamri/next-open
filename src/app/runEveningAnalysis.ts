@@ -28,8 +28,8 @@ import { proposeShadowOrders, shadowHoldings } from "./shadowStrategies.js";
 import { syncBroker, type BrokerState } from "./sync.js";
 import { validateDecisions } from "./validateDecisions.js";
 
-/** Three months of trading days plus margin: enough for returns, ranking and the momentum strategy. */
-const HISTORY_DAYS = 130;
+/** A year of trading days plus margin: 12-month returns, the 52-week high and the 200-day average. */
+const HISTORY_DAYS = 380;
 const RECENT_DECISIONS = 20;
 
 /**
@@ -61,7 +61,7 @@ async function analyse(deps: AppDeps, runId: string, asOf: TradingDate, tradeDat
     const marketNews = await deps.news.getNews({ since, until: deps.clock.now(), limit: 50 });
     const newsTickers = new Set(marketNews.flatMap((n) => n.tickers));
 
-    // Three months of bars for everything that could be a candidate, including the virtual portfolios' holdings.
+    // A year of bars for everything that could be a candidate, including the virtual portfolios' holdings.
     // News also tags tickers the broker doesn't list (B3SA3 in Brazil, 2026-11-09), and one of those makes Alpaca
     // refuse the whole bars request, so only tradable tickers and current holdings go in.
     const assets = await marketData.listTradableAssets();

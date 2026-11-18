@@ -81,4 +81,34 @@ describe("rankCandidates", () => {
 
         expect(tickers(ranked)).toEqual(["NEWS"]);
     });
+
+    it("gives half the free slots to the strongest uptrends, ahead of the movers", () => {
+        const ranked = rankCandidates(
+            [
+                candidate({ ticker: "HELD", isHolding: true }),
+                candidate({ ticker: "HOT", changePct: 0.2, relativeVolume: 5 }),
+                candidate({ ticker: "NEWS", inNews: true }),
+                candidate({ ticker: "SLOW", uptrend6m: 0.1 }),
+                candidate({ ticker: "FAST", uptrend6m: 0.6 }),
+                candidate({ ticker: "MID", uptrend6m: 0.3 }),
+            ],
+            5,
+        );
+
+        expect(tickers(ranked)).toEqual(["HELD", "FAST", "MID", "NEWS", "HOT"]);
+    });
+
+    it("fills unused trend slots with movers, and never lists a stock twice", () => {
+        const ranked = rankCandidates(
+            [
+                candidate({ ticker: "TREND", uptrend6m: 0.4, inNews: true }),
+                candidate({ ticker: "A", changePct: 0.05 }),
+                candidate({ ticker: "B", changePct: 0.04 }),
+                candidate({ ticker: "C", changePct: 0.03 }),
+            ],
+            4,
+        );
+
+        expect(tickers(ranked)).toEqual(["TREND", "A", "B", "C"]);
+    });
 });

@@ -11,7 +11,7 @@ import {
     type Ticker,
     type TradingDate,
 } from "../core/types.js";
-import { annualizedVolatility, barFeatures, periodReturns } from "../core/universe/features.js";
+import { annualizedVolatility, barFeatures, periodReturns, trendFeatures } from "../core/universe/features.js";
 import { newId } from "../lib/ids.js";
 import type { Logger } from "../lib/logger.js";
 import type { NewsItem } from "../ports/news.js";
@@ -42,6 +42,7 @@ export function buildCandidate(
             : undefined);
     if (!features) return undefined;
     const profile = profiles.get(ticker);
+    const uptrend6m = bars ? uptrend(bars) : undefined;
     return {
         ticker,
         exchange: exchanges.get(ticker) ?? "UNKNOWN",
@@ -50,7 +51,15 @@ export function buildCandidate(
         isHolding: holdingPrice !== undefined,
         inNews: newsTickers.has(ticker),
         ...features,
+        ...(uptrend6m === undefined ? {} : { uptrend6m }),
     };
+}
+
+/** The 6-month return of a stock above its 200-day average, the trend signal the shortlist ranks by. */
+function uptrend(bars: readonly DailyBar[]): number | undefined {
+    const m6 = periodReturns(bars).m6;
+    const vsMa200 = trendFeatures(bars)?.vsMa200;
+    return m6 !== undefined && vsMa200 !== undefined && vsMa200 > 0 ? m6 : undefined;
 }
 
 export interface PromptSources {
@@ -84,6 +93,7 @@ export function promptInput(s: PromptSources): PromptInput {
         ticker: c.ticker,
         priceUsd: centsToDollars(c.close),
         returns: periodReturns(s.history.get(c.ticker) ?? []),
+        ...trendFeatures(s.history.get(c.ticker) ?? []),
         relativeVolume: c.relativeVolume,
         marketCapUsd: c.marketCapUsd,
         isHolding: c.isHolding,
