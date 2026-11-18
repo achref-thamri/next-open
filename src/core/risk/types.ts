@@ -10,6 +10,8 @@ export interface OrderRequest {
     side: Side;
     qty: number;
     limitPrice: Cents;
+    /** Stop-loss distance of a buy's bracket, as a fraction; undefined for sells and buys without one. */
+    stopLossPct?: number | undefined;
 }
 
 /** No halt, a manual /stop, or the daily loss stop (which still lets sells through). */

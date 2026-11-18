@@ -51,6 +51,8 @@ export const riskSchema = z
     .strictObject({
         maxPositionWeight: fraction.default(0.2),
         maxPositions: z.int().positive().default(5),
+        /** Most of equity one buy may lose at its stop-loss: position value times the stop distance. */
+        maxRiskPerTradePct: fraction.default(0.02),
         minCashWeight: z.number().min(0).lt(1).default(0.1),
         dailyLossStopPct: fraction.default(0.03),
         maxOrdersPerDay: z.int().positive().default(10),

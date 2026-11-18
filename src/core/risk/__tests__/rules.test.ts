@@ -7,6 +7,7 @@ import { longOnlyRule } from "../longOnly.js";
 import { maxPositionRule } from "../maxPosition.js";
 import { maxPositionsRule } from "../maxPositions.js";
 import { minCashRule } from "../minCash.js";
+import { riskPerTradeRule } from "../riskPerTrade.js";
 import { universeRule } from "../universe.js";
 import { context, EQUITY, order, portfolio, security } from "./fixtures.js";
 
@@ -211,5 +212,36 @@ describe("dailyLossRule", () => {
 
     it("never triggers without a previous close", () => {
         expect(dailyLossBreached(cents(0), cents(0), 0.03)).toBe(false);
+    });
+});
+
+describe("riskPerTradeRule", () => {
+    // 2% of $100,000 = $2,000 at risk; with a 10% stop that's a $20,000 position = 200 shares at $100.
+    const withStop = (qty: number, stopLossPct: number | undefined) => ({ ...order("AAA", "buy", qty), stopLossPct });
+
+    it("accepts a buy whose loss at the stop stays within the limit", () => {
+        expect(riskPerTradeRule(withStop(200, 0.1), portfolio(), context())).toEqual(accept);
+    });
+
+    it("trims a buy with a wide stop to a smaller position", () => {
+        expect(riskPerTradeRule(withStop(200, 0.2), portfolio(), context())).toEqual({
+            kind: "trim",
+            qty: 100,
+            reason: "at most 2% of equity ($2,000.00) lost at the 20% stop-loss",
+        });
+    });
+
+    it("counts the shares already held", () => {
+        expect(riskPerTradeRule(withStop(100, 0.2), portfolio({ holdings: { AAA: 50 } }), context())).toMatchObject({
+            kind: "trim",
+            qty: 50,
+        });
+    });
+
+    it("leaves sells and buys without a stop alone", () => {
+        expect(riskPerTradeRule(order("AAA", "sell", 1000), portfolio({ holdings: { AAA: 1000 } }), context())).toEqual(
+            accept,
+        );
+        expect(riskPerTradeRule(withStop(1000, undefined), portfolio(), context())).toEqual(accept);
     });
 });
