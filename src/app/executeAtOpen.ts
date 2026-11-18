@@ -76,6 +76,7 @@ async function execute(deps: AppDeps, today: TradingDate): Promise<JobResult | u
             side: p.side,
             qty: p.qty,
             limitPrice: p.limitPrice,
+            stopLossPct: p.stopLossPct,
         })),
         { ...start, cash: cents(start.cash - openBuys) },
         {

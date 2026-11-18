@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { cents } from "../money.js";
-import { bracketPrices, limitPrice, oneShareFits, sizeOrder } from "../sizing.js";
+import { bracketPrices, limitPrice, oneShareFits, sizeOrder, stopFloor } from "../sizing.js";
 
 const equity = cents(10_000_000); // $100,000
 
@@ -131,5 +131,24 @@ describe("bracketPrices", () => {
             stopLossPrice: 9_500,
             takeProfitPrice: 10_301,
         });
+    });
+});
+
+describe("stopFloor", () => {
+    it("widens a stop tighter than 2.5 typical daily moves", () => {
+        expect(stopFloor(0.03, 0.02)).toBeCloseTo(0.05);
+    });
+
+    it("keeps a stop that is already wide enough", () => {
+        expect(stopFloor(0.08, 0.02)).toBe(0.08);
+    });
+
+    it("never widens past 25%", () => {
+        expect(stopFloor(0.05, 0.2)).toBe(0.25);
+        expect(stopFloor(0.3, 0.2)).toBe(0.3);
+    });
+
+    it("keeps the model's stop without volatility data", () => {
+        expect(stopFloor(0.04, undefined)).toBe(0.04);
     });
 });

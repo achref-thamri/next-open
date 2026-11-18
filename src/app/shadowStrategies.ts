@@ -9,7 +9,7 @@ import type { Candidate, DailyBar, Decision, Ticker, TradingDate } from "../core
 import { rankCandidates } from "../core/universe/ranking.js";
 import type { NewsItem } from "../ports/news.js";
 import type { ShadowAccount, ShadowOrder, StrategyId } from "../ports/repositories.js";
-import { promptInput, sizeDecisions } from "./analysisShared.js";
+import { promptInput, sizeDecisions, withStopFloors } from "./analysisShared.js";
 import { weekOf } from "./buildLiquidList.js";
 import { addDays } from "./calendar.js";
 import type { AppDeps } from "./deps.js";
@@ -260,7 +260,7 @@ async function patientDecisions(
     if (!result.ok) throw new Error(`invalid LLM output: ${result.error}`);
     const validation = validateDecisions(result.output, new Set(shortlist.map((c) => c.ticker)), held, limits);
     if (!validation.ok) throw new Error(`invalid LLM output: ${validation.errors.join("; ")}`);
-    return validation.decisions;
+    return withStopFloors(validation.decisions, ctx.history);
 }
 
 /**

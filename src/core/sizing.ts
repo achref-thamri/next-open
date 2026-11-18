@@ -72,3 +72,16 @@ export function bracketPrices(
         takeProfitPrice: cents(Math.max(take, limit + 1)),
     };
 }
+
+/** A stop closer than this many typical daily moves gets hit by ordinary noise. */
+const MIN_STOP_DAILY_MOVES = 2.5;
+const MAX_FLOOR = 0.25;
+
+/**
+ * The model's stop-loss distance, widened to at least 2.5 typical daily moves (capped at 25%) so ordinary swings
+ * don't stop a position out. A wider stop means a smaller position through the risk-per-trade rule.
+ */
+export function stopFloor(stopLossPct: number, dailyVolatility: number | undefined): number {
+    if (dailyVolatility === undefined) return stopLossPct;
+    return Math.max(stopLossPct, Math.min(MAX_FLOOR, MIN_STOP_DAILY_MOVES * dailyVolatility));
+}

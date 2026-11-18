@@ -1,7 +1,7 @@
 import type { RiskLimits } from "../config/schema.js";
 import { centsToDollars, type Cents } from "../core/money.js";
 import type { OrderRequest } from "../core/risk/index.js";
-import { limitPrice, sizeOrder } from "../core/sizing.js";
+import { limitPrice, sizeOrder, stopFloor } from "../core/sizing.js";
 import {
     toTicker,
     type Candidate,
@@ -175,7 +175,26 @@ export function sizeDecisions(
         }
         const id = newId();
         decisionOf.set(id, decision);
-        orders.push({ id, ticker: decision.ticker, side: sized.side, qty: sized.qty, limitPrice: price });
+        orders.push({
+            id,
+            ticker: decision.ticker,
+            side: sized.side,
+            qty: sized.qty,
+            limitPrice: price,
+            stopLossPct: sized.side === "buy" ? decision.stopLossPct : undefined,
+        });
     }
     return { orders, decisionOf };
+}
+
+/** Buys with their stop-loss widened to the volatility floor (see `stopFloor`); other decisions unchanged. */
+export function withStopFloors(decisions: readonly Decision[], history: ReadonlyMap<Ticker, DailyBar[]>): Decision[] {
+    return decisions.map((d) =>
+        d.action === "buy"
+            ? {
+                  ...d,
+                  stopLossPct: stopFloor(d.stopLossPct, trendFeatures(history.get(d.ticker) ?? [])?.dailyVolatility),
+              }
+            : d,
+    );
 }

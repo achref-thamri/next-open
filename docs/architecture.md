@@ -86,14 +86,16 @@ or reject, and the reason is stored and shown in Telegram.
 2. Long only: no short positions.
 3. Universe: the ticker must still pass the filters.
 4. Max position size (20% of equity): trim.
-5. Max positions (5): reject new buys unless a sell frees a slot.
-6. Min cash (10%): trim buys.
-7. Daily caps (10 orders, 40% of equity traded).
-8. Daily loss (−3% against the previous close): reject buys, halt and alert. Sells still go through, since they
+5. Risk per trade (2% of equity lost at the stop-loss): trim buys, so a wide stop means a smaller position.
+6. Max positions (5): reject new buys unless a sell frees a slot.
+7. Min cash (10%): trim buys.
+8. Daily caps (10 orders, 40% of equity traded).
+9. Daily loss (−3% against the previous close): reject buys, halt and alert. Sells still go through, since they
    only lower the money at risk.
 
 Limits come from config (`src/config/schema.ts`), validated at startup. The defaults are sized for an account of
-about $3,000 ([ADR 0009](adr/0009-sized-for-a-small-account.md)). Before any of this, the evening leaves out stocks
+about $3,000 ([ADR 0009](adr/0009-sized-for-a-small-account.md)). Before the rules, a buy's stop-loss is widened to at least 2.5 typical daily moves (capped at 25%); the decisions
+table keeps the model's own value. The evening also leaves out stocks
 whose single share costs more than a full position, since they could never be bought. Any reserved cash (`reservedCashUsd`) is
 taken off the account when it is read from the broker, before sizing and every rule.
 

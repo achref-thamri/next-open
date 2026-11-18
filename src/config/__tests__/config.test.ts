@@ -32,6 +32,7 @@ describe("parseConfig", () => {
         expect(config.risk).toEqual({
             maxPositionWeight: 0.2,
             maxPositions: 5,
+            maxRiskPerTradePct: 0.02,
             minCashWeight: 0.1,
             dailyLossStopPct: 0.03,
             maxOrdersPerDay: 10,

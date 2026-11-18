@@ -7,6 +7,7 @@ import { longOnlyRule } from "./longOnly.js";
 import { maxPositionRule } from "./maxPosition.js";
 import { maxPositionsRule } from "./maxPositions.js";
 import { minCashRule } from "./minCash.js";
+import { riskPerTradeRule } from "./riskPerTrade.js";
 import type { OrderRequest, RiskContext, RiskRule, SimulatedPortfolio } from "./types.js";
 import { universeRule } from "./universe.js";
 
@@ -20,6 +21,7 @@ const RISK_RULES: readonly RiskRule[] = [
     longOnlyRule,
     universeRule,
     maxPositionRule,
+    riskPerTradeRule,
     maxPositionsRule,
     minCashRule,
     dailyCapsRule,

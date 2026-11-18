@@ -18,7 +18,7 @@ import { newId } from "../lib/ids.js";
 import type { Cents } from "../core/money.js";
 import type { NewsItem } from "../ports/news.js";
 import type { CandidateRecord, DecisionRecord } from "../ports/repositories.js";
-import { buildCandidate, CONTEXT_SYMBOLS, promptInput, sizeDecisions } from "./analysisShared.js";
+import { buildCandidate, CONTEXT_SYMBOLS, promptInput, sizeDecisions, withStopFloors } from "./analysisShared.js";
 import { addDays, tradingDays } from "./calendar.js";
 import type { AppDeps } from "./deps.js";
 import { eveningSummaryText, proposalText } from "./messages.js";
@@ -239,12 +239,14 @@ async function decideAndPropose(input: DecideInput): Promise<{ result: JobResult
         })),
     );
 
-    const proposals = await propose(deps, runId, tradeDate, validation.decisions, shortlist, state);
+    // The decisions table keeps the model's own stops; orders use them widened to the volatility floor.
+    const decisions = withStopFloors(validation.decisions, history);
+    const proposals = await propose(deps, runId, tradeDate, decisions, shortlist, state);
     await repos.proposals.saveMany(proposals);
     await notify(deps, tradeDate, llmResult.output.marketView, proposals);
     return {
         result: { status: "succeeded", message: `${proposals.filter((p) => p.qty > 0).length} proposals` },
-        decisions: validation.decisions,
+        decisions,
     };
 }
 
