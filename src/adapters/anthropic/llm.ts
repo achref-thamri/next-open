@@ -1,5 +1,5 @@
 import type Anthropic from "@anthropic-ai/sdk";
-import { z } from "zod";
+import * as zod from "zod";
 import type { Logger } from "../../lib/logger.js";
 import type { Llm, LlmCallRecord, LlmDecisionOutput, LlmPrompt, LlmResult } from "../../ports/llm.js";
 
@@ -10,24 +10,24 @@ const PRICES: Record<string, { input: number; output: number; cacheRead: number 
 };
 
 /** The shape sent as the JSON schema. Numeric bounds are checked by `validateDecisions` in the app. */
-const decisionOutputSchema = z.strictObject({
-    decisions: z.array(
-        z.strictObject({
-            ticker: z.string(),
-            action: z.enum(["buy", "sell", "hold"]),
-            targetWeight: z.number(),
-            confidence: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
-            stopLossPct: z.number(),
-            takeProfitPct: z.number(),
-            // A refine, not z.int(): the API rejects the minimum/maximum that z.int() adds to the JSON schema.
-            horizonDays: z.number().refine(Number.isInteger, "must be a whole number of days"),
-            reasoning: z.string(),
+const decisionOutputSchema = zod.strictObject({
+    decisions: zod.array(
+        zod.strictObject({
+            ticker: zod.string(),
+            action: zod.enum(["buy", "sell", "hold"]),
+            targetWeight: zod.number(),
+            confidence: zod.union([zod.literal(1), zod.literal(2), zod.literal(3), zod.literal(4), zod.literal(5)]),
+            stopLossPct: zod.number(),
+            takeProfitPct: zod.number(),
+            // A refine, not zod.int(): the API rejects the minimum/maximum that zod.int() adds to the JSON schema.
+            horizonDays: zod.number().refine(Number.isInteger, "must be a whole number of days"),
+            reasoning: zod.string(),
         }),
     ),
-    marketView: z.string(),
+    marketView: zod.string(),
 });
 
-const { $schema: _, ...schema } = z.toJSONSchema(decisionOutputSchema, { target: "draft-7" });
+const { $schema: _, ...schema } = zod.toJSONSchema(decisionOutputSchema, { target: "draft-7" });
 const OUTPUT_FORMAT = { type: "json_schema" as const, schema };
 
 /** The slice of the SDK client this adapter uses, so tests can pass a fake. */

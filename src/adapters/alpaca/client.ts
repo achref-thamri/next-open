@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import type * as zod from "zod";
 import type { TradingMode } from "../../config/index.js";
 import type { Logger } from "../../lib/logger.js";
 import { requestJson, RateLimiter, type Fetch } from "../../lib/http.js";
@@ -41,25 +41,25 @@ export class AlpacaClient {
     }
 
     /** Trading API (account, orders, positions, calendar, assets). */
-    trading<S extends z.ZodType>(
+    trading<S extends zod.ZodType>(
         path: string,
         schema: S,
         request: { method?: "GET" | "POST" | "PATCH" | "DELETE"; query?: Query; body?: unknown } = {},
-    ): Promise<z.output<S>> {
+    ): Promise<zod.output<S>> {
         return this.call(this.tradingUrl, path, schema, request);
     }
 
     /** Market data API (bars, news). */
-    data<S extends z.ZodType>(path: string, schema: S, query: Query = {}): Promise<z.output<S>> {
+    data<S extends zod.ZodType>(path: string, schema: S, query: Query = {}): Promise<zod.output<S>> {
         return this.call(ALPACA_URLS.data, path, schema, { query });
     }
 
-    private call<S extends z.ZodType>(
+    private call<S extends zod.ZodType>(
         base: string,
         path: string,
         schema: S,
         request: { method?: "GET" | "POST" | "PATCH" | "DELETE"; query?: Query; body?: unknown },
-    ): Promise<z.output<S>> {
+    ): Promise<zod.output<S>> {
         const method = request.method ?? "GET";
         const url = `${base}${path}${queryString(request.query ?? {})}`;
         const label = `Alpaca ${method} ${path}`;

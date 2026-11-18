@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as zod from "zod";
 import {
     isTicker,
     toTradingDate,
@@ -21,17 +21,17 @@ const API = "fmp";
 const FMP_DAILY_BUDGET = 240;
 const PROFILE_MAX_AGE_MS = 30 * 86_400_000;
 
-const profileSchema = z.array(
-    z.object({
-        symbol: z.string(),
-        companyName: z.string().nullish(),
-        marketCap: z.number().nullish(),
-        isEtf: z.boolean(),
-        isFund: z.boolean(),
+const profileSchema = zod.array(
+    zod.object({
+        symbol: zod.string(),
+        companyName: zod.string().nullish(),
+        marketCap: zod.number().nullish(),
+        isEtf: zod.boolean(),
+        isFund: zod.boolean(),
     }),
 );
 
-const earningsSchema = z.array(z.object({ symbol: z.string(), date: z.string() }));
+const earningsSchema = zod.array(zod.object({ symbol: zod.string(), date: zod.string() }));
 
 export interface FmpOptions {
     apiKey: string;
@@ -116,11 +116,11 @@ export class FmpFundamentals implements Fundamentals {
      * FMP answers 429 once the plan's daily quota is spent, which also counts calls made outside this process.
      * Retrying would not help until tomorrow: the day's budget is marked as used and LIMIT_REACHED returned.
      */
-    private async get<S extends z.ZodType>(
+    private async get<S extends zod.ZodType>(
         path: string,
         schema: S,
         query: Record<string, string>,
-    ): Promise<z.output<S> | typeof LIMIT_REACHED> {
+    ): Promise<zod.output<S> | typeof LIMIT_REACHED> {
         try {
             return await this.request(path, schema, query);
         } catch (error) {
@@ -132,7 +132,11 @@ export class FmpFundamentals implements Fundamentals {
         }
     }
 
-    private request<S extends z.ZodType>(path: string, schema: S, query: Record<string, string>): Promise<z.output<S>> {
+    private request<S extends zod.ZodType>(
+        path: string,
+        schema: S,
+        query: Record<string, string>,
+    ): Promise<zod.output<S>> {
         const params = new URLSearchParams({ ...query, apikey: this.options.apiKey });
         return retry(
             () =>
