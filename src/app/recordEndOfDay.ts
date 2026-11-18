@@ -10,7 +10,7 @@ import { toOrderRecord } from "./executeAtOpen.js";
 import { performance, reportText } from "./report.js";
 import { runJob, skip, type JobResult } from "./runJob.js";
 import { simulateShadowDay } from "./shadowStrategies.js";
-import { withComparison } from "./strategyReport.js";
+import { withComparison, withPickScores } from "./strategyReport.js";
 import { syncBroker } from "./sync.js";
 
 /**
@@ -157,7 +157,7 @@ export async function sendWeeklyReport(deps: AppDeps): Promise<JobResult> {
     return runJob(deps, "weekly_report", tradingDateOf(deps.clock.now()), async () => {
         const { positions } = await syncBroker(deps);
         const report = reportText(await performance(deps, positions));
-        await deps.notifier.send(`🗓️ Weekly report\n${await withComparison(deps, report)}`);
+        await deps.notifier.send(`🗓️ Weekly report\n${await withPickScores(deps, await withComparison(deps, report))}`);
         return undefined;
     });
 }

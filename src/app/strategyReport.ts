@@ -1,8 +1,9 @@
 import { percent, signedPercent } from "../core/format.js";
 import type { Cents } from "../core/money.js";
 import { maxDrawdown, winRate } from "../core/metrics.js";
+import { scorePicks, type PickScore } from "../core/pickScore.js";
 import { closedTrades } from "../core/trades.js";
-import type { Fill, TradingDate } from "../core/types.js";
+import { toTicker, tradingDateOf, type Fill, type TradingDate } from "../core/types.js";
 import type { AppDeps } from "./deps.js";
 import { SHADOW_STRATEGIES } from "./shadowStrategies.js";
 
@@ -102,4 +103,55 @@ export function comparisonText(c: StrategyComparison): string {
 export async function withComparison(deps: Pick<AppDeps, "repos" | "config">, report: string): Promise<string> {
     const comparison = await compareStrategies(deps);
     return comparison ? `${report}\n\n${comparisonText(comparison)}` : report;
+}
+
+const PICK_HORIZONS = [5, 20] as const;
+const PICK_INDEX = toTicker("SPY");
+/** Far more buy decisions than a paper period makes. */
+const MAX_PICKS = 1_000;
+
+/**
+ * How the AI's buy decisions did against the S&P 500 after 5 and 20 trading days, approved or not. This judges the
+ * picks themselves, apart from sizing, stops and fills, and builds up much faster than closed trades.
+ */
+async function pickScores(deps: Pick<AppDeps, "repos" | "marketData" | "clock">): Promise<PickScore[]> {
+    const buys = (await deps.repos.decisions.recent(MAX_PICKS)).filter((d) => d.action === "buy");
+    const first = buys.map((d) => d.tradeDate).sort()[0];
+    if (first === undefined) return [];
+    const tickers = [...new Set([...buys.map((d) => d.ticker), PICK_INDEX])];
+    const history = await deps.marketData.getDailyBars(tickers, first, tradingDateOf(deps.clock.now()));
+    return scorePicks(
+        buys.map((d) => ({ ticker: d.ticker, date: d.tradeDate })),
+        history,
+        history.get(PICK_INDEX) ?? [],
+        PICK_HORIZONS,
+    );
+}
+
+export function pickScoreText(scores: readonly PickScore[]): string | undefined {
+    if (scores.length === 0) return undefined;
+    const lines = ["🎯 AI buy picks vs the S&P 500:"];
+    for (const s of scores) {
+        lines.push(
+            s.picks === 0
+                ? `• after ${s.horizon} trading days: no picks that old yet`
+                : `• after ${s.horizon} trading days: ${signedPercent(s.avgExcess)} on average over ${s.picks} ` +
+                      `pick${s.picks === 1 ? "" : "s"}, ${Math.round(s.beatShare * 100)}% beat it`,
+        );
+    }
+    return lines.join("\n");
+}
+
+/** Appends the pick scorecard to a report once there are buy decisions. A data error never breaks the report. */
+export async function withPickScores(
+    deps: Pick<AppDeps, "repos" | "marketData" | "clock" | "logger">,
+    report: string,
+): Promise<string> {
+    try {
+        const text = pickScoreText(await pickScores(deps));
+        return text ? `${report}\n\n${text}` : report;
+    } catch (error) {
+        deps.logger.warn({ err: error }, "pick scorecard unavailable");
+        return report;
+    }
 }

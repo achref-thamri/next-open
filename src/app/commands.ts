@@ -3,7 +3,7 @@ import { dollarsToCents, formatCents } from "../core/money.js";
 import { isTicker, tradingDateOf } from "../core/types.js";
 import type { AppDeps } from "./deps.js";
 import { performance, reportText } from "./report.js";
-import { withComparison } from "./strategyReport.js";
+import { withComparison, withPickScores } from "./strategyReport.js";
 import { syncBroker } from "./sync.js";
 
 /** Every owner command. The help reply and the Telegram command menu are both built from this list. */
@@ -33,7 +33,10 @@ export async function handleCommand(
         case "/resume":
             return resume(deps);
         case "/report":
-            return withComparison(deps, reportText(await performance(deps, (await syncBroker(deps)).positions)));
+            return withPickScores(
+                deps,
+                await withComparison(deps, reportText(await performance(deps, (await syncBroker(deps)).positions))),
+            );
         case "/why":
             return why(deps, args[0]);
         case "/golive":

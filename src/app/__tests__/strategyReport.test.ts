@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { cents } from "../../core/money.js";
 import { toTicker, toTradingDate } from "../../core/types.js";
 import { handleCommand } from "../commands.js";
-import { compareStrategies, comparisonText } from "../strategyReport.js";
+import { compareStrategies, comparisonText, pickScoreText } from "../strategyReport.js";
 import { harness, OWNER, type Harness } from "./harness.js";
 
 const d = toTradingDate;
@@ -85,5 +85,26 @@ describe("strategy comparison", () => {
         await seedHistory(h);
 
         expect(await handleCommand(h, { chatId: OWNER, text: "/report" })).toContain("🏁 Strategies since 2026-11-03");
+    });
+});
+
+describe("pickScoreText", () => {
+    it("shows each horizon, and says when no pick is old enough", () => {
+        const text = pickScoreText([
+            { horizon: 5, picks: 3, avgExcess: 0.012, beatShare: 2 / 3 },
+            { horizon: 20, picks: 0, avgExcess: 0, beatShare: 0 },
+        ]);
+
+        expect(text).toBe(
+            [
+                "🎯 AI buy picks vs the S&P 500:",
+                "• after 5 trading days: +1.2% on average over 3 picks, 67% beat it",
+                "• after 20 trading days: no picks that old yet",
+            ].join("\n"),
+        );
+    });
+
+    it("is empty without buy decisions", () => {
+        expect(pickScoreText([])).toBeUndefined();
     });
 });
