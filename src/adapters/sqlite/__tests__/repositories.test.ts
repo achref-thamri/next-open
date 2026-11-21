@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { cents } from "../../../core/money.js";
 import { toTicker, toTradingDate, type Candidate, type Proposal } from "../../../core/types.js";
 import type { BrokerFill } from "../../../ports/broker.js";
-import type { DecisionRecord, OrderRecord, Repositories } from "../../../ports/repositories.js";
+import type { DecisionRecord, OrderRecord, ProposalFilter, Repositories } from "../../../ports/repositories.js";
 import { openDatabase } from "../db.js";
 import { migrate } from "../migrate.js";
 import { createSqliteRepositories } from "../repositories/index.js";
@@ -183,7 +183,7 @@ describe("proposals", () => {
             proposal({ id: "p-3", tradeDate: toTradingDate("2026-11-04") }),
         ]);
 
-        const ids = async (filter: Parameters<Repositories["proposals"]["list"]>[0]) =>
+        const ids = async (filter: ProposalFilter) =>
             (await repos.proposals.list(filter)).map((proposal) => proposal.id);
         expect(await ids({ tradeDate: toTradingDate("2026-11-03") })).toEqual(["p-1", "p-2"]);
         expect(await ids({ statuses: ["pending"] })).toEqual(["p-1", "p-3"]);
