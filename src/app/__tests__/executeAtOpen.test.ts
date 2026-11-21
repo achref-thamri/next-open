@@ -252,7 +252,7 @@ describe("executeAtOpen", () => {
         expect(h.notifier.texts()[0]).toContain("🟢 buy 10 AAA");
     });
 
-    it.each([
+    it.each<[string, Error, string]>([
         ["refused", new PermanentError("asset not tradable"), "⛔ sell BBB refused by the broker: asset not tradable"],
         ["errored", new TransientError("connection reset"), "⚠️ sell BBB not placed: connection reset"],
     ])(
