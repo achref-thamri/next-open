@@ -44,6 +44,7 @@ function fakeTelegram() {
             method === "sendMessage"
                 ? { message_id: calls.length, date: 0, chat: { id: OWNER, type: "private" } }
                 : true;
+        // grammY types each reply by the method called; one stand-in for every method can't be typed.
         return Promise.resolve({ ok: true, result } as never);
     });
     return { telegram, calls };
