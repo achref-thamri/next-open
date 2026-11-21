@@ -24,7 +24,8 @@ export interface AlpacaClientOptions {
     logger: Logger;
     fetch?: Fetch;
     retry?: RetryOptions;
-    limiter?: RateLimiter;
+    /** Only `acquire` is used, so tests can pass a stand-in. */
+    limiter?: Pick<RateLimiter, "acquire">;
 }
 
 /**
@@ -32,7 +33,7 @@ export interface AlpacaClientOptions {
  * validation, error mapping (429/5xx/network transient, other 4xx permanent), retries and rate limiting.
  */
 export class AlpacaClient {
-    private readonly limiter: RateLimiter;
+    private readonly limiter: Pick<RateLimiter, "acquire">;
     private readonly tradingUrl: string;
 
     constructor(private readonly options: AlpacaClientOptions) {
