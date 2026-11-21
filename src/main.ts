@@ -84,6 +84,8 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-    console.error(error);
+    // The stack only. An error's other fields can hold the input that caused it (Node's "Invalid URL" keeps the URL),
+    // and at startup that input may be a secret from the environment. Config errors name a setting, never its value.
+    console.error(error instanceof Error ? (error.stack ?? error.message) : "Next Open failed to start");
     process.exit(1);
 });
