@@ -30,8 +30,14 @@ const decisionOutputSchema = zod.strictObject({
 const { $schema: _, ...schema } = zod.toJSONSchema(decisionOutputSchema, { target: "draft-7" });
 const OUTPUT_FORMAT = { type: "json_schema" as const, schema };
 
-/** The slice of the SDK client this adapter uses, so tests can pass a fake. */
-export type MessagesClient = Pick<Anthropic, "beta">;
+export type BetaMessage = Anthropic.Beta.Messages.BetaMessage;
+/** The one SDK call this adapter makes: a non-streaming beta message. */
+export type CreateMessage = (body: Anthropic.Beta.Messages.MessageCreateParamsNonStreaming) => Promise<BetaMessage>;
+
+/** The slice of the SDK client this adapter uses. The real client fits it, and tests pass a fake. */
+interface MessagesClient {
+    beta: { messages: { create: CreateMessage } };
+}
 
 export interface AnthropicLlmOptions {
     client: MessagesClient;

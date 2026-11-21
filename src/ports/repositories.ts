@@ -80,10 +80,16 @@ export interface DecisionsRepository {
     recent(limit: number): Promise<DecisionRecord[]>;
 }
 
+/** Which proposals `list` returns; both fields narrow it. */
+export interface ProposalFilter {
+    tradeDate?: TradingDate;
+    statuses?: readonly ProposalStatus[];
+}
+
 export interface ProposalsRepository {
     saveMany(proposals: readonly Proposal[]): Promise<void>;
     get(id: string): Promise<Proposal | undefined>;
-    list(filter: { tradeDate?: TradingDate; statuses?: readonly ProposalStatus[] }): Promise<Proposal[]>;
+    list(filter: ProposalFilter): Promise<Proposal[]>;
     /** Moves to `to` only from one of `from`. Returns false when the status was something else (idempotency). */
     transition(id: string, from: readonly ProposalStatus[], to: ProposalStatus): Promise<boolean>;
     /** Records the result of the execution-time risk re-check. */

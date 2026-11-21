@@ -4,16 +4,17 @@ import { describe, expect, it, vi } from "vitest";
 import { riskSchema } from "../../../config/schema.js";
 import { toTicker } from "../../../core/types.js";
 import { validateDecisions } from "../../../app/validateDecisions.js";
-import { AnthropicLlm, type MessagesClient } from "../llm.js";
+import { AnthropicLlm, type BetaMessage, type CreateMessage } from "../llm.js";
 
-const fixture = (name: string): unknown =>
-    JSON.parse(readFileSync(new URL(`../__fixtures__/${name}`, import.meta.url), "utf8"));
+/** A recorded API response; the files hold made-up data in the API's shape. */
+const fixture = (name: string) =>
+    JSON.parse(readFileSync(new URL(`../__fixtures__/${name}`, import.meta.url), "utf8")) as BetaMessage;
 
-function llm(response: unknown) {
-    const create = vi.fn(() => Promise.resolve(response));
+function llm(response: BetaMessage) {
+    const create = vi.fn<CreateMessage>(() => Promise.resolve(response));
     let t = 1000;
     const adapter = new AnthropicLlm({
-        client: { beta: { messages: { create } } } as unknown as MessagesClient,
+        client: { beta: { messages: { create } } },
         model: "claude-sonnet-5-5",
         logger: pino({ level: "silent" }),
         now: () => (t += 250),
@@ -31,7 +32,7 @@ describe("AnthropicLlm", () => {
 
         await adapter.decide(prompt);
 
-        const params = (create.mock.calls[0] as unknown[] | undefined)?.[0] as Record<string, unknown>;
+        const params = create.mock.calls[0]?.[0];
         expect(params).toMatchObject({
             model: "claude-sonnet-5-5",
             betas: ["server-side-fallback-2026-07-01"],
@@ -40,7 +41,7 @@ describe("AnthropicLlm", () => {
             messages: [{ role: "user", content: prompt.user }],
             output_config: { effort: "high", format: { type: "json_schema" } },
         });
-        const schema = JSON.stringify((params.output_config as { format: unknown }).format);
+        const schema = JSON.stringify(params?.output_config?.format);
         expect(schema).toContain('"additionalProperties":false');
         expect(schema).not.toMatch(/minimum|maximum|\$schema/);
     });
@@ -102,10 +103,15 @@ describe("AnthropicLlm", () => {
     });
 
     it("rejects answers that break the schema", async () => {
-        const base = fixture("valid.json") as { content: unknown[] };
-        const bad = {
-            ...base,
-            content: [{ type: "text", text: '{"decisions":[{"ticker":"AAPL","action":"short"}],"marketView":""}' }],
+        const bad: BetaMessage = {
+            ...fixture("valid.json"),
+            content: [
+                {
+                    type: "text",
+                    text: '{"decisions":[{"ticker":"AAPL","action":"short"}],"marketView":""}',
+                    citations: null,
+                },
+            ],
         };
 
         expect((await llm(bad).adapter.decide(prompt)).ok).toBe(false);
@@ -116,7 +122,7 @@ describe("AnthropicLlm", () => {
             ok: false,
             error: "the model declined (cyber)",
         });
-        const truncated = { ...(fixture("valid.json") as object), stop_reason: "max_tokens" };
+        const truncated: BetaMessage = { ...fixture("valid.json"), stop_reason: "max_tokens" };
         expect(await llm(truncated).adapter.decide(prompt)).toMatchObject({
             ok: false,
             error: "the answer was cut off at max_tokens",
@@ -124,7 +130,7 @@ describe("AnthropicLlm", () => {
     });
 
     it("prices an answer from an unlisted fallback model at the configured model's price", async () => {
-        const other = { ...(fixture("valid.json") as object), model: "claude-future-9" };
+        const other: BetaMessage = { ...fixture("valid.json"), model: "claude-future-9" };
 
         expect((await llm(other).adapter.decide(prompt)).call.costUsd).toBeCloseTo(0.0394, 6);
     });
@@ -133,7 +139,7 @@ describe("AnthropicLlm", () => {
         expect(
             () =>
                 new AnthropicLlm({
-                    client: { beta: { messages: { create: vi.fn() } } } as unknown as MessagesClient,
+                    client: { beta: { messages: { create: vi.fn() } } },
                     model: "claude-future-9",
                     logger: pino({ level: "silent" }),
                 }),
@@ -143,7 +149,7 @@ describe("AnthropicLlm", () => {
     it("lets API errors propagate", async () => {
         const create = vi.fn(() => Promise.reject(new Error("overloaded")));
         const adapter = new AnthropicLlm({
-            client: { beta: { messages: { create } } } as unknown as MessagesClient,
+            client: { beta: { messages: { create } } },
             model: "claude-sonnet-5-5",
             logger: pino({ level: "silent" }),
         });

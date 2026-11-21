@@ -5,6 +5,7 @@ import type {
     FillsRepository,
     OrderRecord,
     OrdersRepository,
+    ProposalFilter,
     ProposalsRepository,
 } from "../../../ports/repositories.js";
 import type { Db } from "../db.js";
@@ -91,7 +92,7 @@ export class SqliteProposalsRepository implements ProposalsRepository {
         });
     }
 
-    list(filter: { tradeDate?: TradingDate; statuses?: readonly ProposalStatus[] }): Promise<Proposal[]> {
+    list(filter: ProposalFilter): Promise<Proposal[]> {
         return promised(() => {
             const where: string[] = [];
             const params: string[] = [];

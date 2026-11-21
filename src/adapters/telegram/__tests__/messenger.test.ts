@@ -1,7 +1,7 @@
 import { Bot as TelegramClient } from "grammy";
 import type { Update } from "grammy/types";
 import { pino } from "pino";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import {
     registerHandlers,
     setCommandMenu,
@@ -44,6 +44,7 @@ function fakeTelegram() {
             method === "sendMessage"
                 ? { message_id: calls.length, date: 0, chat: { id: OWNER, type: "private" } }
                 : true;
+        // grammY types each reply by the method called; one stand-in for every method can't be typed.
         return Promise.resolve({ ok: true, result } as never);
     });
     return { telegram, calls };
@@ -74,7 +75,11 @@ const button = (chatId: number, data: string): Update => ({
 describe("Telegram handlers", () => {
     let telegram: TelegramClient;
     let calls: ApiCall[];
-    let handlers: { [K in keyof TelegramHandlers]: ReturnType<typeof vi.fn> & TelegramHandlers[K] };
+    let handlers: {
+        onCommand: Mock<TelegramHandlers["onCommand"]>;
+        onDecision: Mock<TelegramHandlers["onDecision"]>;
+        onApproveAll: Mock<TelegramHandlers["onApproveAll"]>;
+    };
 
     beforeEach(() => {
         ({ telegram, calls } = fakeTelegram());

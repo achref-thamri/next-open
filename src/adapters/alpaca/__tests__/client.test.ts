@@ -2,20 +2,22 @@ import { pino } from "pino";
 import { describe, expect, it, vi } from "vitest";
 import * as zod from "zod";
 import { HttpError, PermanentError, TransientError } from "../../../lib/errors.js";
-import { RateLimiter } from "../../../lib/http.js";
+import { RateLimiter, type Fetch } from "../../../lib/http.js";
 import { AlpacaClient, queryString } from "../client.js";
 
 type Handler = (url: string, init: RequestInit) => Response | Promise<Response>;
 
 function client(handler: Handler, mode: "paper" | "live" = "paper") {
-    const fetch = vi.fn((url: string, init?: RequestInit) => Promise.resolve(handler(url, init ?? {})));
+    const fetch = vi.fn<Fetch>((input, init) =>
+        Promise.resolve(handler(input instanceof Request ? input.url : input.toString(), init ?? {})),
+    );
     const sleep = vi.fn(() => Promise.resolve());
     const alpaca = new AlpacaClient({
         keyId: "key-id",
         secretKey: "secret",
         mode,
         logger: pino({ level: "silent" }),
-        fetch: fetch as unknown as typeof globalThis.fetch,
+        fetch,
         retry: { sleep, random: () => 0 },
         limiter: new RateLimiter(60_000, () => 0, sleep),
     });
@@ -114,7 +116,7 @@ describe("AlpacaClient", () => {
             mode: "paper",
             logger: pino({ level: "silent" }),
             fetch: () => Promise.resolve(json({ equity: "1" })),
-            limiter: { acquire } as unknown as RateLimiter,
+            limiter: { acquire },
         });
 
         await alpaca.trading("/v2/account", account);
