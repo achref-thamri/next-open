@@ -144,6 +144,15 @@ describe("AnthropicLlm", () => {
                     logger: pino({ level: "silent" }),
                 }),
         ).toThrow("no price for ANTHROPIC_MODEL=claude-future-9");
+        // A name only an object prototype has is not a priced model either.
+        expect(
+            () =>
+                new AnthropicLlm({
+                    client: { beta: { messages: { create: vi.fn<CreateMessage>() } } },
+                    model: "constructor",
+                    logger: pino({ level: "silent" }),
+                }),
+        ).toThrow("no price for ANTHROPIC_MODEL=constructor");
     });
 
     it("lets API errors propagate", async () => {

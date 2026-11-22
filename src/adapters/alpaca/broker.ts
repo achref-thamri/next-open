@@ -84,14 +84,14 @@ const configurationsSchema = zod.object({
     max_margin_multiplier: zod.string(),
 });
 
-const STATUS: Record<string, OrderStatus> = {
-    partially_filled: "partially_filled",
-    filled: "filled",
-    canceled: "canceled",
-    replaced: "canceled",
-    expired: "expired",
-    rejected: "rejected",
-};
+const STATUS: ReadonlyMap<string, OrderStatus> = new Map([
+    ["partially_filled", "partially_filled"],
+    ["filled", "filled"],
+    ["canceled", "canceled"],
+    ["replaced", "canceled"],
+    ["expired", "expired"],
+    ["rejected", "rejected"],
+]);
 
 /** Alpaca as the broker. Buys are gtc bracket limit orders, sells are day limit orders (see plan, task 2.1). */
 export class AlpacaBroker implements Broker {
@@ -251,7 +251,7 @@ function toBrokerOrder(order: AlpacaOrder, parent?: AlpacaOrder): BrokerOrder {
         filledAvgPrice: order.filled_avg_price,
         limitPrice: order.limit_price,
         stopPrice: order.stop_price,
-        status: STATUS[order.status] ?? "open",
+        status: STATUS.get(order.status) ?? "open",
         submittedAt: new Date(order.submitted_at),
         legs: order.legs.map((leg) => toBrokerOrder(leg, order)),
     };

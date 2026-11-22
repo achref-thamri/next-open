@@ -4,10 +4,10 @@ import type { Logger } from "../../lib/logger.js";
 import type { Llm, LlmCallRecord, LlmDecisionOutput, LlmPrompt, LlmResult } from "../../ports/llm.js";
 
 /** USD per million tokens (cache writes cost 1.25× input). Update when Anthropic changes prices. */
-const PRICES: Record<string, { input: number; output: number; cacheRead: number }> = {
-    "claude-sonnet-5-5": { input: 2, output: 10, cacheRead: 0.2 },
-    "claude-opus-5-5": { input: 4, output: 20, cacheRead: 0.2 },
-};
+const PRICES: ReadonlyMap<string, { input: number; output: number; cacheRead: number }> = new Map([
+    ["claude-sonnet-5-5", { input: 2, output: 10, cacheRead: 0.2 }],
+    ["claude-opus-5-5", { input: 4, output: 20, cacheRead: 0.2 }],
+]);
 
 /** The shape sent as the JSON schema. Numeric bounds are checked by `validateDecisions` in the app. */
 const decisionOutputSchema = zod.strictObject({
@@ -56,7 +56,7 @@ export class AnthropicLlm implements Llm {
 
     constructor(private readonly options: AnthropicLlmOptions) {
         // Fail at startup rather than record every call as free.
-        if (!PRICES[options.model]) {
+        if (!PRICES.has(options.model)) {
             throw new Error(
                 `no price for ANTHROPIC_MODEL=${options.model}; add it to PRICES in src/adapters/anthropic/llm.ts`,
             );
@@ -108,11 +108,11 @@ export class AnthropicLlm implements Llm {
             cache_creation_input_tokens: number | null;
         },
     ): number {
-        let price = PRICES[model];
+        let price = PRICES.get(model);
         if (!price) {
             // A server-side fallback can answer on another model; the configured one is the closest estimate.
             this.options.logger.warn({ model, pricedAs: this.options.model }, "no price for the answering model");
-            price = PRICES[this.options.model] ?? { input: 0, output: 0, cacheRead: 0 };
+            price = PRICES.get(this.options.model) ?? { input: 0, output: 0, cacheRead: 0 };
         }
         const perToken = (usd: number) => usd / 1_000_000;
         return (
