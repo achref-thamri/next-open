@@ -81,7 +81,7 @@ export class SqliteSettingsRepository implements SettingsRepository {
             );
             this.db.transaction(() => {
                 for (const [key, value] of Object.entries(patch)) {
-                    if (key in DEFAULT_SETTINGS) upsert.run(key, JSON.stringify(value ?? null));
+                    if (Object.hasOwn(DEFAULT_SETTINGS, key)) upsert.run(key, JSON.stringify(value ?? null));
                 }
             })();
             return this.read();
@@ -92,7 +92,7 @@ export class SqliteSettingsRepository implements SettingsRepository {
         const rows = this.db.prepare("SELECT key, value FROM settings").all() as { key: string; value: string }[];
         const settings: Record<string, unknown> = { ...DEFAULT_SETTINGS };
         for (const { key, value } of rows) {
-            if (key in DEFAULT_SETTINGS) settings[key] = JSON.parse(value) ?? undefined;
+            if (Object.hasOwn(DEFAULT_SETTINGS, key)) settings[key] = JSON.parse(value) ?? undefined;
         }
         return settings as unknown as AppSettings;
     }
