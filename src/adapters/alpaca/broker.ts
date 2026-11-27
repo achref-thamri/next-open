@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from "node:timers/promises";
 import * as zod from "zod";
 import { cents, centsToDollars, dollarsToCents, type Cents } from "../../core/money.js";
 import {
@@ -12,7 +13,15 @@ import {
 } from "../../core/types.js";
 import { HttpError, PermanentError } from "../../lib/errors.js";
 import type { Logger } from "../../lib/logger.js";
-import type { Broker, BrokerFill, BrokerOrder, MarketDay, OrderRole, OrderStatus } from "../../ports/broker.js";
+import {
+    OPEN_ORDER_STATUSES,
+    type Broker,
+    type BrokerFill,
+    type BrokerOrder,
+    type MarketDay,
+    type OrderRole,
+    type OrderStatus,
+} from "../../ports/broker.js";
 import type { AlpacaClient } from "./client.js";
 
 const money = zod.string().transform((value) => dollarsToCents(Number(value)));
@@ -93,11 +102,15 @@ const STATUS: ReadonlyMap<string, OrderStatus> = new Map([
     ["rejected", "rejected"],
 ]);
 
+const CANCEL_CHECKS = 10;
+const CANCEL_CHECK_MS = 500;
+
 /** Alpaca as the broker. Buys are gtc bracket limit orders, sells are day limit orders (see plan, task 2.1). */
 export class AlpacaBroker implements Broker {
     constructor(
         private readonly client: AlpacaClient,
         private readonly logger: Logger,
+        private readonly wait: (ms: number) => Promise<unknown> = sleep,
     ) {}
 
     async getAccount(): Promise<Account> {
@@ -169,6 +182,13 @@ export class AlpacaBroker implements Broker {
             if (error instanceof HttpError && error.status === 422) return;
             throw error;
         }
+        // Alpaca cancels in the background and keeps the shares reserved until it has.
+        for (let check = 1; check <= CANCEL_CHECKS; check++) {
+            const order = await this.client.trading(`/v2/orders/${encodeURIComponent(orderId)}`, orderSchema);
+            if (!OPEN_ORDER_STATUSES.includes(statusOf(order))) return;
+            if (check < CANCEL_CHECKS) await this.wait(CANCEL_CHECK_MS);
+        }
+        throw new Error(`Order ${orderId} is still not cancelled after ${(CANCEL_CHECKS * CANCEL_CHECK_MS) / 1000}s`);
     }
 
     async getFills(since: Date): Promise<BrokerFill[]> {
@@ -251,10 +271,14 @@ function toBrokerOrder(order: AlpacaOrder, parent?: AlpacaOrder): BrokerOrder {
         filledAvgPrice: order.filled_avg_price,
         limitPrice: order.limit_price,
         stopPrice: order.stop_price,
-        status: STATUS.get(order.status) ?? "open",
+        status: statusOf(order),
         submittedAt: new Date(order.submitted_at),
         legs: order.legs.map((leg) => toBrokerOrder(leg, order)),
     };
+}
+
+function statusOf(order: AlpacaOrder): OrderStatus {
+    return STATUS.get(order.status) ?? "open";
 }
 
 function roleOf(order: AlpacaOrder, parent: AlpacaOrder | undefined): OrderRole {

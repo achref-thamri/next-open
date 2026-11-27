@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { pino } from "pino";
 import { describe, expect, it } from "vitest";
+import * as zod from "zod";
 import { cents } from "../../../core/money.js";
 import { toTicker, toTradingDate, type OrderIntent } from "../../../core/types.js";
 import { HttpError, PermanentError } from "../../../lib/errors.js";
@@ -47,10 +48,14 @@ function broker(routes: Record<string, Route>) {
         retry: { sleep: () => Promise.resolve() },
         limiter: new RateLimiter(1e9),
     });
-    return { broker: new AlpacaBroker(client, logger), calls };
+    return { broker: new AlpacaBroker(client, logger, () => Promise.resolve()), calls };
 }
 
 const AAPL = toTicker("AAPL");
+
+const bracketLeg = zod
+    .object({ legs: zod.array(zod.record(zod.string(), zod.unknown())) })
+    .parse(fixture("order-bracket.json")).legs[1];
 
 describe("AlpacaBroker", () => {
     it("maps the account", async () => {
@@ -221,11 +226,36 @@ describe("AlpacaBroker", () => {
         });
 
         it("cancels an open order", async () => {
-            const { broker: b, calls } = broker({ "DELETE /v2/orders/abc": () => ({ status: 204 }) });
+            const { broker: b, calls } = broker({
+                "DELETE /v2/orders/abc": () => ({ status: 204 }),
+                "GET /v2/orders/abc": () => ({ body: { ...bracketLeg, id: "abc", status: "canceled" } }),
+            });
 
             await b.cancelOrder("abc");
 
             expect(calls[0]?.method).toBe("DELETE");
+        });
+
+        it("waits until a pending cancel has gone through, so the shares are free to sell", async () => {
+            const statuses = ["pending_cancel", "pending_cancel", "canceled"];
+            const { broker: b, calls } = broker({
+                "DELETE /v2/orders/abc": () => ({ status: 204 }),
+                "GET /v2/orders/abc": () => ({ body: { ...bracketLeg, id: "abc", status: statuses.shift() } }),
+            });
+
+            await b.cancelOrder("abc");
+
+            expect(calls.filter((call) => call.method === "GET")).toHaveLength(3);
+            expect(statuses).toEqual([]);
+        });
+
+        it("gives up when a cancel stays pending", async () => {
+            const { broker: b } = broker({
+                "DELETE /v2/orders/abc": () => ({ status: 204 }),
+                "GET /v2/orders/abc": () => ({ body: { ...bracketLeg, id: "abc", status: "pending_cancel" } }),
+            });
+
+            await expect(b.cancelOrder("abc")).rejects.toThrow("abc is still not cancelled");
         });
     });
 
