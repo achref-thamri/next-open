@@ -56,7 +56,8 @@ interface ShadowStrategy {
 
 const PATIENT_STYLE = `This portfolio is managed patiently. Hold positions for weeks to months and let the protective \
 orders handle normal swings. Open a new position only on a clear, lasting reason, at most two a week. Sell only \
-when the reason for holding is gone. When in doubt, hold.`;
+when the reason for holding is gone. When in doubt, hold. This replaces the one-to-two-week horizon above: no \
+position is sold here for being held too long, and the take-profit can be wide.`;
 
 /** Time-exit sells what is still held this long after buying, about 20 trading days. */
 const TIME_EXIT_DAYS = 28;

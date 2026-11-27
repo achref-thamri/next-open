@@ -95,7 +95,8 @@ or reject, and the reason is stored and shown in Telegram.
 
 Limits come from config (`src/config/schema.ts`), validated at startup. The defaults are sized for an account of
 about $3,000 ([ADR 0009](adr/0009-sized-for-a-small-account.md)). Before the rules, a buy's stop-loss is widened to at least 2.5 typical daily moves (capped at 25%); the decisions
-table keeps the model's own value. The evening also leaves out stocks
+table keeps the model's own value. A holding bought 10 or more days ago that is up less than 3% is turned into a sell
+([ADR 0013](adr/0013-short-term-holding.md)). The evening also leaves out stocks
 whose single share costs more than a full position, since they could never be bought. Any reserved cash (`reservedCashUsd`) is
 taken off the account when it is read from the broker, before sizing and every rule.
 

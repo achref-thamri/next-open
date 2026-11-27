@@ -39,6 +39,8 @@ describe("parseConfig", () => {
             maxOrdersPerDay: 10,
             maxDailyTradedWeight: 0.4,
             maxEntryGapPct: 0.01,
+            maxStallDays: 10,
+            minGainToKeepPct: 0.03,
             reservedCashUsd: 0,
         });
         expect(config.universe.maxCandidates).toBe(40);

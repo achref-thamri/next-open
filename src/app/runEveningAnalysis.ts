@@ -18,7 +18,14 @@ import { newId } from "../lib/ids.js";
 import type { Cents } from "../core/money.js";
 import type { NewsItem } from "../ports/news.js";
 import type { CandidateRecord, DecisionRecord } from "../ports/repositories.js";
-import { buildCandidate, CONTEXT_SYMBOLS, promptInput, sizeDecisions, withStopFloors } from "./analysisShared.js";
+import {
+    buildCandidate,
+    CONTEXT_SYMBOLS,
+    promptInput,
+    sizeDecisions,
+    withStopFloors,
+    withTimeStops,
+} from "./analysisShared.js";
 import { addDays, tradingDays } from "./calendar.js";
 import type { AppDeps } from "./deps.js";
 import { eveningSummaryText, proposalText } from "./messages.js";
@@ -225,6 +232,7 @@ async function decideAndPropose(input: DecideInput): Promise<{ result: JobResult
     } = input;
     const { config, repos } = deps;
     const holdings = new Set(state.positions.map((position) => position.ticker));
+    const openDates = positionOpenDates(fills);
 
     const prompt = buildPrompt(
         promptInput({
@@ -236,7 +244,7 @@ async function decideAndPropose(input: DecideInput): Promise<{ result: JobResult
             marketNews,
             tickerNews,
             recentDecisions,
-            openDates: positionOpenDates(fills),
+            openDates,
             contextTickers,
             limits: config.risk,
             earnings,
@@ -265,8 +273,15 @@ async function decideAndPropose(input: DecideInput): Promise<{ result: JobResult
         })),
     );
 
-    // The decisions table keeps the model's own stops; orders use them widened to the volatility floor.
-    const decisions = withStopFloors(validation.decisions, history);
+    // The decisions table keeps the model's own answer; orders use stops widened to the volatility floor and
+    // sell stalled positions.
+    const decisions = withTimeStops(
+        withStopFloors(validation.decisions, history),
+        state.positions,
+        openDates,
+        asOf,
+        config.risk,
+    );
     const proposals = await propose(deps, runId, tradeDate, decisions, shortlist, state);
     await repos.proposals.saveMany(proposals);
     await notify(deps, tradeDate, llmResult.output.marketView, proposals);

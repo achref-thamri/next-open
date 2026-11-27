@@ -4,7 +4,7 @@ import { cents, type Cents } from "./money.js";
 import { maxDrawdown } from "./metrics.js";
 import { markToMarketTax, realizedShareTax, totalTax } from "./tax.js";
 import { gainsByYear, type ClosedTrade } from "./trades.js";
-import type { EquitySnapshot, TradingDate } from "./types.js";
+import { daysBetween, type EquitySnapshot, type TradingDate } from "./types.js";
 
 /** Fixed before trading started (docs/adr/0003-forward-testing-only.md); deliberately not configurable. */
 const GO_LIVE_RULES = {
@@ -122,8 +122,4 @@ export function monthsBetween(from: TradingDate, to: TradingDate): number {
     const [ty, tm, td] = to.split("-").map(Number) as [number, number, number];
     const months = (ty - fy) * 12 + (tm - fm) - (td < fd ? 1 : 0);
     return Math.max(0, months);
-}
-
-function daysBetween(from: TradingDate, to: TradingDate): number {
-    return Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000);
 }

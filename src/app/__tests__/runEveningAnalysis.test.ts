@@ -86,6 +86,31 @@ describe("runEveningAnalysis", () => {
         expect(user).toContain('"symbol":"SPY"');
     });
 
+    it("sells a holding that has stalled for 10 days even when the model holds it", async () => {
+        // BBB closed at $98, where it was bought.
+        h.broker.seedPosition(toTicker("BBB"), 50, cents(9_800));
+        await h.repos.fills.saveMany([
+            {
+                id: "f1",
+                orderId: "o1",
+                ticker: toTicker("BBB"),
+                side: "buy",
+                qty: 50,
+                price: cents(9_800),
+                fee: cents(0),
+                date: toTradingDate("2026-10-20"),
+                time: new Date("2026-10-20T13:30:00Z"),
+            },
+        ]);
+        h.llm.respondWith(llmOutput(decision("BBB", { action: "hold", targetWeight: 0.05 })));
+
+        await runEveningAnalysis(h);
+
+        const [proposal] = await h.repos.proposals.list({ tradeDate: NEXT });
+        expect(proposal).toMatchObject({ ticker: "BBB", side: "sell", qty: 50 });
+        expect(proposal?.reasoning).toMatch(/^Held 13 days at \+0\.0%/);
+    });
+
     it("tells the model how many days until a candidate's next earnings report", async () => {
         h.earnings.reports.set(toTicker("AAA"), toTradingDate("2026-11-05"));
         h.llm.respondWith(llmOutput());
