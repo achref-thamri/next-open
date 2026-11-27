@@ -16,3 +16,4 @@ Short records of decisions that shape the code: the context, what was decided, a
 | [0010](0010-trend-in-the-shortlist.md)              | Uptrends in the shortlist, a year of data per stock       |
 | [0011](0011-stops-and-size-from-volatility.md)      | Stops and position size from volatility                   |
 | [0012](0012-earnings-dates-in-the-prompt.md)        | Earnings dates in the prompt                              |
+| [0013](0013-short-term-holding.md)                  | Short-term holding with a time limit                      |

@@ -96,8 +96,13 @@ How to decide:
 invested, so keep most of the portfolio (about 70 to 90% of equity) in your best ideas, spread over several \
 positions. Hold more cash only for a reason you can name, such as a falling market below its 200-day average.
 - Prefer a few high-conviction trades over many small ones. Doing nothing is a valid decision for a day.
-- Think in days to weeks, not minutes. Orders are limit orders at the next open, at most ${shortPercent(limits.maxEntryGapPct)} \
-above (buys) or below (sells) today's close; a stock that gaps past that is not traded.
+- Trade for short-term gains: aim to be out of each position within one to two weeks (5 to 10 trading days). \
+Prefer stocks with a reason to move soon, such as strong recent momentum, a breakout to a new high or fresh news. \
+Sell a position once its move is done or the reason for it is gone. A holding that is still open \
+${limits.maxStallDays} calendar days after it was bought is sold by code unless it is up at least \
+${shortPercent(limits.minGainToKeepPct)}.
+- Orders are limit orders at the next open, at most ${shortPercent(limits.maxEntryGapPct)} above (buys) or below \
+(sells) today's close; a stock that gaps past that is not traded.
 - Use the recent decisions and their outcomes to learn what has and has not worked.
 - Each candidate has returns from 1 day (d1) to 12 months (m12), fromHigh52w (distance below its highest close of \
 the last year), vsMa200 (distance above or below its 200-day average) and dailyVolatility (a typical day's move). \
@@ -129,8 +134,8 @@ from the shortlist.
   - confidence: 1 (low) to 5 (high).
   - stopLossPct and takeProfitPct: distance from the entry price as fractions (0.08 = 8%), used for the \
 protective orders of buys. Set the stop at 2.5 to 4 times the stock's dailyVolatility, so normal swings don't \
-trigger it; code widens anything tighter. The take-profit can be wide: winners are sold by a later decision, not \
-only by the target.
+trigger it; code widens anything tighter. Set the take-profit at a gain the stock can reach in one to two weeks, \
+usually 1.5 to 2 times the stop distance.
   - horizonDays: expected holding period in trading days.
   - reasoning: two or three sentences a non-expert can follow.
 - marketView: two or three sentences on the market as a whole.`;

@@ -64,6 +64,9 @@ export const riskSchema = zod
         maxDailyTradedWeight: fraction.default(0.4),
         /** Max limit price above (buys) or below (sells) the previous close. */
         maxEntryGapPct: zod.number().min(0).max(0.1).default(0.01),
+        /** A position still held this many calendar days after it opened is sold unless it is up minGainToKeepPct. */
+        maxStallDays: zod.int().positive().default(10),
+        minGainToKeepPct: zod.number().min(0).max(1).default(0.03),
         /**
          * Cash in the account that Next Open leaves alone, e.g. to start live with part of the money. It is taken off
          * equity, cash and the previous close everywhere, so sizing, limits, reports and the benchmark see only the

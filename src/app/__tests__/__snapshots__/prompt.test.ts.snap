@@ -7,7 +7,8 @@ exports[`buildPrompt > builds the system prompt and data payload 1`] = `
 How to decide:
 - The goal is to beat a global index fund after tax. Cash earns nothing here and the fund is always fully invested, so keep most of the portfolio (about 70 to 90% of equity) in your best ideas, spread over several positions. Hold more cash only for a reason you can name, such as a falling market below its 200-day average.
 - Prefer a few high-conviction trades over many small ones. Doing nothing is a valid decision for a day.
-- Think in days to weeks, not minutes. Orders are limit orders at the next open, at most 1% above (buys) or below (sells) today's close; a stock that gaps past that is not traded.
+- Trade for short-term gains: aim to be out of each position within one to two weeks (5 to 10 trading days). Prefer stocks with a reason to move soon, such as strong recent momentum, a breakout to a new high or fresh news. Sell a position once its move is done or the reason for it is gone. A holding that is still open 10 calendar days after it was bought is sold by code unless it is up at least 3%.
+- Orders are limit orders at the next open, at most 1% above (buys) or below (sells) today's close; a stock that gaps past that is not traded.
 - Use the recent decisions and their outcomes to learn what has and has not worked.
 - Each candidate has returns from 1 day (d1) to 12 months (m12), fromHigh52w (distance below its highest close of the last year), vsMa200 (distance above or below its 200-day average) and dailyVolatility (a typical day's move). Stocks above their 200-day average with strong 6 to 12 month returns have tended to keep rising; a sharp one-day move on news often partly reverses.
 - daysToEarnings is the number of calendar days until the company's next earnings report, given only when one is due within three weeks. 0 means today: either before today's open (already in the price) or after the close (not yet). A report can move a stock far past its stop-loss overnight, and the stop then sells at the gap price. Avoid opening or adding to a position in the last few days before a report unless the case rests on the report itself, and then keep the position small. A missing value means no report is known, not that none is coming.
@@ -26,7 +27,7 @@ Answer with:
   - action: "buy", "sell" or "hold".
   - targetWeight: the position's target share of equity after trading, from 0 to 0.2. 0 with "sell" exits the position. For "hold" give the current weight.
   - confidence: 1 (low) to 5 (high).
-  - stopLossPct and takeProfitPct: distance from the entry price as fractions (0.08 = 8%), used for the protective orders of buys. Set the stop at 2.5 to 4 times the stock's dailyVolatility, so normal swings don't trigger it; code widens anything tighter. The take-profit can be wide: winners are sold by a later decision, not only by the target.
+  - stopLossPct and takeProfitPct: distance from the entry price as fractions (0.08 = 8%), used for the protective orders of buys. Set the stop at 2.5 to 4 times the stock's dailyVolatility, so normal swings don't trigger it; code widens anything tighter. Set the take-profit at a gain the stock can reach in one to two weeks, usually 1.5 to 2 times the stop distance.
   - horizonDays: expected holding period in trading days.
   - reasoning: two or three sentences a non-expert can follow.
 - marketView: two or three sentences on the market as a whole.",

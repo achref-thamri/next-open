@@ -53,6 +53,11 @@ export function tradingDateOf(instant: Date): TradingDate {
 const OFFSET = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", timeZoneName: "longOffset" });
 
 /** The instant of a wall-clock time ("HH:MM") on a date in New York, honouring daylight saving time. */
+/** Calendar days from one date to a later one. */
+export function daysBetween(from: TradingDate, to: TradingDate): number {
+    return Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000);
+}
+
 export function newYorkInstant(date: TradingDate, time: string): Date {
     const naive = new Date(`${date}T${time}:00Z`);
     // The offset at noon UTC that day is the offset all trading hours use (DST switches at 02:00).

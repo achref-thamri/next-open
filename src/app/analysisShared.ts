@@ -1,8 +1,10 @@
 import type { RiskLimits } from "../config/schema.js";
+import { shortPercent, signedPercent } from "../core/format.js";
 import { centsToDollars, type Cents } from "../core/money.js";
 import type { OrderRequest } from "../core/risk/index.js";
 import { limitPrice, sizeOrder, stopFloor } from "../core/sizing.js";
 import {
+    daysBetween,
     toTicker,
     type Candidate,
     type DailyBar,
@@ -82,14 +84,13 @@ export interface PromptSources {
 export function promptInput(s: PromptSources): PromptInput {
     const { account, positions } = s.state;
     const equity = account.equity;
-    const daysBetween = (from: TradingDate) => Math.round((Date.parse(s.asOf) - Date.parse(from)) / 86_400_000);
     const headlinesFor = (ticker: Ticker) =>
         s.tickerNews
             .filter((item) => item.tickers.includes(ticker))
             .slice(0, HEADLINES_PER_TICKER)
             .map((item) => item.headline);
     const earningsIn = (date: TradingDate | undefined) =>
-        date === undefined ? {} : { daysToEarnings: -daysBetween(date) };
+        date === undefined ? {} : { daysToEarnings: daysBetween(s.asOf, date) };
     const closeOn = (ticker: Ticker, date: TradingDate) =>
         s.history.get(ticker)?.find((bar) => bar.date === date)?.close;
     const latestClose = (ticker: Ticker) => s.history.get(ticker)?.at(-1)?.close;
@@ -124,7 +125,7 @@ export function promptInput(s: PromptSources): PromptInput {
                     priceUsd: centsToDollars(position.currentPrice),
                     unrealizedPct: position.avgEntryPrice > 0 ? position.currentPrice / position.avgEntryPrice - 1 : 0,
                     weight: equity > 0 ? position.marketValue / equity : 0,
-                    daysHeld: opened && daysBetween(opened),
+                    daysHeld: opened && daysBetween(opened, s.asOf),
                 };
             }),
         },
@@ -208,4 +209,35 @@ export function withStopFloors(decisions: readonly Decision[], history: Readonly
               }
             : decision,
     );
+}
+
+/**
+ * Sells positions that have stalled: held at least maxStallDays and up less than minGainToKeepPct. Short-term
+ * trades that have not worked out free their money for the next idea instead of waiting for the stop-loss.
+ */
+export function withTimeStops(
+    decisions: readonly Decision[],
+    positions: readonly Position[],
+    openDates: ReadonlyMap<Ticker, TradingDate>,
+    asOf: TradingDate,
+    limits: RiskLimits,
+): Decision[] {
+    const stalled = new Map<Ticker, string>();
+    for (const position of positions) {
+        const opened = openDates.get(position.ticker);
+        if (opened === undefined || position.avgEntryPrice <= 0) continue;
+        const days = daysBetween(opened, asOf);
+        const gain = position.currentPrice / position.avgEntryPrice - 1;
+        if (days >= limits.maxStallDays && gain < limits.minGainToKeepPct) {
+            stalled.set(
+                position.ticker,
+                `Held ${days} days at ${signedPercent(gain)}. After ${limits.maxStallDays} days a position needs at least ` +
+                    `${shortPercent(limits.minGainToKeepPct)} to stay, so this one is sold to free the money.`,
+            );
+        }
+    }
+    return decisions.map((decision) => {
+        const reasoning = stalled.get(decision.ticker);
+        return reasoning === undefined ? decision : { ...decision, action: "sell", targetWeight: 0, reasoning };
+    });
 }

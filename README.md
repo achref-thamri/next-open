@@ -48,6 +48,7 @@ difference comes from the exit rule alone.
 | Daily activity | At most 10 orders and 40% of equity traded per day                              |
 | Daily loss     | Buying halts when equity falls 3% below the previous close; sells go on         |
 | Entry price    | Buys at most 1% above the last close, so an overnight gap isn't chased          |
+| Holding time   | A position held 10 days is sold unless it is up at least 3%                     |
 | Instruments    | Long only, US common stocks, no margin, shorts, options or ETFs                 |
 
 A buy carries a stop-loss and a take-profit at the broker, both measured from the last close. The stop is at least
